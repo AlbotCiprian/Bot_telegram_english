@@ -1,4 +1,4 @@
-import { BRANDING } from "../content/staticContent.js";
+import { BRANDING, STATIC_PAGES } from "../content/staticContent.js";
 import { logger } from "../utils/logger.js";
 import { resolveAiApiConfig } from "./aiProvider.js";
 import { searchRelevantDocuments } from "./vectorService.js";
@@ -19,7 +19,7 @@ function sanitizeAiAnswer(answer: string): string {
 }
 
 function isPricingQuestion(question: string): boolean {
-  return /(pret|preturi|costa|cost|abonament|abonamente|program|programe|pachet|pachete|basic|medium|advanced|eur|euro)/i.test(
+  return /(pret|preturi|costa|cost|abonament|abonamente|program|programe|pachet|pachete|oferta|oferte|basic|medium|advanced|eur|euro)/i.test(
     question,
   );
 }
@@ -31,9 +31,35 @@ function isSchoolOverviewQuestion(question: string): boolean {
 }
 
 function hasPricingContext(context: string): boolean {
-  return /(250 eur|350 eur|400 eur|550 eur|basic|medium|advanced|pret|preturi|programe|pachete|abonamente)/i.test(
+  return /(250 eur|350 eur|400 eur|550 eur|basic|medium|advanced|pret|preturi|programe|pachete|abonamente|oferta|oferte)/i.test(
     context,
   );
+}
+
+function buildKnowledgeContext(question: string, dynamicContext: string): { context: string; sources: string[] } {
+  const parts: string[] = [];
+  const sources: string[] = [];
+
+  if (dynamicContext.trim().length > 0) {
+    parts.push(dynamicContext);
+  }
+
+  if (isPricingQuestion(question)) {
+    parts.push(`[Context suplimentar] ${STATIC_PAGES.programs.title}\n${STATIC_PAGES.programs.body}`);
+    sources.push(`${BRANDING.websiteUrl}#programs`);
+  }
+
+  if (isSchoolOverviewQuestion(question)) {
+    parts.push(`[Context suplimentar] ${STATIC_PAGES.welcome.title}\n${STATIC_PAGES.welcome.body}`);
+    sources.push(`${BRANDING.websiteUrl}#welcome`);
+    parts.push(`[Context suplimentar] ${STATIC_PAGES.method.title}\n${STATIC_PAGES.method.body}`);
+    sources.push(`${BRANDING.websiteUrl}#method`);
+  }
+
+  return {
+    context: parts.join("\n\n"),
+    sources,
+  };
 }
 
 function buildFallbackAnswer(question: string, context: string[], sources: string[]): AiAnswer {
@@ -89,20 +115,26 @@ export async function answerQuestion(question: string): Promise<AiAnswer> {
   const sources = [...new Set(documents.map((item) => item.url))];
   const topScore = documents[0]?.score ?? 0;
   const minScore = isSchoolOverviewQuestion(question) ? 0.08 : 0.15;
-
-  if (documents.length === 0 || topScore < minScore) {
-    return buildFallbackAnswer(question, [], sources);
-  }
-
-  const context = documents
+  const dynamicContext = documents
     .map(
       (item, index) =>
         `[Context ${index + 1}] ${item.title ?? item.url}\n${item.content.slice(0, 1200)}`,
     )
     .join("\n\n");
+  const supplementalContext = buildKnowledgeContext(question, dynamicContext);
+  const mergedSources = [...new Set([...sources, ...supplementalContext.sources])];
+
+  if (documents.length === 0 || topScore < minScore) {
+    if (supplementalContext.context.trim().length > 0) {
+      return buildFallbackAnswer(question, supplementalContext.context.split("\n\n").slice(0, 4), mergedSources);
+    }
+
+    return buildFallbackAnswer(question, [], mergedSources);
+  }
+  const context = supplementalContext.context;
 
   if (isPricingQuestion(question) && !hasPricingContext(context)) {
-    return buildFallbackAnswer(question, [], sources);
+    return buildFallbackAnswer(question, [], mergedSources);
   }
 
   const aiConfig = resolveAiApiConfig();
@@ -152,7 +184,7 @@ export async function answerQuestion(question: string): Promise<AiAnswer> {
       return buildFallbackAnswer(
         question,
         documents.map((item) => item.content.slice(0, 320)),
-        sources,
+        mergedSources,
       );
     }
 
@@ -170,16 +202,16 @@ export async function answerQuestion(question: string): Promise<AiAnswer> {
     }
 
     return {
-      answer: `${sanitizeAiAnswer(content)}\n\nSurse utile:\n${sources.slice(0, 3).join("\n")}`,
+      answer: `${sanitizeAiAnswer(content)}\n\nSurse utile:\n${mergedSources.slice(0, 3).join("\n")}`,
       usedFallback: false,
-      sources,
+      sources: mergedSources,
     };
   } catch (error) {
     logger.error({ provider: aiConfig.provider, err: error }, "AI request a aruncat exceptie.");
     return buildFallbackAnswer(
       question,
       documents.map((item) => item.content.slice(0, 320)),
-      sources,
+      mergedSources,
     );
   }
 }
