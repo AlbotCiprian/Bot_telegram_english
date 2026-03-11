@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: allengual-postgres
+    command: ["postgres", "-c", "hba_file=/var/lib/postgresql/data/pg_hba.conf"]
+    ports:
+      - "55432:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: botdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
+
+  redis:
+    image: redis:7
+    container_name: allengual-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  bot:
+    build: .
+    container_name: allengual-bot
+    command: npm run dev
+    env_file:
+      - .env.local
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  worker:
+    build: .
+    container_name: allengual-worker
+    command: npm run worker
+    env_file:
+      - .env.local
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+  redis_data:

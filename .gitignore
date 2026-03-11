@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.vps
+.env.*.local
+coverage/
+.turbo/
+.idea/
+.vscode/
+.DS_Store
+npm-debug.log*
+*.log
+src/db/prisma/dev.db
+src/db/prisma/dev.db-journal
+src/db/prisma/migrations/**/migration_lock.toml.tmp

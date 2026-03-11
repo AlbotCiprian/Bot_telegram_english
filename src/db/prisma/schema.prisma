@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int           @id @default(autoincrement())
+  telegramId        BigInt        @unique @map("telegram_id")
+  username          String?       @map("username")
+  firstName         String?       @map("first_name")
+  lastName          String?       @map("last_name")
+  languageCode      String?       @map("language_code")
+  phone             String?       @map("phone")
+  email             String?       @map("email")
+  leadFormCompleted Boolean       @default(false) @map("lead_form_completed")
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at")
+  currentLessonDay  Int           @default(0) @map("current_lesson_day")
+  lesson1Unlocked   Boolean       @default(false) @map("lesson1_unlocked")
+  lesson2Unlocked   Boolean       @default(false) @map("lesson2_unlocked")
+  lesson3Unlocked   Boolean       @default(false) @map("lesson3_unlocked")
+  lesson2UnlockTime DateTime?     @map("lesson2_unlock_time")
+  lesson3UnlockTime DateTime?     @map("lesson3_unlock_time")
+  kommoLeadId       BigInt?       @map("kommo_lead_id")
+  kommoContactId    BigInt?       @map("kommo_contact_id")
+  lastInteractionAt DateTime      @default(now()) @map("last_interaction_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  profile           UserProfile?
+  session           BotSession?
+  campaigns         UserCampaign[]
+  jobs              ScheduledJob[]
+  crmSyncLogs       CrmSyncLog[]
+  events            UserEvent[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id                  Int      @id @default(autoincrement())
+  userId              Int      @unique @map("user_id")
+  englishLevel        String?  @map("english_level")
+  goal                String?  @map("goal")
+  occupation          String?  @map("occupation")
+  timeAvailable       String?  @map("time_available")
+  consentPrivacy      Boolean  @default(false) @map("consent_privacy")
+  consentMarketing    Boolean  @default(false) @map("consent_marketing")
+  consultationWanted  Boolean  @default(false) @map("consultation_wanted")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model BotSession {
+  id        Int      @id @default(autoincrement())
+  userId     Int      @unique @map("user_id")
+  flowType   String?  @map("flow_type")
+  step       String?  @map("step")
+  payload    Json?    @map("payload")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("bot_sessions")
+}
+
+model Campaign {
+  id          Int           @id @default(autoincrement())
+  key         String        @unique @map("key")
+  name        String        @map("name")
+  type        String        @map("type")
+  isActive    Boolean       @default(true) @map("is_active")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  lessons     Lesson[]
+  userLinks   UserCampaign[]
+
+  @@map("campaigns")
+}
+
+model Lesson {
+  id          Int      @id @default(autoincrement())
+  campaignId  Int      @map("campaign_id")
+  key         String   @unique @map("key")
+  dayNumber   Int      @map("day_number")
+  title       String   @map("title")
+  messageText String   @map("message_text")
+  mediaType   String   @map("media_type")
+  mediaUrl    String?  @map("media_url")
+  cta         Json?    @map("cta")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, dayNumber])
+  @@map("lessons")
+}
+
+model UserCampaign {
+  id             Int       @id @default(autoincrement())
+  userId         Int       @map("user_id")
+  campaignId     Int       @map("campaign_id")
+  status         String    @map("status")
+  startedAt      DateTime  @default(now()) @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  stoppedAt      DateTime? @map("stopped_at")
+  lastLessonDay  Int       @default(0) @map("last_lesson_day")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, campaignId])
+  @@map("user_campaigns")
+}
+
+model ScheduledJob {
+  id           Int      @id @default(autoincrement())
+  userId       Int?     @map("user_id")
+  queueName    String   @map("queue_name")
+  jobId        String   @unique @map("job_id")
+  jobType      String   @map("job_type")
+  runAt        DateTime @map("run_at")
+  status       String   @map("status")
+  payload      Json?    @map("payload")
+  errorMessage String?  @map("error_message")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("scheduled_jobs")
+}
+
+model Document {
+  id         Int                         @id @default(autoincrement())
+  source     String                      @map("source")
+  url        String                      @map("url")
+  title      String?                     @map("title")
+  kind       String                      @default("page") @map("kind")
+  chunkIndex Int                         @default(0) @map("chunk_index")
+  content    String                      @map("content")
+  metadata   Json?                       @map("metadata")
+  embedding  Unsupported("vector(384)")? @map("embedding")
+  createdAt  DateTime                    @default(now()) @map("created_at")
+  updatedAt  DateTime                    @updatedAt @map("updated_at")
+
+  @@unique([url, kind, chunkIndex])
+  @@map("documents")
+}
+
+model CrmSyncLog {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @map("user_id")
+  action         String   @map("action")
+  status         String   @map("status")
+  requestPayload Json?    @map("request_payload")
+  responsePayload Json?   @map("response_payload")
+  errorMessage   String?  @map("error_message")
+  createdAt      DateTime @default(now()) @map("created_at")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("crm_sync_logs")
+}
+
+model UserEvent {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  eventType String   @map("event_type")
+  metadata  Json?    @map("metadata")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("user_events")
+}

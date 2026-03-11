@@ -1,0 +1,18 @@
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY src ./src
+COPY video ./video
+
+RUN npm ci
+RUN npm run prisma:generate
+RUN npm run build
+
+ENV NODE_ENV=production
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start"]
