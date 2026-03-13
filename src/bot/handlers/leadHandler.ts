@@ -1,6 +1,6 @@
 import { Context, Markup } from "telegraf";
 import { prisma } from "../../db/client.js";
-import { LEAD_GOAL_OPTIONS, LEAD_LEVEL_OPTIONS } from "../../content/staticContent.js";
+import { LEAD_GOAL_OPTIONS, LEAD_LEVEL_OPTIONS, PUBLIC_ENTRY_LABELS, PublicEntryKey } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
 import { cancelPendingUserJobs, scheduleCrmJob } from "../../services/schedulerService.js";
 import { clearSession, setSession, updateSessionStep } from "../../services/sessionService.js";
@@ -12,6 +12,7 @@ import {
   getLeadGoalKeyboard,
   getLeadLevelKeyboard,
   getMainMenuKeyboard,
+  getPublicMenuKeyboard,
   getPhoneRequestKeyboard,
   getPrivacyChoiceKeyboard,
 } from "../menu.js";
@@ -96,7 +97,7 @@ export async function startLeadCapture(
   ctx: Context,
   user: BotUser,
   nextAction?: string,
-  options?: { silentIntro?: boolean },
+  options?: { silentIntro?: boolean; firstRequestedService?: PublicEntryKey | null },
 ): Promise<void> {
   await setSession({
     userId: user.id,
@@ -104,11 +105,17 @@ export async function startLeadCapture(
     step: "first_name",
     payload: {
       nextAction: nextAction ?? null,
+      firstRequestedService: options?.firstRequestedService ?? null,
     },
   });
 
   if (!options?.silentIntro) {
-    await ctx.reply("Perfect. Incepem rapid.");
+    const firstRequestedService =
+      options?.firstRequestedService && PUBLIC_ENTRY_LABELS[options.firstRequestedService]
+        ? `Mai intai iti activam rapid accesul pentru: ${PUBLIC_ENTRY_LABELS[options.firstRequestedService]}.`
+        : "Mai intai iti activam rapid accesul.";
+
+    await ctx.reply(`${firstRequestedService}\n\nAm nevoie de cateva date de baza ca sa continuam.`);
   }
 
   await replyLeadStepPrompt(ctx, "first_name");
@@ -257,6 +264,10 @@ export async function handleLeadTextInput(
       consentPrivacy: true,
       consentMarketing: true,
       nextAction: typeof payload.nextAction === "string" ? payload.nextAction : undefined,
+      firstRequestedService:
+        typeof payload.firstRequestedService === "string"
+          ? (payload.firstRequestedService as PublicEntryKey)
+          : undefined,
     });
 
     if (payload.nextAction === "wants_course") {
@@ -331,7 +342,7 @@ export async function handleCourseInterestTextInput(
     });
 
     await ctx.reply("Perfect. Am salvat interesul tau pentru curs si am trimis datele mai departe.", {
-      reply_markup: getMainMenuKeyboard().reply_markup,
+      reply_markup: getMainMenuKeyboard({ showLessons: Boolean(user.lesson1Unlocked || user.currentLessonDay > 0) }).reply_markup,
     });
   }
 }
@@ -357,6 +368,10 @@ export async function handleConsentCallback(
       consentPrivacy: true,
       consentMarketing: true,
       nextAction: typeof payload.nextAction === "string" ? payload.nextAction : undefined,
+      firstRequestedService:
+        typeof payload.firstRequestedService === "string"
+          ? (payload.firstRequestedService as PublicEntryKey)
+          : undefined,
     });
 
     if (payload.nextAction === "wants_course") {
@@ -372,6 +387,10 @@ export async function handleConsentCallback(
     consentPrivacy: Boolean(payload.consentPrivacy),
     consentMarketing: value,
     nextAction: typeof payload.nextAction === "string" ? payload.nextAction : undefined,
+    firstRequestedService:
+      typeof payload.firstRequestedService === "string"
+        ? (payload.firstRequestedService as PublicEntryKey)
+        : undefined,
   });
 
   if (payload.nextAction === "wants_course") {

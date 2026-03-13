@@ -6,7 +6,7 @@ import { MAIN_MENU } from "../content/staticContent.js";
 
 describe("local runtime invariants", () => {
   it("exposes the full main menu", () => {
-    expect(MAIN_MENU).toHaveLength(10);
+    expect(MAIN_MENU).toHaveLength(9);
   });
 
   it("normalizes and validates phone numbers", () => {

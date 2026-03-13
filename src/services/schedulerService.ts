@@ -9,7 +9,7 @@ export type CampaignJobPayload =
   | { userId: number; type: "long_reminder" };
 
 export type CrmJobPayload =
-  | { userId: number; action: "create_lead" }
+  | { userId: number; action: "create_lead"; firstRequestedService?: string | null }
   | { userId: number; action: "qualify_lead" };
 
 function buildCampaignJobId(payload: CampaignJobPayload): string {

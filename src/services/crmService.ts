@@ -1,5 +1,6 @@
 import axios from "axios";
 import { prisma } from "../db/client.js";
+import { PUBLIC_ENTRY_LABELS, PublicEntryKey } from "../content/staticContent.js";
 import { config, isConfigured } from "../utils/config.js";
 import { logger } from "../utils/logger.js";
 
@@ -81,6 +82,27 @@ function buildContactName(user: {
   };
 }
 
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function resolveLeadIntent(firstRequestedService?: string) {
+  if (!firstRequestedService) {
+    return null;
+  }
+
+  const key = firstRequestedService as PublicEntryKey;
+  const label = PUBLIC_ENTRY_LABELS[key] ?? firstRequestedService;
+  return {
+    key,
+    label,
+    tag: `intent-${slugify(key)}`,
+  };
+}
+
 function extractLeadResponse(data: unknown): { leadId?: number; contactId?: number } {
   if (Array.isArray(data) && data[0] && typeof data[0] === "object") {
     const lead = data[0] as { id?: number; contact_id?: number };
@@ -113,7 +135,7 @@ function extractLeadResponse(data: unknown): { leadId?: number; contactId?: numb
   return {};
 }
 
-export async function createLeadInKommo(userId: number): Promise<void> {
+export async function createLeadInKommo(userId: number, firstRequestedService?: string): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: { profile: true },
@@ -124,21 +146,36 @@ export async function createLeadInKommo(userId: number): Promise<void> {
   }
 
   const contactName = buildContactName(user);
+  const leadIntent = resolveLeadIntent(firstRequestedService);
+  const leadNameSuffix =
+    leadIntent?.key === "free_lessons"
+      ? "a cerut 3 zile gratuite"
+      : leadIntent
+        ? `interes: ${leadIntent.label}`
+        : "lead nou din bot";
 
   const payload = [
     {
-      name: `Telegram lead - ${contactName.displayName} - a inceput 3 lectii gratuite`,
+      name: `Telegram lead - ${contactName.displayName} - ${leadNameSuffix}`,
       pipeline_id: parseOptionalId(config.KOMMO_PIPELINE_ID),
       status_id: parseOptionalId(config.KOMMO_STAGE_NEW_ID),
       tags_to_add: [
         { name: "telegram" },
-        { name: "english-express" },
-        { name: "free-lessons" },
-        { name: `free-lesson-day-${Math.max(user.currentLessonDay, 1)}` },
+        { name: "express-english-academy" },
+        ...(leadIntent ? [{ name: leadIntent.tag }] : []),
+        ...(leadIntent?.key === "free_lessons"
+          ? [
+              { name: "free-lessons" },
+              { name: `free-lesson-day-${Math.max(user.currentLessonDay, 1)}` },
+            ]
+          : []),
       ],
       custom_fields_values: [
         buildCustomField(config.KOMMO_CUSTOM_FIELD_SOURCE, "telegram bot"),
-        buildCustomField(config.KOMMO_CUSTOM_FIELD_CURRENT_LESSON, Math.max(user.currentLessonDay, 1)),
+        buildCustomField(
+          config.KOMMO_CUSTOM_FIELD_CURRENT_LESSON,
+          leadIntent?.key === "free_lessons" ? Math.max(user.currentLessonDay, 1) : 0,
+        ),
         buildCustomField(config.KOMMO_CUSTOM_FIELD_LAST_ACTIVITY, user.lastInteractionAt.toISOString()),
         buildCustomField(config.KOMMO_CUSTOM_FIELD_TELEGRAM_ID, user.telegramId.toString()),
         buildCustomField(config.KOMMO_CUSTOM_FIELD_TELEGRAM_USERNAME, user.username ?? ""),
@@ -186,6 +223,26 @@ export async function createLeadInKommo(userId: number): Promise<void> {
     });
 
     const { leadId, contactId } = extractLeadResponse(response.data);
+
+    if (leadId && leadIntent) {
+      try {
+        await kommoApi.post(
+          "/leads/notes",
+          [
+            {
+              entity_id: leadId,
+              note_type: "common",
+              params: {
+                text: `Primul serviciu ales in bot: ${leadIntent.label}`,
+              },
+            },
+          ],
+          { headers: getKommoHeaders() },
+        );
+      } catch (noteError) {
+        logger.warn({ err: noteError, userId, leadId }, "Nu am putut salva nota interna Kommo pentru intentia initiala.");
+      }
+    }
 
     await prisma.user.update({
       where: { id: userId },

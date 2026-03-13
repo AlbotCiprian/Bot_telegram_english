@@ -6,7 +6,7 @@ import { getSession } from "../services/sessionService.js";
 import { getOrCreateUser, touchUser } from "../services/userService.js";
 import { config } from "../utils/config.js";
 import { logger } from "../utils/logger.js";
-import { buildStaticPageMessage, getBackToMenuKeyboard, getMainMenuKeyboard, getStartFreeLessonsKeyboard } from "./menu.js";
+import { buildStaticPageMessage, getBackToMenuKeyboard, getMainMenuKeyboard, getPublicMenuKeyboard, getStartFreeLessonsKeyboard } from "./menu.js";
 import { handleAiQuestionInput, startAiQuestionFlow } from "./handlers/aiHandler.js";
 import { deliverLesson, getLessonsMenu, getLockedLessonMessage } from "../services/lessonService.js";
 import {
@@ -21,6 +21,7 @@ import {
 import { handleHelp, handleMenu, handleStart } from "./handlers/startHandler.js";
 import { LeadCaptureStep, SessionPayload } from "../types/session.js";
 import { resetUserForTesting } from "../services/userService.js";
+import { continueRequestedService, isPublicEntryAction } from "./handlers/serviceHandler.js";
 
 function isTextMessage(ctx: Context): ctx is Context & { message: { text: string } } {
   return "message" in ctx && typeof (ctx.message as { text?: string })?.text === "string";
@@ -28,6 +29,15 @@ function isTextMessage(ctx: Context): ctx is Context & { message: { text: string
 
 function isContactMessage(ctx: Context): ctx is Context & { message: { contact: { phone_number: string } } } {
   return "message" in ctx && Boolean((ctx.message as { contact?: unknown })?.contact);
+}
+
+function showLessonsInMenu(user: {
+  lesson1Unlocked?: boolean;
+  lesson2Unlocked?: boolean;
+  lesson3Unlocked?: boolean;
+  currentLessonDay?: number;
+}): boolean {
+  return Boolean(user.lesson1Unlocked || user.lesson2Unlocked || user.lesson3Unlocked || (user.currentLessonDay ?? 0) > 0);
 }
 
 export function createBot(): Telegraf<Context> {
@@ -50,11 +60,17 @@ export function createBot(): Telegraf<Context> {
 
     const user = await getOrCreateUser(ctx.from);
     if (user.leadFormCompleted) {
-      await handleStart(ctx, user, true);
+      await handleStart(ctx, user, {
+        showMainMenu: true,
+        showLessons: showLessonsInMenu(user),
+      });
       return;
     }
 
-    await handleStart(ctx, user, false);
+    await handleStart(ctx, user, {
+      showMainMenu: false,
+      showLessons: false,
+    });
   });
 
   bot.command("menu", async (ctx) => {
@@ -64,18 +80,16 @@ export function createBot(): Telegraf<Context> {
 
     const user = await getOrCreateUser(ctx.from);
     if (!user.leadFormCompleted) {
-      await ctx.reply("Mai intai activeaza seria gratuita din butonul de start.", {
-        reply_markup: getStartFreeLessonsKeyboard().reply_markup,
-      });
+      await handleStart(ctx, user, { showMainMenu: false, showLessons: false });
       return;
     }
 
-    await handleMenu(ctx);
+    await handleMenu(ctx, { showLessons: showLessonsInMenu(user) });
   });
 
   bot.command("help", async (ctx) => {
     const user = ctx.from ? await getOrCreateUser(ctx.from) : null;
-    await handleHelp(ctx, user?.id);
+    await handleHelp(ctx, user?.id, { showLessons: user ? showLessonsInMenu(user) : false });
   });
 
   bot.command("reset", async (ctx) => {
@@ -99,55 +113,40 @@ export function createBot(): Telegraf<Context> {
 
     const user = await getOrCreateUser(ctx.from);
     const action = ctx.match[1];
+    const session = await getSession(user.id);
 
     if (action === "menu") {
       if (!user.leadFormCompleted) {
-        const session = await getSession(user.id);
-        await ctx.reply("Meniul complet devine disponibil dupa ce salvezi datele de baza.");
         if (session?.flowType === "lead_capture") {
           await resumeLeadCapture(ctx, session.step as LeadCaptureStep);
           return;
         }
-        await startLeadCapture(ctx, user);
+        await handleStart(ctx, user, { showMainMenu: false, showLessons: false });
         return;
       }
 
-      await handleMenu(ctx);
+      await handleMenu(ctx, { showLessons: showLessonsInMenu(user) });
       return;
     }
 
-    if (action === "free_lessons") {
-      const session = await getSession(user.id);
-      const currentUser = await prisma.user.findUnique({
-        where: { id: user.id },
-      });
-
-      if (currentUser?.leadFormCompleted) {
-        const lessonsMenu = await getLessonsMenu(user.id);
-        await ctx.reply(lessonsMenu.text, {
-          parse_mode: "Markdown",
-          reply_markup: lessonsMenu.replyMarkup,
-        });
-        return;
-      }
-
+    if (!user.leadFormCompleted && (isPublicEntryAction(action) || action === "lessons" || action === "wants_course" || action === "ask_ai")) {
       if (session?.flowType === "lead_capture") {
         await resumeLeadCapture(ctx, session.step as LeadCaptureStep);
         return;
       }
 
-      await startLeadCapture(ctx, user);
+      await startLeadCapture(ctx, user, action, {
+        firstRequestedService: isPublicEntryAction(action) ? action : null,
+      });
+      return;
+    }
+
+    if (isPublicEntryAction(action)) {
+      await continueRequestedService(ctx, user, action);
       return;
     }
 
     if (action === "lessons") {
-      if (!user.leadFormCompleted) {
-        await ctx.reply("Mai intai activeaza seria gratuita din butonul de start.", {
-          reply_markup: getStartFreeLessonsKeyboard().reply_markup,
-        });
-        return;
-      }
-
       const lessonsMenu = await getLessonsMenu(user.id);
       await ctx.reply(lessonsMenu.text, {
         parse_mode: "Markdown",
@@ -178,7 +177,7 @@ export function createBot(): Telegraf<Context> {
 
     if (action === "website") {
       await ctx.reply(STATIC_PAGES.website.body, {
-        reply_markup: getBackToMenuKeyboard().reply_markup,
+        reply_markup: getBackToMenuKeyboard(showLessonsInMenu(user)).reply_markup,
       });
       return;
     }
@@ -187,7 +186,7 @@ export function createBot(): Telegraf<Context> {
     if (staticPageKeys.includes(action as (typeof staticPageKeys)[number])) {
       await ctx.reply(buildStaticPageMessage(action as keyof typeof STATIC_PAGES), {
         parse_mode: "Markdown",
-        reply_markup: getBackToMenuKeyboard().reply_markup,
+        reply_markup: getBackToMenuKeyboard(showLessonsInMenu(user)).reply_markup,
       });
     }
   });
@@ -213,8 +212,8 @@ export function createBot(): Telegraf<Context> {
 
     const user = await getOrCreateUser(ctx.from);
     if (!user.leadFormCompleted) {
-      await ctx.reply("Mai intai activeaza seria gratuita din butonul de start.", {
-        reply_markup: getStartFreeLessonsKeyboard().reply_markup,
+      await ctx.reply("Mai intai activeaza accesul din meniul de start.", {
+        reply_markup: getPublicMenuKeyboard().reply_markup,
       });
       return;
     }
@@ -255,14 +254,14 @@ export function createBot(): Telegraf<Context> {
 
     if (!session?.flowType) {
       if (!user.leadFormCompleted) {
-        await ctx.reply("Apasa butonul de mai jos ca sa incepi cele 3 lectii gratuite.", {
-          reply_markup: getStartFreeLessonsKeyboard().reply_markup,
+        await ctx.reply("Alege un serviciu din meniul de mai jos ca sa pornim onboardingul rapid.", {
+          reply_markup: getPublicMenuKeyboard().reply_markup,
         });
         return;
       }
 
       await ctx.reply("Foloseste meniul principal pentru a continua.", {
-        reply_markup: getMainMenuKeyboard().reply_markup,
+        reply_markup: getMainMenuKeyboard({ showLessons: showLessonsInMenu(user) }).reply_markup,
       });
       return;
     }

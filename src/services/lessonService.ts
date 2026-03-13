@@ -117,6 +117,13 @@ function buildLessonsMenuText(user: User): string {
 }
 
 function buildLessonsMenuKeyboard(user: User) {
+  if (!hasStartedFreeLessons(user)) {
+    return Markup.inlineKeyboard([
+      [Markup.button.callback("🎓 Porneste 3 zile gratuite", "menu:free_lessons")],
+      [Markup.button.callback("Meniul principal", "menu:menu")],
+    ]);
+  }
+
   const rows = ([1, 2, 3] as const).map((dayNumber) => {
     const unlocked = isLessonUnlocked(user, dayNumber);
     return [
@@ -138,6 +145,10 @@ function getUnlockUpdate(dayNumber: 2 | 3): Record<string, boolean> {
   }
 
   return { lesson3Unlocked: true };
+}
+
+function hasStartedFreeLessons(user: User): boolean {
+  return user.lesson1Unlocked || user.lesson2Unlocked || user.lesson3Unlocked || user.currentLessonDay > 0;
 }
 
 function resolveLocalMediaPath(mediaUrl: string): string {
@@ -186,6 +197,20 @@ export async function getLessonsMenu(
   userId: number,
 ): Promise<{ text: string; replyMarkup: ReturnType<typeof buildLessonsMenuKeyboard>["reply_markup"] }> {
   const user = await syncLessonUnlockState(userId);
+
+  if (!hasStartedFreeLessons(user)) {
+    return {
+      text: [
+        "*Lectiile tale*",
+        "",
+        "Nu ai activat inca seria gratuita de 3 zile.",
+        "",
+        "Apasa pe butonul de mai jos si iti deschidem imediat Lectia 1.",
+      ].join("\n"),
+      replyMarkup: buildLessonsMenuKeyboard(user).reply_markup,
+    };
+  }
+
   return {
     text: buildLessonsMenuText(user),
     replyMarkup: buildLessonsMenuKeyboard(user).reply_markup,
@@ -194,6 +219,10 @@ export async function getLessonsMenu(
 
 export async function getLockedLessonMessage(userId: number, dayNumber: 1 | 2 | 3): Promise<string | null> {
   const user = await syncLessonUnlockState(userId);
+
+  if (!hasStartedFreeLessons(user)) {
+    return "Nu ai activat inca seria gratuita. Apasa pe „Porneste 3 zile gratuite” din meniu.";
+  }
 
   if (isLessonUnlocked(user, dayNumber)) {
     return null;

@@ -4,7 +4,7 @@ import { CrmJobPayload } from "../services/schedulerService.js";
 
 export async function processCrmJob(job: Job<CrmJobPayload>): Promise<void> {
   if (job.data.action === "create_lead") {
-    await createLeadInKommo(job.data.userId);
+    await createLeadInKommo(job.data.userId, job.data.firstRequestedService ?? undefined);
   }
 
   if (job.data.action === "qualify_lead") {

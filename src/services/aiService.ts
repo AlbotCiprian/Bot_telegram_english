@@ -19,13 +19,13 @@ function sanitizeAiAnswer(answer: string): string {
 }
 
 function isPricingQuestion(question: string): boolean {
-  return /(pret|preturi|costa|cost|abonament|abonamente|program|programe|pachet|pachete|oferta|oferte|basic|medium|advanced|eur|euro)/i.test(
+  return /(pret|preturi|costa|cost|abonament|abonamente|program|programe|pachet|pachete|oferta|oferte|serviciu|servicii|basic|medium|advanced|eur|euro)/i.test(
     question,
   );
 }
 
 function isSchoolOverviewQuestion(question: string): boolean {
-  return /(scoala|allengual|english express|cine sunteti|ce este|despre voi|despre scoala|metoda voastra|cum functioneaza)/i.test(
+  return /(scoala|academie|academy|allengual|english express|express english academy|cine sunteti|ce este|despre voi|despre scoala|metoda voastra|cum functioneaza)/i.test(
     question,
   );
 }

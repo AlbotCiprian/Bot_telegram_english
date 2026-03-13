@@ -1,13 +1,13 @@
 import { Context } from "telegraf";
 import { prisma } from "../../db/client.js";
-import { deliverLesson } from "../../services/lessonService.js";
-import { scheduleCrmJob, scheduleFreeLessonCampaign } from "../../services/schedulerService.js";
+import { scheduleCrmJob } from "../../services/schedulerService.js";
 import { clearSession } from "../../services/sessionService.js";
 import { logUserEvent } from "../../services/eventService.js";
 import { BotUser } from "../../types/bot.js";
-import { getDelayMap, getRunAt } from "../../utils/schedule.js";
 import { logger } from "../../utils/logger.js";
 import { getMainMenuKeyboard } from "../menu.js";
+import { continueRequestedService } from "./serviceHandler.js";
+import { PublicEntryKey } from "../../content/staticContent.js";
 
 export async function finalizeLeadAndStartCampaign(params: {
   ctx: Context;
@@ -15,8 +15,8 @@ export async function finalizeLeadAndStartCampaign(params: {
   consentPrivacy: boolean;
   consentMarketing: boolean;
   nextAction?: string;
+  firstRequestedService?: PublicEntryKey;
 }): Promise<void> {
-  const delayMap = getDelayMap();
   const onboardingCompletedAt = new Date();
 
   await prisma.user.update({
@@ -24,11 +24,6 @@ export async function finalizeLeadAndStartCampaign(params: {
     data: {
       leadFormCompleted: true,
       onboardingCompletedAt,
-      lesson1Unlocked: true,
-      lesson2Unlocked: false,
-      lesson3Unlocked: false,
-      lesson2UnlockTime: getRunAt(delayMap.lesson2Ms),
-      lesson3UnlockTime: getRunAt(delayMap.lesson3Ms),
     },
   });
 
@@ -48,26 +43,41 @@ export async function finalizeLeadAndStartCampaign(params: {
   await clearSession(params.user.id);
 
   try {
-    await scheduleCrmJob({ userId: params.user.id, action: "create_lead" });
+    await scheduleCrmJob({
+      userId: params.user.id,
+      action: "create_lead",
+      firstRequestedService: params.firstRequestedService ?? null,
+    });
   } catch (error) {
-    logger.error({ err: error, userId: params.user.id }, "Nu am putut programa sync-ul Kommo, continui flow-ul lectiilor.");
+    logger.error(
+      { err: error, userId: params.user.id },
+      "Nu am putut programa sync-ul Kommo, continui flow-ul ales de utilizator.",
+    );
   }
 
+  const targetAction =
+    params.firstRequestedService ??
+    (params.nextAction === "wants_course" ? undefined : (params.nextAction as PublicEntryKey | undefined));
+
   await params.ctx.reply(
-    "Perfect. Datele tale au fost salvate. Ti-am activat seria gratuita: Lectia 1 este disponibila acum, iar Lectiile 2 si 3 se deblocheaza automat, cate una pe zi.",
+    targetAction
+      ? "Perfect. Datele tale au fost salvate in CRM. Iti deschid acum serviciul pe care l-ai ales."
+      : "Perfect. Datele tale au fost salvate in CRM. Meniul tau este acum activ.",
     {
       reply_markup: getMainMenuKeyboard().reply_markup,
     },
   );
 
-  await deliverLesson(params.user.id, 1);
-  await scheduleFreeLessonCampaign(params.user.id);
+  if (targetAction) {
+    await continueRequestedService(params.ctx, params.user, targetAction);
+  }
 
   await logUserEvent({
     userId: params.user.id,
     eventType: "lead_form_completed",
     metadata: {
       nextAction: params.nextAction ?? null,
+      firstRequestedService: params.firstRequestedService ?? null,
     },
   });
 }

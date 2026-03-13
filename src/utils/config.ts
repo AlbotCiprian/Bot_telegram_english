@@ -43,6 +43,9 @@ const envSchema = z.object({
   KOMMO_CUSTOM_FIELD_LAST_ACTIVITY: z.string().default(""),
   LESSON_DELAY_MODE: z.enum(["dev", "prod"]).default("dev"),
   WEBSITE_SOURCE_URL: z.string().default("https://www.expres.allengual.md/"),
+  WEBINAR_URL: z.string().default("https://www.expres.allengual.md/"),
+  OPERATOR_CONTACT_URL: z.string().default("https://www.expres.allengual.md/"),
+  ASTROLOGY_CONSULTATION_URL: z.string().default("https://www.expres.allengual.md/"),
   WELCOME_IMAGE_URL: z
     .string()
     .default("https://www.expres.allengual.md/assets/favicon/web-app-manifest-192x192.png"),

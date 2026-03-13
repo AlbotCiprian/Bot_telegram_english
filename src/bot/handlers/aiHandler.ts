@@ -5,6 +5,10 @@ import { clearSession, setSession } from "../../services/sessionService.js";
 import { BotUser } from "../../types/bot.js";
 import { getMainMenuKeyboard } from "../menu.js";
 
+function showLessonsInMenu(user: BotUser): boolean {
+  return Boolean(user.lesson1Unlocked || user.lesson2Unlocked || user.lesson3Unlocked || user.currentLessonDay > 0);
+}
+
 export async function startAiQuestionFlow(ctx: Context, user: BotUser): Promise<void> {
   await setSession({
     userId: user.id,
@@ -14,7 +18,7 @@ export async function startAiQuestionFlow(ctx: Context, user: BotUser): Promise<
   });
 
   await ctx.reply(
-    "🤖 Salut! Sunt colegul AI English Express.\n\nScrie-mi o intrebare despre cursuri, preturi, niveluri sau program si iti raspund doar pe baza informatiilor disponibile.",
+    "🤖 Salut! Sunt colegul AI Express English Academy.\n\nScrie-mi o intrebare despre cursuri, preturi, niveluri sau program si iti raspund doar pe baza informatiilor disponibile.",
   );
 }
 
@@ -23,7 +27,7 @@ export async function handleAiQuestionInput(ctx: Context, user: BotUser, questio
   await clearSession(user.id);
 
   await ctx.reply(response.answer, {
-    reply_markup: getMainMenuKeyboard().reply_markup,
+    reply_markup: getMainMenuKeyboard({ showLessons: showLessonsInMenu(user) }).reply_markup,
   });
 
   await logUserEvent({

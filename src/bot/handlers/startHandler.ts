@@ -3,22 +3,26 @@ import { STATIC_PAGES } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
 import { BotUser } from "../../types/bot.js";
 import { config } from "../../utils/config.js";
-import { buildHelpMessage, getMainMenuKeyboard, getStartFreeLessonsKeyboard } from "../menu.js";
+import { buildHelpMessage, getMainMenuKeyboard, getPublicMenuKeyboard } from "../menu.js";
 
-function buildWelcomeCaption(showMenu: boolean): string {
+function buildWelcomeCaption(showMainMenu: boolean, showLessons: boolean): string {
   return [
-    `*${STATIC_PAGES.welcome.title}* 🇬🇧`,
+    `*${STATIC_PAGES.welcome.title}*`,
     "",
     STATIC_PAGES.welcome.body,
     "",
-    showMenu
-      ? "Meniul tau este activ. Recomandat: continua cu seria de 3 lectii gratuite."
-      : "Poti incepe cu seria gratuita sau poti vedea direct preturile si raspunsurile AI.",
+    showMainMenu
+      ? showLessons
+        ? "Meniul tau este activ. Poti continua lectiile gratuite sau poti deschide orice alt serviciu."
+        : "Meniul tau este activ. Poti incepe seria gratuita sau poti deschide direct serviciul de care ai nevoie."
+      : "La prima interactiune cu orice buton, iti activam rapid onboardingul si salvam lead-ul in CRM.",
   ].join("\n");
 }
 
-async function replyWelcomeCard(ctx: Context, caption: string, showMenu: boolean): Promise<void> {
-  const replyMarkup = showMenu ? getMainMenuKeyboard().reply_markup : getStartFreeLessonsKeyboard().reply_markup;
+async function replyWelcomeCard(ctx: Context, caption: string, showMainMenu: boolean, showLessons: boolean): Promise<void> {
+  const replyMarkup = showMainMenu
+    ? getMainMenuKeyboard({ showLessons }).reply_markup
+    : getPublicMenuKeyboard().reply_markup;
 
   try {
     await ctx.replyWithPhoto(config.WELCOME_IMAGE_URL, {
@@ -35,28 +39,36 @@ async function replyWelcomeCard(ctx: Context, caption: string, showMenu: boolean
   }
 }
 
-export async function handleStart(ctx: Context, user: BotUser, showMenu = true): Promise<void> {
-  await replyWelcomeCard(ctx, buildWelcomeCaption(showMenu), showMenu);
+export async function handleStart(
+  ctx: Context,
+  user: BotUser,
+  options?: { showMainMenu?: boolean; showLessons?: boolean },
+): Promise<void> {
+  const showMainMenu = options?.showMainMenu ?? true;
+  const showLessons = options?.showLessons ?? false;
+
+  await replyWelcomeCard(ctx, buildWelcomeCaption(showMainMenu, showLessons), showMainMenu, showLessons);
 
   await logUserEvent({
     userId: user.id,
     eventType: "bot_started",
     metadata: {
-      showMenu,
+      showMainMenu,
+      showLessons,
     },
   });
 }
 
-export async function handleMenu(ctx: Context): Promise<void> {
-  await ctx.reply("Alege ce vrei sa faci mai departe. Recomandarea noastra: incepe cu 3 lectii gratuite.", {
-    reply_markup: getMainMenuKeyboard().reply_markup,
+export async function handleMenu(ctx: Context, options?: { showLessons?: boolean }): Promise<void> {
+  await ctx.reply("Alege serviciul de care ai nevoie.", {
+    reply_markup: getMainMenuKeyboard({ showLessons: options?.showLessons }).reply_markup,
   });
 }
 
-export async function handleHelp(ctx: Context, userId?: number): Promise<void> {
+export async function handleHelp(ctx: Context, userId?: number, options?: { showLessons?: boolean }): Promise<void> {
   await ctx.reply(buildHelpMessage(), {
     parse_mode: "Markdown",
-    reply_markup: getMainMenuKeyboard().reply_markup,
+    reply_markup: getMainMenuKeyboard({ showLessons: options?.showLessons }).reply_markup,
   });
 
   await logUserEvent({
