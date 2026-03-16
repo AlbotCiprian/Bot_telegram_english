@@ -6,14 +6,13 @@ import { config } from "../../utils/config.js";
 import { buildHelpMessage, getMainMenuKeyboard, getPublicMenuKeyboard } from "../menu.js";
 
 function buildWelcomeCaption(showMainMenu: boolean, showLessons: boolean): string {
-  return [
-    `*${STATIC_PAGES.welcome.title}*`,
-    "",
-    STATIC_PAGES.welcome.body,
-    ...(showMainMenu
-      ? ["", showLessons ? "Alege ce vrei sa faci mai departe." : "Alege serviciul de care ai nevoie."]
-      : []),
-  ].join("\n");
+  const lines = [`*${STATIC_PAGES.welcome.title}*`];
+
+  if (STATIC_PAGES.welcome.body.trim()) {
+    lines.push("", STATIC_PAGES.welcome.body);
+  }
+
+  return lines.join("\n");
 }
 
 async function replyWelcomeCard(ctx: Context, caption: string, showMainMenu: boolean, showLessons: boolean): Promise<void> {

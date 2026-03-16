@@ -72,7 +72,7 @@ export const PUBLIC_ENTRY_LABELS: Record<PublicEntryKey, string> = Object.fromEn
 export const STATIC_PAGES = {
   welcome: {
     title: "Buna, bine ai venit la Express English Academy",
-    body: "Unica academie care te ajuta sa vorbesti engleza liber, cu incredere si cu rezultat real.",
+    body: "",
   },
   academy: {
     title: "Despre academie",
