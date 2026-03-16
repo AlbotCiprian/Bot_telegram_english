@@ -14,17 +14,21 @@ function buildSingleColumnKeyboard(labels: Array<{ label: string; action: string
 }
 
 export function getPublicMenuKeyboard() {
-  return buildSingleColumnKeyboard(PUBLIC_ENTRY_MENU.map((item) => ({ label: item.label, action: item.key })));
+  return buildSingleColumnKeyboard([
+    { label: getMenuItem("free_lessons").label, action: "free_lessons" },
+    { label: getMenuItem("lessons").label, action: "lessons" },
+    ...PUBLIC_ENTRY_MENU.filter((item) => item.key !== "free_lessons").map((item) => ({
+      label: item.label,
+      action: item.key,
+    })),
+  ]);
 }
 
 export function getMainMenuKeyboard(options?: { showLessons?: boolean; showAi?: boolean }) {
   const rows: Array<Array<ReturnType<typeof Markup.button.callback>>> = [];
 
-  if (options?.showLessons) {
-    rows.push([Markup.button.callback(getMenuItem("lessons").label, "menu:lessons")]);
-  }
-
   rows.push([Markup.button.callback(getMenuItem("free_lessons").label, "menu:free_lessons")]);
+  rows.push([Markup.button.callback(getMenuItem("lessons").label, "menu:lessons")]);
 
   for (const item of PUBLIC_ENTRY_MENU.filter((entry) => entry.key !== "free_lessons")) {
     rows.push([Markup.button.callback(item.label, `menu:${item.key}`)]);

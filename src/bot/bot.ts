@@ -8,7 +8,7 @@ import { config } from "../utils/config.js";
 import { logger } from "../utils/logger.js";
 import { buildStaticPageMessage, getBackToMenuKeyboard, getMainMenuKeyboard, getPublicMenuKeyboard, getStartFreeLessonsKeyboard } from "./menu.js";
 import { handleAiQuestionInput, startAiQuestionFlow } from "./handlers/aiHandler.js";
-import { deliverLesson, getLessonsMenu, getLockedLessonMessage } from "../services/lessonService.js";
+import { deliverLesson, getLessonsMenu, getLockedLessonMessage, handleLessonQuiz } from "../services/lessonService.js";
 import {
   handleConsentCallback,
   handleCourseInterestTextInput,
@@ -227,6 +227,29 @@ export function createBot(): Telegraf<Context> {
     }
 
     await deliverLesson(user.id, dayNumber);
+  });
+
+  bot.action(/^lesson:quiz:(1|2|3)$/, async (ctx) => {
+    await ctx.answerCbQuery();
+
+    if (!ctx.from) {
+      return;
+    }
+
+    const user = await getOrCreateUser(ctx.from);
+    if (!user.leadFormCompleted) {
+      await ctx.reply("Mai intai activeaza accesul din meniul de start.", {
+        reply_markup: getPublicMenuKeyboard().reply_markup,
+      });
+      return;
+    }
+
+    const dayNumber = Number(ctx.match[1]) as 1 | 2 | 3;
+    const result = await handleLessonQuiz(user.id, dayNumber);
+
+    if (result.message) {
+      await ctx.reply(result.message);
+    }
   });
 
   bot.on("contact", async (ctx) => {

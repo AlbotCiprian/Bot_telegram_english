@@ -74,6 +74,10 @@ export async function resetUserForTesting(userId: number): Promise<void> {
     where: { userId },
   });
 
+  await prisma.lessonProgress.deleteMany({
+    where: { userId },
+  });
+
   await prisma.userProfile.upsert({
     where: { userId },
     update: {

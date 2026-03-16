@@ -1,24 +1,17 @@
-import fs from "node:fs";
-import path from "node:path";
 import { Context, Input, Markup } from "telegraf";
 import { prisma } from "../../db/client.js";
 import { BRANDING, PUBLIC_ENTRY_LABELS, PublicEntryKey, SERVICE_VIDEO_FILES, STATIC_PAGES } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
-import { getLessonsMenu, deliverLesson } from "../../services/lessonService.js";
+import { deliverLesson, getLessonsMenu } from "../../services/lessonService.js";
 import { scheduleCrmJob, scheduleFreeLessonCampaign } from "../../services/schedulerService.js";
 import { ensureProfile } from "../../services/userService.js";
 import { BotUser } from "../../types/bot.js";
 import { config } from "../../utils/config.js";
 import { logger } from "../../utils/logger.js";
+import { resolveExistingMediaFile } from "../../utils/mediaAssets.js";
 import { getMainMenuKeyboard } from "../menu.js";
 
 type InlineActionButton = ReturnType<typeof Markup.button.url> | ReturnType<typeof Markup.button.callback>;
-
-const LOCAL_VIDEO_DIR = path.resolve(process.cwd(), "video");
-
-function resolveLocalVideoPath(fileName: string): string {
-  return path.resolve(LOCAL_VIDEO_DIR, fileName);
-}
 
 function hasStartedFreeLessons(user: {
   lesson1Unlocked: boolean;
@@ -47,7 +40,7 @@ function buildActionButtons(params: {
   }
 
   if (params.operatorShortcut) {
-    buttons.push(Markup.button.callback("📞 Vorbeste cu operatorul", "menu:operator"));
+    buttons.push(Markup.button.callback("📞 Contact operator", "menu:operator"));
   }
 
   if (params.showLessons) {
@@ -72,10 +65,10 @@ async function replyWithSharedVideo(
     operatorShortcut?: boolean;
   },
 ): Promise<void> {
-  const localVideoPath = params.fileName ? resolveLocalVideoPath(params.fileName) : "";
+  const localVideoPath = params.fileName ? resolveExistingMediaFile(params.fileName) : null;
   const caption = `*${params.title}*\n\n${params.body}`;
 
-  if (localVideoPath && fs.existsSync(localVideoPath) && fs.statSync(localVideoPath).isFile()) {
+  if (localVideoPath) {
     try {
       await ctx.replyWithVideo(Input.fromLocalFile(localVideoPath), {
         caption,
@@ -106,7 +99,7 @@ async function replyWithSharedVideo(
     }
   }
 
-  if (params.fallbackUrl && (params.fallbackMode === "preview" || params.fallbackUrl === config.WEBINAR_URL)) {
+  if (params.fallbackUrl && params.fallbackMode === "preview") {
     await ctx.reply(`${caption}\n\n${params.fallbackUrl}`, {
       parse_mode: "Markdown",
       link_preview_options: {
@@ -217,7 +210,7 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       showLessons,
       fileName: SERVICE_VIDEO_FILES.fearSpeaking,
       fallbackUrl: config.WEBINAR_URL,
-      fallbackLabel: "▶️ Deschide webinarul",
+      fallbackMode: "preview",
     });
   } else if (action === "teaching_method") {
     await replyWithSharedVideo(ctx, {

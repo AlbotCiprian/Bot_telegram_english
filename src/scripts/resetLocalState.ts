@@ -3,6 +3,7 @@ import { campaignQueue, crmQueue } from "../services/queue.js";
 
 async function resetLocalState() {
   await prisma.userCampaign.deleteMany();
+  await prisma.lessonProgress.deleteMany();
   await prisma.botSession.deleteMany();
   await prisma.scheduledJob.deleteMany();
   await prisma.crmSyncLog.deleteMany();

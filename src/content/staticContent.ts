@@ -7,9 +7,9 @@ export const BRANDING = {
 };
 
 export const SERVICE_VIDEO_FILES = {
-  fearSpeaking: "Webinar_fear_speaking.mp4",
-  teachingMethod: "Video_metda_depredare!.mp4",
-  aboutAcademy: "",
+  fearSpeaking: "webinar-fear.mp4",
+  teachingMethod: "method.mp4",
+  aboutAcademy: "academy.mp4",
 } as const;
 
 export const LEAD_LEVEL_OPTIONS = ["Incepator", "Elementar", "Intermediar", "Nu stiu"] as const;
@@ -44,11 +44,11 @@ export const PUBLIC_ENTRY_MENU = [
   },
   {
     key: "operator",
-    label: "📞 Vorbeste cu operatorul",
+    label: "📞 Contact operator",
   },
   {
     key: "career_astrology",
-    label: "🔮 Consultatie de cariera",
+    label: "🔮 Consultatie cariera",
   },
 ] as const;
 
@@ -73,39 +73,22 @@ export const PUBLIC_ENTRY_LABELS: Record<PublicEntryKey, string> = Object.fromEn
 export const STATIC_PAGES = {
   welcome: {
     title: "Buna, bine ai venit la Express English Academy",
-    body: "",
+    body:
+      "Incepe cu 3 lectii gratuite si vezi cum poti vorbi mai clar, mai liber si cu mai multa incredere, in doar cateva minute pe zi.",
   },
   academy: {
     title: "Despre academie",
-    body: [
-      "Express English Academy este pentru oameni care vor sa vorbeasca engleza clar si cu incredere.",
-      "",
-      "Lucram practic, cu pasi simpli, continut aplicat si progres real.",
-    ].join("\n"),
+    body: "Express English Academy este pentru oameni care vor sa vorbeasca engleza clar, aplicat si cu incredere.",
   },
   programs: {
     title: "Programe si preturi",
     body: [
       "*Basic - Engleza pentru supravietuire* - 250 EUR",
-      "- 20-25 de lectii inregistrate",
-      "- 7 intalniri de grup cu Victoria Cosovan",
-      "- Workbook, chat suport, video conversationale",
-      "- Diploma A2, acces 6 luni",
-      "",
       "*Medium - Engleza pentru putere si curaj* - 350 EUR",
-      "- 20-25 de lectii inregistrate",
-      "- 7 intalniri de grup cu Victoria Cosovan",
-      "- Workbook, chat suport, video conversationale",
-      "- Diploma B1, acces 6 luni",
-      "",
       "*Advanced - Engleza pentru statut si influenta* - 400 EUR",
-      "- 20-25 de lectii inregistrate",
-      "- 7 intalniri de grup cu Victoria Cosovan",
-      "- Workbook, chat suport, video conversationale",
-      "- Diploma B2, acces 6 luni",
-      "",
       "*Basic + Medium* - 550 EUR in loc de 600 EUR",
-      "- traseu complet de la baza pana la vorbire cu incredere",
+      "",
+      "Deschide site-ul pentru descrierea completa a fiecarui program.",
     ].join("\n"),
   },
   method: {
@@ -153,10 +136,9 @@ export const LESSON_SEED_CONTENT = [
     dayNumber: 1,
     key: "free-day-1",
     title: "Lectia 1 - Present Simple",
-    messageText:
-      "In prima lectie intri direct in ritm. Urmareste materialul si apoi rezolva testul scurt pentru Present Simple.",
-    mediaType: "video_link",
-    mediaUrl: "https://drive.google.com/file/d/18hSQtwISv180c_DZrz09ji7V81dDPqL8/view?usp=drivesdk",
+    messageText: "Urmareste lectia si dupa un minut poti porni testul scurt pentru Present Simple.",
+    mediaType: "video_file",
+    mediaUrl: "lesson-1.mp4",
     cta: [
       { label: "📚 Lectiile tale", action: "lessons" },
       { label: "📞 Vreau la curs", action: "wants_course" },
@@ -166,10 +148,9 @@ export const LESSON_SEED_CONTENT = [
     dayNumber: 2,
     key: "free-day-2",
     title: "Lectia 2 - Daily routine",
-    messageText:
-      "Lectia a doua consolideaza raspunsurile de baza si vocabularul de zi cu zi. Se deschide automat dupa 24 de ore.",
-    mediaType: "video_link",
-    mediaUrl: "https://drive.google.com/file/d/1b40m6Nn7zKknrzMuDiDQRFWogmTz9GhZ/view?usp=drivesdk",
+    messageText: "Lectia a doua consolideaza raspunsurile de baza si vocabularul de zi cu zi.",
+    mediaType: "video_file",
+    mediaUrl: "lesson-2.mp4",
     cta: [
       { label: "📚 Lectiile tale", action: "lessons" },
       { label: "📞 Vreau la curs", action: "wants_course" },
@@ -179,10 +160,9 @@ export const LESSON_SEED_CONTENT = [
     dayNumber: 3,
     key: "free-day-3",
     title: "Lectia 3 - Next step",
-    messageText:
-      "Ai ajuns la finalul seriei gratuite. Urmareste lectia si apoi intra in flow-ul de calificare daca vrei programul complet.",
-    mediaType: "video_link",
-    mediaUrl: "https://drive.google.com/file/d/14XdideiSad-wIeVOYfLWNHBoU8_GBqVp/view?usp=drivesdk",
+    messageText: "Ai ajuns la finalul seriei gratuite. Urmareste lectia si pregateste pasul urmator.",
+    mediaType: "video_file",
+    mediaUrl: "lesson-3.mp4",
     cta: [
       { label: "📞 Vreau la curs", action: "wants_course" },
       { label: "🤖 Intreaba AI-ul", action: "ask_ai" },

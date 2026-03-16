@@ -32,6 +32,7 @@ model User {
   profile           UserProfile?
   session           BotSession?
   campaigns         UserCampaign[]
+  lessonProgress    LessonProgress[]
   jobs              ScheduledJob[]
   crmSyncLogs       CrmSyncLog[]
   events            UserEvent[]
@@ -118,6 +119,22 @@ model UserCampaign {
 
   @@unique([userId, campaignId])
   @@map("user_campaigns")
+}
+
+model LessonProgress {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @map("user_id")
+  dayNumber       Int       @map("day_number")
+  videoSentAt     DateTime? @map("video_sent_at")
+  quizAvailableAt DateTime? @map("quiz_available_at")
+  quizCompletedAt DateTime? @map("quiz_completed_at")
+  openedAt        DateTime? @map("opened_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dayNumber])
+  @@map("lesson_progress")
 }
 
 model ScheduledJob {

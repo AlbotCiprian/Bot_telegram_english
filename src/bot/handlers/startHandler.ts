@@ -56,7 +56,7 @@ export async function handleStart(
 }
 
 export async function handleMenu(ctx: Context, options?: { showLessons?: boolean }): Promise<void> {
-  await ctx.reply("Alege o optiune:", {
+  await ctx.reply("Alege cum vrei sa continuam:", {
     reply_markup: getMainMenuKeyboard({ showLessons: options?.showLessons }).reply_markup,
   });
 }

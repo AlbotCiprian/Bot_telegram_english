@@ -4,6 +4,7 @@ import { getDelayMap, getRunAt } from "../utils/schedule.js";
 
 export type CampaignJobPayload =
   | { userId: number; type: "lesson_unlock"; dayNumber: 2 | 3 }
+  | { userId: number; type: "lesson_nudge"; dayNumber: 2 | 3; afterHours: 12 | 24 }
   | { userId: number; type: "follow_up" }
   | { userId: number; type: "inactive" }
   | { userId: number; type: "long_reminder" };
@@ -16,6 +17,10 @@ export type CrmJobPayload =
 function buildCampaignJobId(payload: CampaignJobPayload): string {
   if (payload.type === "lesson_unlock") {
     return `campaign:${payload.userId}:${payload.type}:${payload.dayNumber}`;
+  }
+
+  if (payload.type === "lesson_nudge") {
+    return `campaign:${payload.userId}:${payload.type}:${payload.dayNumber}:${payload.afterHours}`;
   }
 
   return `campaign:${payload.userId}:${payload.type}`;
@@ -65,9 +70,6 @@ export async function scheduleFreeLessonCampaign(userId: number): Promise<void> 
   const delayMap = getDelayMap();
   await scheduleCampaignJob({ userId, type: "lesson_unlock", dayNumber: 2 }, delayMap.lesson2Ms);
   await scheduleCampaignJob({ userId, type: "lesson_unlock", dayNumber: 3 }, delayMap.lesson3Ms);
-  await scheduleCampaignJob({ userId, type: "follow_up" }, delayMap.followUpMs);
-  await scheduleCampaignJob({ userId, type: "inactive" }, delayMap.inactiveMs);
-  await scheduleCampaignJob({ userId, type: "long_reminder" }, delayMap.longReminderMs);
 }
 
 export async function scheduleCampaignJob(payload: CampaignJobPayload, delayMs: number): Promise<void> {
