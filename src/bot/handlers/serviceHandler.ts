@@ -65,6 +65,7 @@ async function replyWithSharedVideo(
     fileName: string;
     fallbackUrl?: string;
     fallbackLabel?: string;
+    fallbackMode?: "button" | "preview";
     includeCourseCta?: boolean;
     operatorShortcut?: boolean;
   },
@@ -101,6 +102,21 @@ async function replyWithSharedVideo(
       );
       return;
     }
+  }
+
+  if (params.fallbackUrl && (params.fallbackMode === "preview" || params.fallbackUrl === config.WEBINAR_URL)) {
+    await ctx.reply(`${caption}\n\n${params.fallbackUrl}`, {
+      parse_mode: "Markdown",
+      link_preview_options: {
+        is_disabled: false,
+      },
+      reply_markup: buildActionButtons({
+        showLessons: params.showLessons,
+        includeCourseCta: params.includeCourseCta,
+        operatorShortcut: params.operatorShortcut,
+      }).reply_markup,
+    });
+    return;
   }
 
   await ctx.reply(caption, {
