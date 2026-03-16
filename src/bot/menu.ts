@@ -41,8 +41,8 @@ export function getStartFreeLessonsKeyboard() {
   return getPublicMenuKeyboard();
 }
 
-export function getBackToMenuKeyboard(showLessons = false) {
-  return Markup.inlineKeyboard([[Markup.button.callback(showLessons ? "📚 Lectiile si meniul" : "Meniul principal", "menu:menu")]]);
+export function getBackToMenuKeyboard(_showLessons = false) {
+  return Markup.inlineKeyboard([[Markup.button.callback("⬅️ Meniul principal", "menu:menu")]]);
 }
 
 export function getPrivacyChoiceKeyboard() {
@@ -73,7 +73,7 @@ export function buildHelpMessage(): string {
   return [
     "*Ajutor*",
     "",
-    "Botul te poate ghida prin serviciile principale ale academiei si prin seria de 3 zile gratuite.",
+    "Botul te poate ghida prin serviciile principale si prin seria de 3 zile gratuite.",
     "",
     "Daca esti utilizator nou, primul pas important este onboardingul scurt pentru salvarea lead-ului in CRM.",
     "",

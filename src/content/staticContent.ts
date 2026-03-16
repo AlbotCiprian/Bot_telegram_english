@@ -24,15 +24,15 @@ export const LEAD_GOAL_OPTIONS = [
 export const PUBLIC_ENTRY_MENU = [
   {
     key: "free_lessons",
-    label: "🎓 Incearca 3 zile gratuite de engleza dupa metoda noastra",
+    label: "🎓 3 zile gratuite",
   },
   {
     key: "fear_speaking",
-    label: "🗣️ Cum scap de frica de vorbire in engleza",
+    label: "🗣️ Webinar: fara frica",
   },
   {
     key: "teaching_method",
-    label: "🎥 Metoda de predare",
+    label: "🎥 Metoda noastra",
   },
   {
     key: "about_academy",
@@ -40,15 +40,15 @@ export const PUBLIC_ENTRY_MENU = [
   },
   {
     key: "services",
-    label: "💼 Servicii",
+    label: "💼 Programe si preturi",
   },
   {
     key: "operator",
-    label: "📞 Ia legatura cu operatorul",
+    label: "📞 Vorbeste cu operatorul",
   },
   {
     key: "career_astrology",
-    label: "🔮 Consultatie astrologica de cariera",
+    label: "🔮 Consultatie de cariera",
   },
 ] as const;
 
@@ -60,7 +60,7 @@ export const MAIN_MENU = [
   ...PUBLIC_ENTRY_MENU,
   {
     key: "ask_ai",
-    label: "🤖 Intreaba AI-ul nostru",
+    label: "🤖 Intreaba AI-ul",
   },
 ] as const;
 
@@ -78,83 +78,74 @@ export const STATIC_PAGES = {
   academy: {
     title: "Despre academie",
     body: [
-      "Express English Academy este construita pentru oameni care vor sa vorbeasca engleza clar, cu incredere si cu rezultat real in viata profesionala.",
+      "Express English Academy este pentru oameni care vor sa vorbeasca engleza clar si cu incredere.",
       "",
-      "Accentul este pe vorbire, claritate, exercitiu aplicat si progres sustenabil.",
+      "Lucram practic, cu pasi simpli, continut aplicat si progres real.",
     ].join("\n"),
   },
   programs: {
-    title: "Servicii si preturi",
+    title: "Programe si preturi",
     body: [
-      "Aici ai informatia confirmata despre programe si preturi:",
-      "",
       "*Basic - Engleza pentru supravietuire* - 250 EUR",
-      "- 20-25 de lectii inregistrate cu durata de 5-20 minute",
-      "- 7 intalniri de grup, 1 pe saptamana, cu Victoria Cosovan",
-      "- Workbook cu exercitii",
-      "- Chat suport pentru intrebari",
-      "- Video conversationale",
-      "- Diploma de confirmare a nivelului A2",
-      "- Acces 6 luni",
+      "- 20-25 de lectii inregistrate",
+      "- 7 intalniri de grup cu Victoria Cosovan",
+      "- Workbook, chat suport, video conversationale",
+      "- Diploma A2, acces 6 luni",
       "",
       "*Medium - Engleza pentru putere si curaj* - 350 EUR",
-      "- 20-25 de lectii inregistrate cu durata de 5-20 minute",
-      "- 7 intalniri de grup, 1 pe saptamana, cu Victoria Cosovan",
-      "- Workbook, chat suport si video conversationale",
-      "- Diploma de confirmare a nivelului B1",
-      "- Acces 6 luni",
+      "- 20-25 de lectii inregistrate",
+      "- 7 intalniri de grup cu Victoria Cosovan",
+      "- Workbook, chat suport, video conversationale",
+      "- Diploma B1, acces 6 luni",
       "",
       "*Advanced - Engleza pentru statut si influenta* - 400 EUR",
-      "- 20-25 de lectii inregistrate cu durata de 5-20 minute",
-      "- 7 intalniri de grup, 1 pe saptamana, cu Victoria Cosovan",
-      "- Workbook, chat suport si video conversationale",
-      "- Diploma de confirmare a nivelului B2",
-      "- Acces 6 luni",
+      "- 20-25 de lectii inregistrate",
+      "- 7 intalniri de grup cu Victoria Cosovan",
+      "- Workbook, chat suport, video conversationale",
+      "- Diploma B2, acces 6 luni",
       "",
       "*Basic + Medium* - 550 EUR in loc de 600 EUR",
       "- traseu complet de la baza pana la vorbire cu incredere",
-      "- pentru cei care vor progres logic, fara stres si fara ani de blocaj",
     ].join("\n"),
   },
   method: {
-    title: "Metoda de predare",
+    title: "Metoda noastra",
     body: "Video scurt despre cum lucram: clar, practic si orientat pe vorbire.",
   },
   fear_speaking: {
-    title: "Cum scap de frica de vorbire in engleza",
-    body: "Webinar video despre cum spargi blocajul si incepi sa vorbesti cu mai multa siguranta.",
+    title: "Webinar: cum scapi de frica de vorbire",
+    body: "Video despre cum spargi blocajul si incepi sa vorbesti cu mai multa siguranta.",
   },
   website: {
-    title: "Servicii",
+    title: "Site oficial",
     body: `Deschide site-ul oficial pentru toate detaliile: ${BRANDING.websiteUrl}`,
   },
   operator: {
-    title: "Ia legatura cu operatorul",
-    body: "Daca vrei ghidare rapida, apasa butonul de mai jos si te conectam cu operatorul.",
+    title: "Vorbeste cu operatorul",
+    body: "Daca vrei recomandare rapida, intra direct in legatura cu operatorul.",
   },
   astrology: {
-    title: "Consultatie astrologica de cariera",
+    title: "Consultatie de cariera",
     body:
-      "Daca vrei o discutie dedicata despre directia ta profesionala si cum poate engleza sa te ajute, poti deschide consultatia din linkul configurat.",
+      "Daca vrei o discutie dedicata despre directia ta profesionala, poti deschide consultatia din linkul configurat.",
   },
   mistakes: {
     title: "TOP 5 greseli",
     body: [
-      "Cele mai frecvente blocaje sunt:",
       "1. invatarea fara practica reala",
       "2. lipsa de consecventa",
       "3. accentul exclusiv pe gramatica",
       "4. frica de a vorbi",
-      "5. lipsa unui plan simplu de progres",
+      "5. lipsa unui plan simplu",
     ].join("\n"),
   },
   career: {
     title: "Engleza pentru cariera",
-    body: "Cursurile sunt gandite si pentru interviuri, emailuri, sedinte, prezentari si comunicare mai sigura.",
+    body: "Interviuri, emailuri, sedinte, prezentari si comunicare mai sigura la munca.",
   },
   busy_people: {
     title: "Engleza pentru oameni ocupati",
-    body: "Lectii scurte, follow-up automat si ritm sustenabil pentru persoane cu program incarcat.",
+    body: "Lectii scurte, ritm sustenabil si follow-up clar pentru persoane cu program incarcat.",
   },
 } as const;
 
@@ -195,7 +186,7 @@ export const LESSON_SEED_CONTENT = [
     mediaUrl: "https://drive.google.com/file/d/14XdideiSad-wIeVOYfLWNHBoU8_GBqVp/view?usp=drivesdk",
     cta: [
       { label: "📞 Vreau la curs", action: "wants_course" },
-      { label: "🤖 Intreaba AI-ul nostru", action: "ask_ai" },
+      { label: "🤖 Intreaba AI-ul", action: "ask_ai" },
     ],
   },
 ] as const;
