@@ -5,9 +5,11 @@ import { prisma } from "../../db/client.js";
 import { BRANDING, PUBLIC_ENTRY_LABELS, PublicEntryKey, SERVICE_VIDEO_FILES, STATIC_PAGES } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
 import { getLessonsMenu, deliverLesson } from "../../services/lessonService.js";
-import { scheduleFreeLessonCampaign } from "../../services/schedulerService.js";
+import { scheduleCrmJob, scheduleFreeLessonCampaign } from "../../services/schedulerService.js";
+import { ensureProfile } from "../../services/userService.js";
 import { BotUser } from "../../types/bot.js";
 import { config } from "../../utils/config.js";
+import { logger } from "../../utils/logger.js";
 import { getMainMenuKeyboard } from "../menu.js";
 
 type InlineActionButton = ReturnType<typeof Markup.button.url> | ReturnType<typeof Markup.button.callback>;
@@ -131,6 +133,26 @@ async function replyWithSharedVideo(
   });
 }
 
+async function trackConsultationIntent(userId: number, action: "operator" | "career_astrology"): Promise<void> {
+  await ensureProfile(userId);
+  await prisma.userProfile.update({
+    where: { userId },
+    data: {
+      consultationWanted: true,
+    },
+  });
+
+  try {
+    await scheduleCrmJob({
+      userId,
+      action: "request_consultation",
+      requestedService: action,
+    });
+  } catch (error) {
+    logger.error({ err: error, userId, action }, "Nu am putut programa request_consultation in Kommo.");
+  }
+}
+
 export async function startFreeLessonsForUser(ctx: Context, userId: number): Promise<void> {
   const currentUser = await prisma.user.findUnique({
     where: { id: userId },
@@ -223,6 +245,7 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       }).reply_markup,
     });
   } else if (action === "operator") {
+    await trackConsultationIntent(user.id, "operator");
     await ctx.reply(buildStaticPageMessage("operator"), {
       parse_mode: "Markdown",
       reply_markup: buildActionButtons({
@@ -232,6 +255,7 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       }).reply_markup,
     });
   } else if (action === "career_astrology") {
+    await trackConsultationIntent(user.id, "career_astrology");
     await ctx.reply(buildStaticPageMessage("astrology"), {
       parse_mode: "Markdown",
       reply_markup: buildActionButtons({

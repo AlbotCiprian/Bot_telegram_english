@@ -121,13 +121,12 @@ export const STATIC_PAGES = {
     body: `Deschide site-ul oficial pentru toate detaliile: ${BRANDING.websiteUrl}`,
   },
   operator: {
-    title: "Vorbeste cu operatorul",
-    body: "Daca vrei recomandare rapida, intra direct in legatura cu operatorul.",
+    title: "Contact operator",
+    body: "Cererea ta a fost trimisa. Poti deschide contactul direct sau poti astepta preluarea in CRM.",
   },
   astrology: {
-    title: "Consultatie de cariera",
-    body:
-      "Daca vrei o discutie dedicata despre directia ta profesionala, poti deschide consultatia din linkul configurat.",
+    title: "Consultatie cariera",
+    body: "Cererea ta a fost trimisa. Deschide consultatia din linkul de mai jos.",
   },
   mistakes: {
     title: "TOP 5 greseli",

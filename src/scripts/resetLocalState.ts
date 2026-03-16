@@ -7,35 +7,8 @@ async function resetLocalState() {
   await prisma.scheduledJob.deleteMany();
   await prisma.crmSyncLog.deleteMany();
   await prisma.userEvent.deleteMany();
-
-  await prisma.userProfile.updateMany({
-    data: {
-      englishLevel: null,
-      goal: null,
-      occupation: null,
-      timeAvailable: null,
-      consentPrivacy: false,
-      consentMarketing: false,
-      consultationWanted: false,
-    },
-  });
-
-  await prisma.user.updateMany({
-    data: {
-      phone: null,
-      email: null,
-      leadFormCompleted: false,
-      onboardingCompletedAt: null,
-      currentLessonDay: 0,
-      lesson1Unlocked: false,
-      lesson2Unlocked: false,
-      lesson3Unlocked: false,
-      lesson2UnlockTime: null,
-      lesson3UnlockTime: null,
-      kommoLeadId: null,
-      kommoContactId: null,
-    },
-  });
+  await prisma.userProfile.deleteMany();
+  await prisma.user.deleteMany();
 
   try {
     await campaignQueue.obliterate({ force: true });
@@ -53,7 +26,7 @@ async function resetLocalState() {
   await crmQueue.close();
   await prisma.$disconnect();
 
-  console.log("Local bot state reset complete.");
+  console.log("Bot state reset complete.");
 }
 
 resetLocalState().catch(async (error) => {

@@ -10,7 +10,8 @@ export type CampaignJobPayload =
 
 export type CrmJobPayload =
   | { userId: number; action: "create_lead"; firstRequestedService?: string | null }
-  | { userId: number; action: "qualify_lead" };
+  | { userId: number; action: "qualify_lead" }
+  | { userId: number; action: "request_consultation"; requestedService: "operator" | "career_astrology" };
 
 function buildCampaignJobId(payload: CampaignJobPayload): string {
   if (payload.type === "lesson_unlock") {
@@ -21,6 +22,10 @@ function buildCampaignJobId(payload: CampaignJobPayload): string {
 }
 
 function buildCrmJobId(payload: CrmJobPayload): string {
+  if (payload.action === "request_consultation") {
+    return `crm:${payload.userId}:${payload.action}:${payload.requestedService}`;
+  }
+
   return `crm:${payload.userId}:${payload.action}`;
 }
 

@@ -145,6 +145,11 @@ export async function createLeadInKommo(userId: number, firstRequestedService?: 
     throw new Error(`User ${userId} nu exista.`);
   }
 
+  if (user.kommoLeadId) {
+    logger.info({ userId, kommoLeadId: user.kommoLeadId.toString() }, "Lead-ul Kommo exista deja, sar peste create_lead.");
+    return;
+  }
+
   const contactName = buildContactName(user);
   const leadIntent = resolveLeadIntent(firstRequestedService);
   const leadNameSuffix =
@@ -270,6 +275,112 @@ export async function createLeadInKommo(userId: number, firstRequestedService?: 
         action: "create_lead",
         status: "failed",
         requestPayload: payload,
+        errorMessage: message,
+      },
+    });
+    throw error;
+  }
+}
+
+export async function requestConsultationInKommo(
+  userId: number,
+  requestedService: "operator" | "career_astrology",
+): Promise<void> {
+  const serviceLabel = PUBLIC_ENTRY_LABELS[requestedService] ?? requestedService;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { profile: true },
+  });
+
+  if (!user) {
+    throw new Error(`User ${userId} nu exista.`);
+  }
+
+  if (!user.kommoLeadId) {
+    await createLeadInKommo(userId, requestedService);
+  }
+
+  const refreshedUser = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { profile: true },
+  });
+
+  if (!refreshedUser?.kommoLeadId) {
+    throw new Error("Lead-ul Kommo nu a putut fi creat inainte de request_consultation.");
+  }
+
+  const patchPayload = [
+    {
+      id: Number(refreshedUser.kommoLeadId),
+      pipeline_id: parseOptionalId(config.KOMMO_PIPELINE_ID),
+      status_id: parseOptionalId(config.KOMMO_STAGE_CONSULT_ID),
+    },
+  ];
+
+  const notePayload = [
+    {
+      entity_id: Number(refreshedUser.kommoLeadId),
+      note_type: "common",
+      params: {
+        text: [
+          "Cerere noua din botul Telegram:",
+          `Tip cerere: ${serviceLabel}`,
+          `Telefon: ${refreshedUser.phone ?? "nesetat"}`,
+          `Telegram: ${refreshedUser.username ? `@${refreshedUser.username}` : refreshedUser.telegramId.toString()}`,
+        ].join("\n"),
+      },
+    },
+  ];
+
+  await prisma.crmSyncLog.create({
+    data: {
+      userId,
+      action: "request_consultation",
+      status: "pending",
+      requestPayload: {
+        requestedService,
+        patchPayload,
+        notePayload,
+      },
+    },
+  });
+
+  try {
+    const [leadResponse, noteResponse] = await Promise.all([
+      kommoApi.patch("/leads", patchPayload, { headers: getKommoHeaders() }),
+      kommoApi.post("/leads/notes", notePayload, { headers: getKommoHeaders() }),
+    ]);
+
+    await prisma.crmSyncLog.create({
+      data: {
+        userId,
+        action: "request_consultation",
+        status: "success",
+        requestPayload: {
+          requestedService,
+          patchPayload,
+          notePayload,
+        },
+        responsePayload: {
+          lead: leadResponse.data,
+          notes: noteResponse.data,
+        },
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    logger.error({ err: error, userId, requestedService }, "Kommo request consultation esuat.");
+    await prisma.crmSyncLog.create({
+      data: {
+        userId,
+        action: "request_consultation",
+        status: "failed",
+        requestPayload: {
+          requestedService,
+          patchPayload,
+          notePayload,
+        },
         errorMessage: message,
       },
     });
