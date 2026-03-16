@@ -72,13 +72,14 @@ async function replyWithSharedVideo(
     action: PublicEntryKey;
     showLessons: boolean;
     fileName: string;
+    fallbackUrl?: string;
   },
 ): Promise<void> {
-  const localVideoPath = resolveLocalVideoPath(params.fileName);
+  const localVideoPath = params.fileName ? resolveLocalVideoPath(params.fileName) : "";
   const caption = `*${params.title}*\n\n${params.body}`;
   const replyMarkup = buildServiceActionButtons(params.action, params.showLessons).reply_markup;
 
-  if (fs.existsSync(localVideoPath)) {
+  if (localVideoPath && fs.existsSync(localVideoPath) && fs.statSync(localVideoPath).isFile()) {
     try {
       await ctx.replyWithVideo(Input.fromLocalFile(localVideoPath), {
         caption,
@@ -97,6 +98,18 @@ async function replyWithSharedVideo(
       );
       return;
     }
+  }
+
+  if (params.fallbackUrl) {
+    await ctx.reply(caption, {
+      parse_mode: "Markdown",
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.url("▶️ Deschide video-ul", params.fallbackUrl)],
+        [Markup.button.callback("📞 Vreau la curs", "menu:wants_course")],
+        [Markup.button.callback(params.showLessons ? "📚 Lectiile si meniul" : "Meniul principal", "menu:menu")],
+      ]).reply_markup,
+    });
+    return;
   }
 
   await ctx.reply(caption, {
@@ -163,9 +176,13 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
   if (action === "free_lessons") {
     await startFreeLessonsForUser(ctx, user.id);
   } else if (action === "fear_speaking") {
-    await ctx.reply(buildStaticPageMessage("fear_speaking"), {
-      parse_mode: "Markdown",
-      reply_markup: buildServiceActionButtons(action, showLessons).reply_markup,
+    await replyWithSharedVideo(ctx, {
+      title: STATIC_PAGES.fear_speaking.title,
+      body: STATIC_PAGES.fear_speaking.body,
+      action,
+      showLessons,
+      fileName: SERVICE_VIDEO_FILES.fearSpeaking,
+      fallbackUrl: config.WEBINAR_URL,
     });
   } else if (action === "teaching_method") {
     await replyWithSharedVideo(ctx, {

@@ -7,6 +7,7 @@ export const BRANDING = {
 };
 
 export const SERVICE_VIDEO_FILES = {
+  fearSpeaking: "Webinar_fear_speaking.mp4",
   teachingMethod: "Video_metda_depredare!.mp4",
   aboutAcademy: "",
 } as const;
@@ -117,22 +118,11 @@ export const STATIC_PAGES = {
   },
   method: {
     title: "Metoda de predare",
-    body: [
-      "Metoda noastra este construita pentru oameni ocupati care vor sa vorbeasca, nu doar sa memoreze.",
-      "",
-      "- pasi clari si lectii scurte",
-      "- accent pe vorbire reala si incredere",
-      "- progres usor de urmarit",
-      "- ritm sustenabil, fara teorie inutila",
-    ].join("\n"),
+    body: "Video scurt despre cum lucram: clar, practic si orientat pe vorbire.",
   },
   fear_speaking: {
     title: "Cum scap de frica de vorbire in engleza",
-    body: [
-      "Frica de vorbire apare cel mai des din lipsa de practica, teama de greseala si lipsa unui cadru simplu.",
-      "",
-      "Webinarul nostru te ajuta sa intelegi cum spargi blocajul si cum incepi sa vorbesti cu mai multa siguranta.",
-    ].join("\n"),
+    body: "Webinar video despre cum spargi blocajul si incepi sa vorbesti cu mai multa siguranta.",
   },
   website: {
     title: "Servicii",
