@@ -3,6 +3,7 @@ import path from "node:path";
 import { User } from "@prisma/client";
 import { Input, Markup } from "telegraf";
 import { prisma } from "../db/client.js";
+import { LESSON_ONE_QUIZ } from "../content/staticContent.js";
 import { logUserEvent } from "./eventService.js";
 import { getTelegramClient } from "./telegram.js";
 import { getDelayMap } from "../utils/schedule.js";
@@ -11,6 +12,8 @@ type LessonCta = {
   label: string;
   action: string;
 };
+
+type InlineActionButton = ReturnType<typeof Markup.button.url> | ReturnType<typeof Markup.button.callback>;
 
 type LessonAvailability = {
   dayNumber: 1 | 2 | 3;
@@ -30,6 +33,20 @@ function buildCtaKeyboard(cta: LessonCta[] | null | undefined) {
   return Markup.inlineKeyboard(
     cta.map((item) => [Markup.button.callback(item.label, `menu:${item.action}`)]),
   );
+}
+
+function buildVideoLinkKeyboard(url: string, cta: LessonCta[] | null | undefined) {
+  const buttons: InlineActionButton[] = [
+    Markup.button.url("▶️ Deschide video-ul", url),
+  ];
+
+  if (cta && cta.length > 0) {
+    for (const item of cta) {
+      buttons.push(Markup.button.callback(item.label, `menu:${item.action}`));
+    }
+  }
+
+  return Markup.inlineKeyboard(buttons, { columns: 1 });
 }
 
 function buildLessonActionKeyboard(dayNumber: 1 | 2 | 3) {
@@ -69,7 +86,7 @@ function isLessonUnlocked(user: User, dayNumber: 1 | 2 | 3): boolean {
 
 function getLessonUnlockTime(user: User, dayNumber: 1 | 2 | 3): Date | null {
   if (dayNumber === 1) {
-    return user.onboardingCompletedAt;
+    return null;
   }
 
   if (dayNumber === 2) {
@@ -170,10 +187,6 @@ export async function syncLessonUnlockState(userId: number): Promise<User> {
 
   const now = new Date();
   const updateData: Record<string, unknown> = {};
-
-  if (user.leadFormCompleted && user.onboardingCompletedAt && !user.lesson1Unlocked) {
-    updateData.lesson1Unlocked = true;
-  }
 
   if (!user.lesson2Unlocked && user.lesson2UnlockTime && user.lesson2UnlockTime <= now) {
     updateData.lesson2Unlocked = true;
@@ -302,13 +315,45 @@ async function sendLessonBody(params: {
 
   const lines = [`*${params.title}*`, "", params.messageText];
   if (params.mediaType === "video_link" && params.mediaUrl) {
-    lines.push("", `Video: ${params.mediaUrl}`);
+    await telegram.sendMessage(params.chatId, lines.join("\n"), {
+      parse_mode: "Markdown",
+      reply_markup: buildVideoLinkKeyboard(params.mediaUrl, params.cta).reply_markup,
+    });
+    return;
   }
 
   await telegram.sendMessage(params.chatId, lines.join("\n"), {
     parse_mode: "Markdown",
     reply_markup: replyMarkup,
   });
+}
+
+async function sendLessonOneQuiz(chatId: string): Promise<void> {
+  const telegram = getTelegramClient();
+
+  await telegram.sendMessage(
+    chatId,
+    "📝 Tema 1 - Present Simple\n\nRaspunde la intrebarile de mai jos direct in Telegram.",
+  );
+
+  for (const item of LESSON_ONE_QUIZ) {
+    await telegram.sendQuiz(chatId, item.question, [...item.options], {
+      correct_option_id: item.correctOptionIndex,
+      is_anonymous: false,
+      explanation: "Verifica regula de Present Simple si continua testul.",
+    });
+  }
+
+  await telegram.sendMessage(
+    chatId,
+    "Perfect. Ai terminat testul pentru Lectia 1. Meniul Lectiile tale iti va arata cand se deblocheaza urmatoarea lectie.",
+    {
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.callback("📚 Lectiile tale", "menu:lessons")],
+        [Markup.button.callback("📞 Vreau la curs", "menu:wants_course")],
+      ]).reply_markup,
+    },
+  );
 }
 
 export async function deliverLesson(userId: number, dayNumber: 1 | 2 | 3): Promise<void> {
@@ -357,6 +402,7 @@ export async function deliverLesson(userId: number, dayNumber: 1 | 2 | 3): Promi
   });
 
   const lastOpenedLesson = Math.max(user.currentLessonDay, dayNumber);
+  const firstOpenForThisLesson = user.currentLessonDay < dayNumber;
 
   await prisma.user.update({
     where: { id: userId },
@@ -385,6 +431,19 @@ export async function deliverLesson(userId: number, dayNumber: 1 | 2 | 3): Promi
       lessonKey: lesson.key,
     },
   });
+
+  if (dayNumber === 1 && firstOpenForThisLesson) {
+    await sendLessonOneQuiz(user.telegramId.toString());
+
+    await logUserEvent({
+      userId,
+      eventType: "lesson_quiz_sent",
+      metadata: {
+        dayNumber,
+        quiz: "present_simple",
+      },
+    });
+  }
 
   if (dayNumber === 3) {
     const telegram = getTelegramClient();

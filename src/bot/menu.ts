@@ -1,5 +1,5 @@
 import { Markup } from "telegraf";
-import { LEAD_GOAL_OPTIONS, LEAD_LEVEL_OPTIONS, MAIN_MENU, PUBLIC_ENTRY_MENU, STATIC_PAGES } from "../content/staticContent.js";
+import { MAIN_MENU, PUBLIC_ENTRY_MENU, STATIC_PAGES } from "../content/staticContent.js";
 
 function getMenuItem(key: (typeof MAIN_MENU)[number]["key"]) {
   const item = MAIN_MENU.find((entry) => entry.key === key);
@@ -59,24 +59,6 @@ export function getPhoneRequestKeyboard() {
   return Markup.keyboard([
     [Markup.button.contactRequest("📱 Trimite numarul")],
     ["Voi scrie manual"],
-  ])
-    .resize()
-    .oneTime();
-}
-
-export function getLeadLevelKeyboard() {
-  return Markup.keyboard([
-    [LEAD_LEVEL_OPTIONS[0], LEAD_LEVEL_OPTIONS[1]],
-    [LEAD_LEVEL_OPTIONS[2], LEAD_LEVEL_OPTIONS[3]],
-  ])
-    .resize()
-    .oneTime();
-}
-
-export function getLeadGoalKeyboard() {
-  return Markup.keyboard([
-    [LEAD_GOAL_OPTIONS[0], LEAD_GOAL_OPTIONS[1]],
-    [LEAD_GOAL_OPTIONS[2], LEAD_GOAL_OPTIONS[3]],
   ])
     .resize()
     .oneTime();

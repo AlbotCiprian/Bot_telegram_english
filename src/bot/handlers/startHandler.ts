@@ -10,12 +10,9 @@ function buildWelcomeCaption(showMainMenu: boolean, showLessons: boolean): strin
     `*${STATIC_PAGES.welcome.title}*`,
     "",
     STATIC_PAGES.welcome.body,
-    "",
-    showMainMenu
-      ? showLessons
-        ? "Meniul tau este activ. Poti continua lectiile gratuite sau poti deschide orice alt serviciu."
-        : "Meniul tau este activ. Poti incepe seria gratuita sau poti deschide direct serviciul de care ai nevoie."
-      : "La prima interactiune cu orice buton, iti activam rapid onboardingul si salvam lead-ul in CRM.",
+    ...(showMainMenu
+      ? ["", showLessons ? "Alege ce vrei sa faci mai departe." : "Alege serviciul de care ai nevoie."]
+      : []),
   ].join("\n");
 }
 

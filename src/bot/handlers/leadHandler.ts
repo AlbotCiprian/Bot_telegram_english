@@ -1,56 +1,23 @@
 import { Context, Markup } from "telegraf";
 import { prisma } from "../../db/client.js";
-import { LEAD_GOAL_OPTIONS, LEAD_LEVEL_OPTIONS, PUBLIC_ENTRY_LABELS, PublicEntryKey } from "../../content/staticContent.js";
+import { PUBLIC_ENTRY_LABELS, PublicEntryKey } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
 import { cancelPendingUserJobs, scheduleCrmJob } from "../../services/schedulerService.js";
 import { clearSession, setSession, updateSessionStep } from "../../services/sessionService.js";
 import { ensureProfile, getUserWithProfile } from "../../services/userService.js";
 import { BotUser } from "../../types/bot.js";
 import { LeadCaptureStep, SessionPayload } from "../../types/session.js";
-import { isValidEmail, isValidPhone, normalizePhone, normalizeWhitespace, parseBooleanChoice } from "../../utils/validators.js";
+import { isValidPhone, normalizePhone, normalizeWhitespace, parseBooleanChoice } from "../../utils/validators.js";
 import {
-  getLeadGoalKeyboard,
-  getLeadLevelKeyboard,
   getMainMenuKeyboard,
-  getPublicMenuKeyboard,
   getPhoneRequestKeyboard,
   getPrivacyChoiceKeyboard,
 } from "../menu.js";
 import { finalizeLeadAndStartCampaign } from "./lessonHandler.js";
 
-function normalizeLeadLevel(value: string): string {
-  const normalized = value.trim().toLowerCase();
-
-  if (normalized === "a0" || normalized === "a1") {
-    return "Incepator";
-  }
-
-  if (normalized === "a2") {
-    return "Elementar";
-  }
-
-  if (normalized === "b1" || normalized === "b2" || normalized === "intermediar") {
-    return "Intermediar";
-  }
-
-  const matched = LEAD_LEVEL_OPTIONS.find((option) => option.toLowerCase() === normalized);
-  return matched ?? value;
-}
-
-function normalizeLeadGoal(value: string): string {
-  const normalized = value.trim().toLowerCase();
-  const matched = LEAD_GOAL_OPTIONS.find((option) => option.toLowerCase() === normalized);
-  return matched ?? value;
-}
-
 export async function replyLeadStepPrompt(ctx: Context, step: LeadCaptureStep): Promise<void> {
   if (step === "first_name") {
     await ctx.reply("Cum te numesti?");
-    return;
-  }
-
-  if (step === "last_name") {
-    await ctx.reply("Perfect. Acum scrie numele de familie.");
     return;
   }
 
@@ -61,35 +28,13 @@ export async function replyLeadStepPrompt(ctx: Context, step: LeadCaptureStep): 
     return;
   }
 
-  if (step === "email") {
-    await ctx.reply("Care este emailul tau?", {
-      reply_markup: Markup.removeKeyboard().reply_markup,
-    });
-    return;
-  }
-
-  if (step === "level") {
-    await ctx.reply("Care este nivelul tau de engleza?", {
-      reply_markup: getLeadLevelKeyboard().reply_markup,
-    });
-    return;
-  }
-
-  if (step === "goal") {
-    await ctx.reply("Pentru ce vrei sa inveti engleza?", {
-      reply_markup: getLeadGoalKeyboard().reply_markup,
-    });
-    return;
-  }
-
   if (step === "consent_privacy") {
     await ctx.reply(
       "Accept politica de confidentialitate si sunt de acord sa primesc notificari despre cursuri si oferte.",
       {
-      reply_markup: getPrivacyChoiceKeyboard().reply_markup,
+        reply_markup: getPrivacyChoiceKeyboard().reply_markup,
       },
     );
-    return;
   }
 }
 
@@ -149,10 +94,11 @@ export async function handleLeadContactInput(
     },
   });
 
-  await updateSessionStep(user.id, "email");
-  await ctx.reply("Am salvat numarul. Acum scrie adresa de email.", {
+  await updateSessionStep(user.id, "consent_privacy");
+  await ctx.reply("Am salvat numarul. Mai am nevoie doar de acordul tau pentru a continua.", {
     reply_markup: Markup.removeKeyboard().reply_markup,
   });
+  await replyLeadStepPrompt(ctx, "consent_privacy");
 }
 
 export async function handleLeadTextInput(
@@ -184,16 +130,6 @@ export async function handleLeadTextInput(
     return;
   }
 
-  if (step === "last_name") {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastName: value },
-    });
-    await updateSessionStep(user.id, "phone");
-    await replyLeadStepPrompt(ctx, "phone");
-    return;
-  }
-
   if (step === "phone") {
     if (value.toLowerCase() === "voi scrie manual") {
       await ctx.reply("Scrie numarul tau in formatul +373XXXXXXXX.");
@@ -208,43 +144,6 @@ export async function handleLeadTextInput(
     await prisma.user.update({
       where: { id: user.id },
       data: { phone: normalizePhone(value) },
-    });
-    await updateSessionStep(user.id, "email");
-    await replyLeadStepPrompt(ctx, "email");
-    return;
-  }
-
-  if (step === "email") {
-    if (!isValidEmail(value)) {
-      await ctx.reply("Emailul nu pare valid. Incearca din nou.");
-      return;
-    }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { email: value.toLowerCase() },
-    });
-    await updateSessionStep(user.id, "level");
-    await replyLeadStepPrompt(ctx, "level");
-    return;
-  }
-
-  if (step === "level") {
-    await ensureProfile(user.id);
-    await prisma.userProfile.update({
-      where: { userId: user.id },
-      data: { englishLevel: normalizeLeadLevel(value) },
-    });
-    await updateSessionStep(user.id, "goal");
-    await replyLeadStepPrompt(ctx, "goal");
-    return;
-  }
-
-  if (step === "goal") {
-    await ensureProfile(user.id);
-    await prisma.userProfile.update({
-      where: { userId: user.id },
-      data: { goal: normalizeLeadGoal(value) },
     });
     await updateSessionStep(user.id, "consent_privacy");
     await replyLeadStepPrompt(ctx, "consent_privacy");

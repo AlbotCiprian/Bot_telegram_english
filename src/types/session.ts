@@ -2,13 +2,8 @@ export type SessionFlow = "lead_capture" | "course_interest" | "ai_question";
 
 export type LeadCaptureStep =
   | "first_name"
-  | "last_name"
   | "phone"
-  | "email"
-  | "level"
-  | "goal"
-  | "consent_privacy"
-  | "consent_marketing";
+  | "consent_privacy";
 
 export type CourseInterestStep =
   | "level"
@@ -24,13 +19,8 @@ export type SessionPayload = Record<string, unknown>;
 
 export const LEAD_CAPTURE_STEPS: LeadCaptureStep[] = [
   "first_name",
-  "last_name",
   "phone",
-  "email",
-  "level",
-  "goal",
   "consent_privacy",
-  "consent_marketing",
 ];
 
 export const COURSE_INTEREST_STEPS: CourseInterestStep[] = [

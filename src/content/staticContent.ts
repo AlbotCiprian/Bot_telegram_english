@@ -6,7 +6,10 @@ export const BRANDING = {
     "Academia care te ajuta sa treci de la nesiguranta la engleza vorbita liber si folosita pentru crestere profesionala.",
 };
 
-export const TEMP_SHARED_VIDEO_FILE = "Lofi Girl - Snowman (Music Video).mp4";
+export const SERVICE_VIDEO_FILES = {
+  teachingMethod: "Video_metda_depredare!.mp4",
+  aboutAcademy: "",
+} as const;
 
 export const LEAD_LEVEL_OPTIONS = ["Incepator", "Elementar", "Intermediar", "Nu stiu"] as const;
 
@@ -69,19 +72,7 @@ export const PUBLIC_ENTRY_LABELS: Record<PublicEntryKey, string> = Object.fromEn
 export const STATIC_PAGES = {
   welcome: {
     title: "Buna, bine ai venit la Express English Academy",
-    body: [
-      "Unica academie care te transforma dintr-o persoana nesigura pe sine intr-o persoana care vorbeste liber engleza si face bani datorita ei.",
-      "",
-      "Alege din meniul de mai jos serviciul de care ai nevoie:",
-      "",
-      "1. Cum scap de frica de vorbire in engleza (link webinar)",
-      "2. Metoda de predare (video)",
-      "3. Despre academie (video)",
-      "4. Servicii (website)",
-      "5. Incearca 3 zile gratuite de engleza dupa metoda noastra",
-      "6. Ia legatura cu operatorul",
-      "7. Consultatie astrologica de cariera",
-    ].join("\n"),
+    body: "Unica academie care te ajuta sa vorbesti engleza liber, cu incredere si cu rezultat real.",
   },
   academy: {
     title: "Despre academie",
@@ -89,8 +80,6 @@ export const STATIC_PAGES = {
       "Express English Academy este construita pentru oameni care vor sa vorbeasca engleza clar, cu incredere si cu rezultat real in viata profesionala.",
       "",
       "Accentul este pe vorbire, claritate, exercitiu aplicat si progres sustenabil.",
-      "",
-      "Scopul nu este doar sa inveti reguli, ci sa poti comunica liber si sa transformi engleza intr-un avantaj real.",
     ].join("\n"),
   },
   programs: {
@@ -151,15 +140,12 @@ export const STATIC_PAGES = {
   },
   operator: {
     title: "Ia legatura cu operatorul",
-    body: [
-      "Daca vrei ghidare rapida, apasa pe butonul de mai jos si te conectam cu operatorul sau intri direct in flow-ul de calificare.",
-    ].join("\n"),
+    body: "Daca vrei ghidare rapida, apasa butonul de mai jos si te conectam cu operatorul.",
   },
   astrology: {
     title: "Consultatie astrologica de cariera",
-    body: [
-      "Daca vrei o discutie dedicata despre directia ta profesionala si cum poate engleza sa te ajute, poti deschide consultatia astrologica de cariera din linkul configurat.",
-    ].join("\n"),
+    body:
+      "Daca vrei o discutie dedicata despre directia ta profesionala si cum poate engleza sa te ajute, poti deschide consultatia din linkul configurat.",
   },
   mistakes: {
     title: "TOP 5 greseli",
@@ -174,15 +160,11 @@ export const STATIC_PAGES = {
   },
   career: {
     title: "Engleza pentru cariera",
-    body: [
-      "Cursurile sunt gandite si pentru situatii profesionale reale: interviuri, emailuri, sedinte, prezentari si comunicare mai sigura.",
-    ].join("\n"),
+    body: "Cursurile sunt gandite si pentru interviuri, emailuri, sedinte, prezentari si comunicare mai sigura.",
   },
   busy_people: {
     title: "Engleza pentru oameni ocupati",
-    body: [
-      "Lectii scurte, follow-up automat si ritm sustenabil pentru persoane cu program incarcat.",
-    ].join("\n"),
+    body: "Lectii scurte, follow-up automat si ritm sustenabil pentru persoane cu program incarcat.",
   },
 } as const;
 
@@ -190,24 +172,24 @@ export const LESSON_SEED_CONTENT = [
   {
     dayNumber: 1,
     key: "free-day-1",
-    title: "Lectia 1 - Start rapid",
+    title: "Lectia 1 - Present Simple",
     messageText:
-      "In prima lectie intri direct in ritm: expresii simple, pronuntie si incredere pentru primele raspunsuri in engleza.",
-    mediaType: "video_file",
-    mediaUrl: TEMP_SHARED_VIDEO_FILE,
+      "In prima lectie intri direct in ritm. Urmareste materialul si apoi rezolva testul scurt pentru Present Simple.",
+    mediaType: "video_link",
+    mediaUrl: "https://drive.google.com/file/d/18hSQtwISv180c_DZrz09ji7V81dDPqL8/view?usp=drivesdk",
     cta: [
-      { label: "📞 Vreau la curs", action: "wants_course" },
       { label: "📚 Lectiile tale", action: "lessons" },
+      { label: "📞 Vreau la curs", action: "wants_course" },
     ],
   },
   {
     dayNumber: 2,
     key: "free-day-2",
-    title: "Lectia 2 - Engleza de zi cu zi",
+    title: "Lectia 2 - Daily routine",
     messageText:
-      "Astazi consolidam raspunsurile de baza si fluiditatea. Scopul este sa simti progres clar, nu informatie fara context.",
-    mediaType: "video_file",
-    mediaUrl: TEMP_SHARED_VIDEO_FILE,
+      "Lectia a doua consolideaza raspunsurile de baza si vocabularul de zi cu zi. Se deschide automat dupa 24 de ore.",
+    mediaType: "video_link",
+    mediaUrl: "https://drive.google.com/file/d/1b40m6Nn7zKknrzMuDiDQRFWogmTz9GhZ/view?usp=drivesdk",
     cta: [
       { label: "📚 Lectiile tale", action: "lessons" },
       { label: "📞 Vreau la curs", action: "wants_course" },
@@ -216,14 +198,92 @@ export const LESSON_SEED_CONTENT = [
   {
     dayNumber: 3,
     key: "free-day-3",
-    title: "Lectia 3 - Urmatorul pas",
+    title: "Lectia 3 - Next step",
     messageText:
-      "Ai ajuns la finalul seriei gratuite. Daca vrei un plan aplicat pentru obiectivul tau, intra in flow-ul de calificare si iti pregatim urmatorul pas.",
-    mediaType: "video_file",
-    mediaUrl: TEMP_SHARED_VIDEO_FILE,
+      "Ai ajuns la finalul seriei gratuite. Urmareste lectia si apoi intra in flow-ul de calificare daca vrei programul complet.",
+    mediaType: "video_link",
+    mediaUrl: "https://drive.google.com/file/d/14XdideiSad-wIeVOYfLWNHBoU8_GBqVp/view?usp=drivesdk",
     cta: [
       { label: "📞 Vreau la curs", action: "wants_course" },
       { label: "🤖 Intreaba AI-ul nostru", action: "ask_ai" },
     ],
+  },
+] as const;
+
+export const LESSON_ONE_QUIZ = [
+  {
+    question: "I ___ coffee every morning.",
+    options: ["drink", "drinks", "drinking"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "She ___ in London.",
+    options: ["live", "lives", "living"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "We ___ pizza on Friday.",
+    options: ["eats", "eat", "eating"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "My brother ___ home at 6 pm.",
+    options: ["go", "goes", "going"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "They ___ English very well.",
+    options: ["speaks", "speak", "speaking"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "I ___ work on Sunday.",
+    options: ["don't", "doesn't", "not"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "She ___ drink coffee.",
+    options: ["don't", "doesn't", "not"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "___ you work today?",
+    options: ["Do", "Does", "Are"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "___ she speak English?",
+    options: ["Do", "Does", "Is"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "We ___ the bus to work.",
+    options: ["take", "takes", "taking"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "I ___ bread every day.",
+    options: ["buy", "buys", "buying"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "He ___ sport every weekend.",
+    options: ["do", "does", "doing"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "She ___ music in the evening.",
+    options: ["listen", "listens", "listening"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "___ you live in London?",
+    options: ["Do", "Does", "Are"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "They ___ breakfast at 8 am.",
+    options: ["eat", "eats", "eating"],
+    correctOptionIndex: 0,
   },
 ] as const;

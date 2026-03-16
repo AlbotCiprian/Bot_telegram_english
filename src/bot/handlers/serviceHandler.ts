@@ -1,19 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
-import { prisma } from "../../db/client.js";
-import { BRANDING, PublicEntryKey, PUBLIC_ENTRY_LABELS, STATIC_PAGES, TEMP_SHARED_VIDEO_FILE } from "../../content/staticContent.js";
 import { Context, Input, Markup } from "telegraf";
-import { getMainMenuKeyboard, getBackToMenuKeyboard } from "../menu.js";
+import { prisma } from "../../db/client.js";
+import { BRANDING, PUBLIC_ENTRY_LABELS, PublicEntryKey, SERVICE_VIDEO_FILES, STATIC_PAGES } from "../../content/staticContent.js";
+import { logUserEvent } from "../../services/eventService.js";
+import { getLessonsMenu, deliverLesson } from "../../services/lessonService.js";
+import { scheduleFreeLessonCampaign } from "../../services/schedulerService.js";
 import { BotUser } from "../../types/bot.js";
 import { config } from "../../utils/config.js";
-import { getLessonsMenu } from "../../services/lessonService.js";
-import { scheduleFreeLessonCampaign } from "../../services/schedulerService.js";
-import { deliverLesson } from "../../services/lessonService.js";
-import { logUserEvent } from "../../services/eventService.js";
+import { getMainMenuKeyboard } from "../menu.js";
 
 const LOCAL_VIDEO_DIR = path.resolve(process.cwd(), "video");
 
-function resolveLocalVideoPath(fileName = TEMP_SHARED_VIDEO_FILE): string {
+function resolveLocalVideoPath(fileName: string): string {
   return path.resolve(LOCAL_VIDEO_DIR, fileName);
 }
 
@@ -72,20 +71,32 @@ async function replyWithSharedVideo(
     body: string;
     action: PublicEntryKey;
     showLessons: boolean;
+    fileName: string;
   },
 ): Promise<void> {
-  const localVideoPath = resolveLocalVideoPath();
+  const localVideoPath = resolveLocalVideoPath(params.fileName);
   const caption = `*${params.title}*\n\n${params.body}`;
   const replyMarkup = buildServiceActionButtons(params.action, params.showLessons).reply_markup;
 
   if (fs.existsSync(localVideoPath)) {
-    await ctx.replyWithVideo(Input.fromLocalFile(localVideoPath), {
-      caption,
-      parse_mode: "Markdown",
-      supports_streaming: true,
-      reply_markup: replyMarkup,
-    });
-    return;
+    try {
+      await ctx.replyWithVideo(Input.fromLocalFile(localVideoPath), {
+        caption,
+        parse_mode: "Markdown",
+        supports_streaming: true,
+        reply_markup: replyMarkup,
+      });
+      return;
+    } catch {
+      await ctx.reply(
+        `${caption}\n\nVideo-ul final trebuie inlocuit cu un MP4 optimizat pentru redare directa in Telegram.`,
+        {
+          parse_mode: "Markdown",
+          reply_markup: replyMarkup,
+        },
+      );
+      return;
+    }
   }
 
   await ctx.reply(caption, {
@@ -112,14 +123,13 @@ export async function startFreeLessonsForUser(ctx: Context, userId: number): Pro
     return;
   }
 
-  const onboardingCompletedAt = currentUser.onboardingCompletedAt ?? new Date();
-  const lesson2UnlockTime = new Date(onboardingCompletedAt.getTime() + 24 * 60 * 60 * 1000);
-  const lesson3UnlockTime = new Date(onboardingCompletedAt.getTime() + 48 * 60 * 60 * 1000);
+  const activationTime = new Date();
+  const lesson2UnlockTime = new Date(activationTime.getTime() + 24 * 60 * 60 * 1000);
+  const lesson3UnlockTime = new Date(activationTime.getTime() + 48 * 60 * 60 * 1000);
 
   await prisma.user.update({
     where: { id: userId },
     data: {
-      onboardingCompletedAt,
       lesson1Unlocked: true,
       lesson2Unlocked: false,
       lesson3Unlocked: false,
@@ -163,14 +173,23 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       body: STATIC_PAGES.method.body,
       action,
       showLessons,
+      fileName: SERVICE_VIDEO_FILES.teachingMethod,
     });
   } else if (action === "about_academy") {
-    await replyWithSharedVideo(ctx, {
-      title: STATIC_PAGES.academy.title,
-      body: STATIC_PAGES.academy.body,
-      action,
-      showLessons,
-    });
+    if (SERVICE_VIDEO_FILES.aboutAcademy) {
+      await replyWithSharedVideo(ctx, {
+        title: STATIC_PAGES.academy.title,
+        body: STATIC_PAGES.academy.body,
+        action,
+        showLessons,
+        fileName: SERVICE_VIDEO_FILES.aboutAcademy,
+      });
+    } else {
+      await ctx.reply(buildStaticPageMessage("academy"), {
+        parse_mode: "Markdown",
+        reply_markup: buildServiceActionButtons(action, showLessons).reply_markup,
+      });
+    }
   } else if (action === "services") {
     await ctx.reply(buildStaticPageMessage("programs"), {
       parse_mode: "Markdown",
