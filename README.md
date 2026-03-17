@@ -47,3 +47,4 @@ Pentru VPS foloseste:
 - `Dockerfile.prod`
 - `docker-compose.prod.yml`
 - `.env.vps.example` -> copie in `.env.vps`
+- `Local Bot API Server` in acelasi compose pentru video mari

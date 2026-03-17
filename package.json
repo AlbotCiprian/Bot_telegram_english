@@ -21,6 +21,7 @@
     "crawl": "tsx src/crawler/websiteCrawler.ts",
     "embed": "tsx src/crawler/embeddingPipeline.ts",
     "reset:local-state": "tsx src/scripts/resetLocalState.ts",
+    "telegram:logout-cloud": "tsx src/scripts/logoutTelegramCloud.ts",
     "test:e2e-local": "vitest run",
     "verify:ai": "tsx src/scripts/verifyAi.ts",
     "verify:deepseek": "tsx src/scripts/verifyDeepSeek.ts",

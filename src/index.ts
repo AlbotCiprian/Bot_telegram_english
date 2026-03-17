@@ -34,7 +34,13 @@ async function bootstrap(): Promise<void> {
           dropPendingUpdates: false,
         },
         () => {
-          logger.info("Bot Telegram pornit in polling mode.");
+          logger.info(
+            {
+              apiRoot: config.telegramApiRoot,
+              localBotApi: config.telegramUseLocalApi,
+            },
+            "Bot Telegram pornit in polling mode.",
+          );
         },
       )
       .catch(async (error) => {

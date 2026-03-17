@@ -22,6 +22,7 @@ import { handleHelp, handleMenu, handleStart } from "./handlers/startHandler.js"
 import { LeadCaptureStep, SessionPayload } from "../types/session.js";
 import { resetUserForTesting } from "../services/userService.js";
 import { continueRequestedService, isPublicEntryAction } from "./handlers/serviceHandler.js";
+import { getTelegramApiClientOptions } from "../services/telegram.js";
 
 function isTextMessage(ctx: Context): ctx is Context & { message: { text: string } } {
   return "message" in ctx && typeof (ctx.message as { text?: string })?.text === "string";
@@ -41,7 +42,9 @@ function showLessonsInMenu(user: {
 }
 
 export function createBot(): Telegraf<Context> {
-  const bot = new Telegraf<Context>(config.TELEGRAM_BOT_TOKEN);
+  const bot = new Telegraf<Context>(config.TELEGRAM_BOT_TOKEN, {
+    telegram: getTelegramApiClientOptions(),
+  });
 
   bot.use(async (ctx, next) => {
     if (!ctx.from) {

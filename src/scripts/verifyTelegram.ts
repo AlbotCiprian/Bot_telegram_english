@@ -1,7 +1,7 @@
 import { config, isConfigured } from "../utils/config.js";
 
 async function callTelegram(method: string): Promise<unknown> {
-  const response = await fetch(`https://api.telegram.org/bot${config.TELEGRAM_BOT_TOKEN}/${method}`);
+  const response = await fetch(`${config.telegramApiRoot}/bot${config.TELEGRAM_BOT_TOKEN}/${method}`);
   const payload = (await response.json()) as {
     ok: boolean;
     result?: unknown;
@@ -34,6 +34,7 @@ async function main(): Promise<void> {
   };
 
   console.log("Telegram OK");
+  console.log(`api_root=${config.telegramApiRoot}`);
   console.log(`bot_id=${me.id}`);
   console.log(`username=@${me.username}`);
   console.log(`name=${me.first_name}`);
@@ -45,7 +46,7 @@ async function main(): Promise<void> {
   if (webhookInfo.url) {
     console.log("");
     console.log("Atentie: proiectul local foloseste polling mode.");
-    console.log(`Sterge webhook-ul curent cu: https://api.telegram.org/bot${config.TELEGRAM_BOT_TOKEN}/deleteWebhook`);
+    console.log(`Sterge webhook-ul curent cu: ${config.telegramApiRoot}/bot${config.TELEGRAM_BOT_TOKEN}/deleteWebhook`);
   }
 }
 

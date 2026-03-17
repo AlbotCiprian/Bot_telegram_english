@@ -15,6 +15,10 @@ const envSchema = z.object({
   APP_PORT: z.coerce.number().default(3000),
   APP_HOST: z.string().default("0.0.0.0"),
   TELEGRAM_BOT_TOKEN: z.string().default(""),
+  TELEGRAM_API_ROOT: z.string().default(""),
+  TELEGRAM_USE_LOCAL_API: z.enum(["true", "false"]).default("false"),
+  TELEGRAM_LOCAL_API_ID: z.string().default(""),
+  TELEGRAM_LOCAL_API_HASH: z.string().default(""),
   AI_PROVIDER: z.enum(["auto", "groq", "deepseek", "openrouter", "none"]).default("auto"),
   AI_API_KEY: z.string().default(""),
   AI_MODEL: z.string().default(""),
@@ -55,8 +59,18 @@ const envSchema = z.object({
 
 const parsedEnv = envSchema.parse(process.env);
 
+const telegramApiRoot = parsedEnv.TELEGRAM_API_ROOT.trim().length > 0
+  ? parsedEnv.TELEGRAM_API_ROOT.trim()
+  : parsedEnv.TELEGRAM_USE_LOCAL_API === "true"
+    ? parsedEnv.NODE_ENV === "production"
+      ? "http://telegram-bot-api:8081"
+      : "http://localhost:8081"
+    : "https://api.telegram.org";
+
 export const config = {
   ...parsedEnv,
+  telegramUseLocalApi: parsedEnv.TELEGRAM_USE_LOCAL_API === "true",
+  telegramApiRoot,
   kommoBaseUrl: `https://${parsedEnv.KOMMO_SUBDOMAIN}.kommo.com`,
 } as const;
 
