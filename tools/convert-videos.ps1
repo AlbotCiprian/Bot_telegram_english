@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$script:FfmpegCommand = $null
 
 function Get-VideoSizeMb([string]$Path) {
   if (-not (Test-Path $Path)) {
@@ -16,10 +17,33 @@ function Get-VideoSizeMb([string]$Path) {
   return [math]::Round($item.Length / 1MB, 2)
 }
 
+function Resolve-CommandPath([string]$CommandName) {
+  $command = Get-Command $CommandName -ErrorAction SilentlyContinue
+  if ($command) {
+    return $command.Source
+  }
+
+  $wingetLinks = Join-Path $env:LOCALAPPDATA "Microsoft\\WinGet\\Links\\$CommandName.exe"
+  if (Test-Path $wingetLinks) {
+    return $wingetLinks
+  }
+
+  $wingetPackage = Get-ChildItem (Join-Path $env:LOCALAPPDATA "Microsoft\\WinGet\\Packages") -Recurse -Filter "$CommandName.exe" -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+  if ($wingetPackage) {
+    return $wingetPackage.FullName
+  }
+
+  return $null
+}
+
 function Require-Command([string]$CommandName, [string]$InstallHint) {
-  if (-not (Get-Command $CommandName -ErrorAction SilentlyContinue)) {
+  $resolved = Resolve-CommandPath $CommandName
+  if (-not $resolved) {
     throw "Comanda '$CommandName' nu exista in PATH. $InstallHint"
   }
+
+  return $resolved
 }
 
 function Convert-VideoFile(
@@ -69,7 +93,7 @@ function Convert-VideoFile(
     )
   }
 
-  & ffmpeg @arguments
+  & $script:FfmpegCommand @arguments
 
   $outputSizeMb = Get-VideoSizeMb $OutputPath
   Write-Host "Done: $OutputPath ($outputSizeMb MB)" -ForegroundColor Green
@@ -89,7 +113,7 @@ function Find-FirstExistingPath([string[]]$Candidates) {
   return $null
 }
 
-Require-Command -CommandName "ffmpeg" -InstallHint "Instaleaza FFmpeg si apoi ruleaza din nou scriptul. Varianta rapida pe Windows: winget install Gyan.FFmpeg"
+$script:FfmpegCommand = Require-Command -CommandName "ffmpeg" -InstallHint "Instaleaza FFmpeg si apoi ruleaza din nou scriptul. Varianta rapida pe Windows: winget install Gyan.FFmpeg"
 
 $resolvedVideoDir = Resolve-Path $VideoDir
 $videoDirPath = $resolvedVideoDir.Path
