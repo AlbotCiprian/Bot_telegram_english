@@ -2,15 +2,19 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: allengual-postgres
-    command: ["postgres", "-c", "hba_file=/var/lib/postgresql/data/pg_hba.conf"]
     ports:
       - "55432:5432"
     environment:
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: botdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d botdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7
@@ -19,6 +23,11 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   bot:
     build: .
@@ -27,8 +36,10 @@ services:
     env_file:
       - .env.local
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "3000:3000"
     volumes:
@@ -42,8 +53,10 @@ services:
     env_file:
       - .env.local
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - .:/app
       - /app/node_modules

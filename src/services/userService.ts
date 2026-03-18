@@ -12,31 +12,22 @@ type TelegramProfile = {
 
 export async function getOrCreateUser(from: TelegramProfile) {
   const telegramId = BigInt(from.id);
-  const existingUser = await prisma.user.findUnique({
+  return prisma.user.upsert({
     where: { telegramId },
-  });
-
-  if (!existingUser) {
-    return prisma.user.create({
-      data: {
-        telegramId,
-        username: from.username ?? null,
-        firstName: from.first_name ?? null,
-        lastName: from.last_name ?? null,
-        languageCode: from.language_code ?? null,
-        lastInteractionAt: new Date(),
-      },
-    });
-  }
-
-  return prisma.user.update({
-    where: { id: existingUser.id },
-    data: {
+    create: {
+      telegramId,
+      username: from.username ?? null,
+      firstName: from.first_name ?? null,
+      lastName: from.last_name ?? null,
+      languageCode: from.language_code ?? null,
+      lastInteractionAt: new Date(),
+    },
+    update: {
       username: from.username ?? null,
       languageCode: from.language_code ?? null,
       lastInteractionAt: new Date(),
-      firstName: existingUser.firstName ?? from.first_name ?? null,
-      lastName: existingUser.lastName ?? from.last_name ?? null,
+      ...(from.first_name ? { firstName: from.first_name } : {}),
+      ...(from.last_name ? { lastName: from.last_name } : {}),
     },
   });
 }
