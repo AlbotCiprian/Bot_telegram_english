@@ -13,8 +13,7 @@ export type CourseInterestStep =
 
 export type ConsultationRequestStep =
   | "phone"
-  | "reason"
-  | "message";
+  | "reason";
 
 export type AiQuestionStep = "awaiting_question";
 
@@ -38,5 +37,4 @@ export const COURSE_INTEREST_STEPS: CourseInterestStep[] = [
 export const CONSULTATION_REQUEST_STEPS: ConsultationRequestStep[] = [
   "phone",
   "reason",
-  "message",
 ];

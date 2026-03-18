@@ -46,3 +46,8 @@ export async function listContainers(): Promise<DockerContainer[]> {
 export async function restartContainer(containerName: string): Promise<void> {
   await dockerRequest(`/containers/${containerName}/restart?t=10`, "POST");
 }
+
+export async function getContainerLogs(containerName: string, tailLines: number): Promise<string> {
+  const tail = Math.max(tailLines, 1);
+  return dockerRequest(`/containers/${containerName}/logs?stdout=1&stderr=1&tail=${tail}`);
+}

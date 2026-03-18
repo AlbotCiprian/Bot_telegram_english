@@ -4,6 +4,7 @@ import { embedTextLocally, splitIntoChunks } from "../services/vectorService.js"
 import { isValidEmail, isValidPhone, normalizePhone } from "../utils/validators.js";
 import { MAIN_MENU, isMarathonVisible } from "../content/staticContent.js";
 import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
+import { getMainMenuKeyboard, resolveMenuActionFromLabel } from "../bot/menu.js";
 
 describe("local runtime invariants", () => {
   it("exposes the full main menu", () => {
@@ -12,6 +13,25 @@ describe("local runtime invariants", () => {
     expect(MAIN_MENU[1]?.key).toBe("free_lessons");
     expect(MAIN_MENU.some((item) => item.key === "marathon")).toBe(true);
     expect(MAIN_MENU.map((item) => item.key)).not.toContain("about_academy");
+  });
+
+  it("builds the compact reply keyboard layout for the main menu", () => {
+    const keyboard = getMainMenuKeyboard().reply_markup;
+    if (!("keyboard" in keyboard)) {
+      throw new Error("Main menu keyboard nu este ReplyKeyboardMarkup.");
+    }
+
+    const rows = keyboard.keyboard.map((row) =>
+      row.map((button) => (typeof button === "string" ? button : button.text)),
+    );
+
+    expect(rows).toEqual([
+      ["\uD83C\uDF93 3 zile gratuite"],
+      ["\uD83D\uDE80 Maraton Engleza", "\uD83D\uDCDA Lectiile tale"],
+      ["\uD83D\uDDE3\uFE0F Webinar: fara frica", "\uD83C\uDFA5 Metoda noastra"],
+      ["\uD83D\uDCBC Programe si preturi", "\u26A1 Contact operator"],
+      ["\uD83D\uDD2E Consultatie cariera"],
+    ]);
   });
 
   it("normalizes and validates phone numbers", () => {
@@ -61,5 +81,11 @@ describe("local runtime invariants", () => {
 
   it("resolves the local welcome image asset", () => {
     expect(resolveExistingMediaFile("Image_welcome.JPG")).toBeTruthy();
+  });
+
+  it("maps reply keyboard labels back to menu actions", () => {
+    expect(resolveMenuActionFromLabel("\uD83C\uDF93 3 zile gratuite")).toBe("free_lessons");
+    expect(resolveMenuActionFromLabel("\uD83D\uDCDA Lectiile tale")).toBe("lessons");
+    expect(resolveMenuActionFromLabel("\u26A1 Contact operator")).toBe("operator");
   });
 });

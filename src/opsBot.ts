@@ -3,9 +3,14 @@ import { closeResetResources, wipeBotState } from "./services/resetService.js";
 import { config, isConfigured } from "./utils/config.js";
 import { logger } from "./utils/logger.js";
 import {
+  formatHealthStatus,
+  formatJobsStatus,
   formatOpsStatus,
+  formatQueuesStatus,
+  getBotLogTail,
   getDailyReportKey,
   getOpsStatus,
+  getWorkerLogTail,
   hasIncident,
   isDailyReportMoment,
   restartExpressRuntime,
@@ -46,6 +51,15 @@ async function safeReply(ctx: Context, text: string): Promise<void> {
   await ctx.reply(text, {
     parse_mode: "Markdown",
   });
+}
+
+async function safePlainReply(ctx: Context, text: string): Promise<void> {
+  await ctx.reply(text);
+}
+
+function trimForTelegram(text: string): string {
+  const trimmed = text.trim() || "Nu exista output recent.";
+  return trimmed.length > 3900 ? trimmed.slice(trimmed.length - 3900) : trimmed;
 }
 
 async function bootstrapOpsBot(): Promise<void> {
@@ -113,7 +127,13 @@ async function bootstrapOpsBot(): Promise<void> {
           "",
           "Comenzi disponibile:",
           "/status",
+          "/health",
+          "/queues",
+          "/jobs",
+          "/logs_bot",
+          "/logs_worker",
           "/restart_express",
+          "/daily_now",
           "/reset_state CONFIRM",
         ].join("\n"),
       );
@@ -138,7 +158,23 @@ async function bootstrapOpsBot(): Promise<void> {
       return;
     }
 
-    await safeReply(ctx, ["*Ops Bot*", "", "Comenzi disponibile:", "/status", "/restart_express", "/reset_state CONFIRM"].join("\n"));
+    await safeReply(
+      ctx,
+      [
+        "*Ops Bot*",
+        "",
+        "Comenzi disponibile:",
+        "/status",
+        "/health",
+        "/queues",
+        "/jobs",
+        "/logs_bot",
+        "/logs_worker",
+        "/restart_express",
+        "/daily_now",
+        "/reset_state CONFIRM",
+      ].join("\n"),
+    );
   });
 
   bot.command("status", async (ctx) => {
@@ -146,10 +182,40 @@ async function bootstrapOpsBot(): Promise<void> {
     await safeReply(ctx, formatOpsStatus(status));
   });
 
+  bot.command("health", async (ctx) => {
+    const status = await getOpsStatus();
+    await safeReply(ctx, formatHealthStatus(status));
+  });
+
+  bot.command("queues", async (ctx) => {
+    const status = await getOpsStatus();
+    await safeReply(ctx, formatQueuesStatus(status));
+  });
+
+  bot.command("jobs", async (ctx) => {
+    const status = await getOpsStatus();
+    await safePlainReply(ctx, formatJobsStatus(status));
+  });
+
+  bot.command("logs_bot", async (ctx) => {
+    const logs = await getBotLogTail();
+    await safePlainReply(ctx, trimForTelegram(logs));
+  });
+
+  bot.command("logs_worker", async (ctx) => {
+    const logs = await getWorkerLogTail();
+    await safePlainReply(ctx, trimForTelegram(logs));
+  });
+
   bot.command("restart_express", async (ctx) => {
     await ctx.reply("Restart bot + worker in curs...");
     await restartExpressRuntime();
     await ctx.reply("Restart trimis catre containerele Express.");
+  });
+
+  bot.command("daily_now", async (ctx) => {
+    const status = await getOpsStatus();
+    await safeReply(ctx, formatOpsStatus(status));
   });
 
   bot.command("reset_state", async (ctx) => {

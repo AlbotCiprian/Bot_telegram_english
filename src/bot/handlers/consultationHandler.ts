@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { Markup, Context } from "telegraf";
+import { Context } from "telegraf";
 import { prisma } from "../../db/client.js";
 import { PUBLIC_ENTRY_LABELS } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
@@ -9,7 +9,7 @@ import { ensureProfile } from "../../services/userService.js";
 import { BotUser } from "../../types/bot.js";
 import { ConsultationRequestStep, SessionPayload } from "../../types/session.js";
 import { normalizePhone, normalizeWhitespace, isValidPhone } from "../../utils/validators.js";
-import { getMainMenuKeyboard, getPhoneRequestKeyboard, getReasonChoiceKeyboard, getSkipMessageKeyboard } from "../menu.js";
+import { getMainMenuKeyboard, getPhoneRequestKeyboard, getReasonChoiceKeyboard } from "../menu.js";
 
 export type ConsultationRequestType = "operator" | "career_astrology";
 export type ConsultationPriority = "urgent_contact" | "consultation";
@@ -37,7 +37,6 @@ async function replyConsultationStepPrompt(
   ctx: Context,
   service: ConsultationRequestType,
   step: ConsultationRequestStep,
-  options?: { hasSavedPhone?: boolean; presetReason?: string | null },
 ): Promise<void> {
   if (step === "phone") {
     await ctx.reply(`Te rog trimite numarul de telefon pentru ${getServiceTitle(service)}.`, {
@@ -46,17 +45,8 @@ async function replyConsultationStepPrompt(
     return;
   }
 
-  if (step === "reason") {
-    await ctx.reply("Care este motivul principal pentru care vrei sa fii contactat?", {
-      reply_markup: getReasonChoiceKeyboard(CONSULTATION_REASON_OPTIONS[service]).reply_markup,
-    });
-    return;
-  }
-
-  const suffix = options?.presetReason ? `Motiv selectat: ${options.presetReason}\n\n` : "";
-  const phoneHint = options?.hasSavedPhone ? "Vom folosi numarul deja salvat." : "";
-  await ctx.reply(`${suffix}Lasa un mesaj scurt daca vrei mai mult context. ${phoneHint}`.trim(), {
-    reply_markup: getSkipMessageKeyboard().reply_markup,
+  await ctx.reply("Care este motivul principal pentru care vrei sa fii contactat?", {
+    reply_markup: getReasonChoiceKeyboard(CONSULTATION_REASON_OPTIONS[service]).reply_markup,
   });
 }
 
@@ -79,7 +69,7 @@ async function finalizeConsultationRequest(
     requestedService: ConsultationRequestType;
     priority: ConsultationPriority;
     reason: string;
-    message: string | null;
+    message?: string | null;
   },
 ) {
   await ensureProfile(user.id);
@@ -99,7 +89,7 @@ async function finalizeConsultationRequest(
     requestedService: params.requestedService,
     priority: params.priority,
     reason: params.reason,
-    note: params.message,
+    note: params.message ?? null,
     requestKey: crypto.randomUUID(),
   });
 
@@ -110,7 +100,7 @@ async function finalizeConsultationRequest(
       requestedService: params.requestedService,
       priority: params.priority,
       reason: params.reason,
-      message: params.message,
+      message: params.message ?? null,
     },
   });
 
@@ -141,8 +131,17 @@ export async function startConsultationRequestFlow(
     return;
   }
 
-  const nextStep: ConsultationRequestStep =
-    currentUser.phone ? (params.presetReason ? "message" : "reason") : "phone";
+  if (currentUser.phone && params.presetReason) {
+    await finalizeConsultationRequest(ctx, user, {
+      requestedService: params.requestedService,
+      priority: params.priority,
+      reason: params.presetReason,
+      message: null,
+    });
+    return;
+  }
+
+  const nextStep: ConsultationRequestStep = currentUser.phone ? "reason" : "phone";
 
   await setSession({
     userId: user.id,
@@ -156,19 +155,7 @@ export async function startConsultationRequestFlow(
     },
   });
 
-  const intro =
-    params.priority === "urgent_contact"
-      ? "Pornim un formular foarte scurt si trimitem cererea direct in CRM cu prioritate mare."
-      : "Pornim un formular foarte scurt si trimitem cererea direct in CRM.";
-
-  await ctx.reply(intro, {
-    reply_markup: Markup.removeKeyboard().reply_markup,
-  });
-
-  await replyConsultationStepPrompt(ctx, params.requestedService, nextStep, {
-    hasSavedPhone: Boolean(currentUser.phone),
-    presetReason: params.presetReason ?? null,
-  });
+  await replyConsultationStepPrompt(ctx, params.requestedService, nextStep);
 }
 
 export async function resumeConsultationRequest(
@@ -178,9 +165,7 @@ export async function resumeConsultationRequest(
 ): Promise<void> {
   const parsed = parsePayload(payload);
   await ctx.reply("Continuam cererea exact de unde ai ramas.");
-  await replyConsultationStepPrompt(ctx, parsed.requestedService, step, {
-    presetReason: parsed.reason ?? parsed.presetReason,
-  });
+  await replyConsultationStepPrompt(ctx, parsed.requestedService, step);
 }
 
 export async function handleConsultationContactInput(
@@ -198,12 +183,18 @@ export async function handleConsultationContactInput(
     },
   });
 
-  const nextStep: ConsultationRequestStep = parsed.presetReason ? "message" : "reason";
-  await updateSessionStep(user.id, nextStep);
-  await replyConsultationStepPrompt(ctx, parsed.requestedService, nextStep, {
-    hasSavedPhone: true,
-    presetReason: parsed.reason ?? parsed.presetReason,
-  });
+  if (parsed.presetReason || parsed.reason) {
+    await finalizeConsultationRequest(ctx, user, {
+      requestedService: parsed.requestedService,
+      priority: parsed.priority,
+      reason: parsed.reason ?? parsed.presetReason ?? "Cerere generala",
+      message: null,
+    });
+    return;
+  }
+
+  await updateSessionStep(user.id, "reason");
+  await replyConsultationStepPrompt(ctx, parsed.requestedService, "reason");
 }
 
 export async function handleConsultationTextInput(
@@ -232,30 +223,26 @@ export async function handleConsultationTextInput(
       data: { phone: normalizePhone(value) },
     });
 
-    const nextStep: ConsultationRequestStep = parsed.presetReason ? "message" : "reason";
-    await updateSessionStep(user.id, nextStep);
-    await replyConsultationStepPrompt(ctx, parsed.requestedService, nextStep, {
-      hasSavedPhone: true,
-      presetReason: parsed.reason ?? parsed.presetReason,
-    });
+    if (parsed.presetReason || parsed.reason) {
+      await finalizeConsultationRequest(ctx, user, {
+        requestedService: parsed.requestedService,
+        priority: parsed.priority,
+        reason: parsed.reason ?? parsed.presetReason ?? "Cerere generala",
+        message: null,
+      });
+      return;
+    }
+
+    await updateSessionStep(user.id, "reason");
+    await replyConsultationStepPrompt(ctx, parsed.requestedService, "reason");
     return;
   }
 
-  if (step === "reason") {
-    await updateSessionPayload(user.id, { reason: value });
-    await updateSessionStep(user.id, "message");
-    await replyConsultationStepPrompt(ctx, parsed.requestedService, "message", {
-      hasSavedPhone: true,
-      presetReason: value,
-    });
-    return;
-  }
-
-  const finalMessage = value === "Sari peste mesaj" ? null : value;
+  await updateSessionPayload(user.id, { reason: value });
   await finalizeConsultationRequest(ctx, user, {
     requestedService: parsed.requestedService,
     priority: parsed.priority,
-    reason: parsed.reason ?? parsed.presetReason ?? "Cerere generala",
-    message: finalMessage,
+    reason: value,
+    message: null,
   });
 }

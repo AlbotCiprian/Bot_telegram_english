@@ -220,23 +220,11 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       }).reply_markup,
     });
   } else if (action === "operator") {
-    await ctx.reply(buildStaticPageMessage("operator"), {
-      parse_mode: "Markdown",
-      reply_markup: buildActionButtons({
-        showLessons,
-      }).reply_markup,
-    });
     await startConsultationRequestFlow(ctx, user, {
       requestedService: "operator",
       priority: "urgent_contact",
     });
   } else if (action === "career_astrology") {
-    await ctx.reply(buildStaticPageMessage("astrology"), {
-      parse_mode: "Markdown",
-      reply_markup: buildActionButtons({
-        showLessons,
-      }).reply_markup,
-    });
     await startConsultationRequestFlow(ctx, user, {
       requestedService: "career_astrology",
       priority: "consultation",

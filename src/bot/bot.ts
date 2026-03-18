@@ -6,7 +6,7 @@ import { getSession } from "../services/sessionService.js";
 import { getOrCreateUser } from "../services/userService.js";
 import { config } from "../utils/config.js";
 import { logger } from "../utils/logger.js";
-import { buildStaticPageMessage, getBackToMenuKeyboard, getMainMenuKeyboard, getPublicMenuKeyboard, getStartFreeLessonsKeyboard } from "./menu.js";
+import { buildStaticPageMessage, getBackToMenuKeyboard, getMainMenuKeyboard, getPublicMenuKeyboard, getStartFreeLessonsKeyboard, resolveMenuActionFromLabel } from "./menu.js";
 import { handleAiQuestionInput, startAiQuestionFlow } from "./handlers/aiHandler.js";
 import { deliverLesson, getLessonsMenu, getLockedLessonMessage, handleLessonQuiz } from "../services/lessonService.js";
 import {
@@ -60,6 +60,101 @@ async function getContextUser(ctx: Context) {
   const user = await getOrCreateUser(ctx.from);
   (ctx.state as { botUser?: Awaited<ReturnType<typeof getOrCreateUser>> }).botUser = user;
   return user;
+}
+
+async function handleMenuAction(
+  ctx: Context,
+  user: Awaited<ReturnType<typeof getOrCreateUser>>,
+  action: string,
+  session: Awaited<ReturnType<typeof getSession>>,
+) {
+  if (action === "menu") {
+    if (!user.leadFormCompleted) {
+      if (session?.flowType === "lead_capture") {
+        await resumeLeadCapture(ctx, session.step as LeadCaptureStep);
+        return;
+      }
+      if (session?.flowType === "consultation_request") {
+        await resumeConsultationRequest(ctx, session.step as ConsultationRequestStep, (session.payload as SessionPayload | null) ?? {});
+        return;
+      }
+      await handleStart(ctx, user, { showMainMenu: false, showLessons: false });
+      return;
+    }
+
+    await handleMenu(ctx, { showLessons: showLessonsInMenu(user) });
+    return;
+  }
+
+  if (!user.leadFormCompleted && (isPublicEntryAction(action) || action === "lessons" || action === "wants_course" || action === "ask_ai")) {
+    if (session?.flowType === "lead_capture") {
+      await resumeLeadCapture(ctx, session.step as LeadCaptureStep);
+      return;
+    }
+
+    await startLeadCapture(ctx, user, action, {
+      firstRequestedService: isPublicEntryAction(action) ? action : null,
+    });
+    return;
+  }
+
+  if (isPublicEntryAction(action)) {
+    await continueRequestedService(ctx, user, action);
+    return;
+  }
+
+  if (action === "marathon_price") {
+    await startConsultationRequestFlow(ctx, user, {
+      requestedService: "operator",
+      priority: "urgent_contact",
+      presetReason: "Pret maraton",
+    });
+    return;
+  }
+
+  if (action === "lessons") {
+    const lessonsMenu = await getLessonsMenu(user.id);
+    await ctx.reply(lessonsMenu.text, {
+      parse_mode: "Markdown",
+      reply_markup: lessonsMenu.replyMarkup,
+    });
+    return;
+  }
+
+  if (action === "wants_course") {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.id },
+    });
+
+    if (!currentUser?.leadFormCompleted) {
+      await ctx.reply("Inainte de flow-ul comercial, am nevoie de datele de contact de baza.");
+      await startLeadCapture(ctx, user, "wants_course");
+      return;
+    }
+
+    await startCourseInterestFlow(ctx, user);
+    return;
+  }
+
+  if (action === "ask_ai") {
+    await startAiQuestionFlow(ctx, user);
+    return;
+  }
+
+  if (action === "website") {
+    await ctx.reply(STATIC_PAGES.website.body, {
+      reply_markup: getBackToMenuKeyboard(showLessonsInMenu(user)).reply_markup,
+    });
+    return;
+  }
+
+  const staticPageKeys = ["programs", "method", "mistakes", "career", "busy_people"] as const;
+  if (staticPageKeys.includes(action as (typeof staticPageKeys)[number])) {
+    await ctx.reply(buildStaticPageMessage(action as keyof typeof STATIC_PAGES), {
+      parse_mode: "Markdown",
+      reply_markup: getBackToMenuKeyboard(showLessonsInMenu(user)).reply_markup,
+    });
+  }
 }
 
 export function createBot(): Telegraf<Context> {
@@ -134,94 +229,7 @@ export function createBot(): Telegraf<Context> {
     }
     const action = ctx.match[1];
     const session = await getSession(user.id);
-
-    if (action === "menu") {
-      if (!user.leadFormCompleted) {
-        if (session?.flowType === "lead_capture") {
-          await resumeLeadCapture(ctx, session.step as LeadCaptureStep);
-          return;
-        }
-        if (session?.flowType === "consultation_request") {
-          await resumeConsultationRequest(ctx, session.step as ConsultationRequestStep, (session.payload as SessionPayload | null) ?? {});
-          return;
-        }
-        await handleStart(ctx, user, { showMainMenu: false, showLessons: false });
-        return;
-      }
-
-      await handleMenu(ctx, { showLessons: showLessonsInMenu(user) });
-      return;
-    }
-
-    if (!user.leadFormCompleted && (isPublicEntryAction(action) || action === "lessons" || action === "wants_course" || action === "ask_ai")) {
-      if (session?.flowType === "lead_capture") {
-        await resumeLeadCapture(ctx, session.step as LeadCaptureStep);
-        return;
-      }
-
-      await startLeadCapture(ctx, user, action, {
-        firstRequestedService: isPublicEntryAction(action) ? action : null,
-      });
-      return;
-    }
-
-    if (isPublicEntryAction(action)) {
-      await continueRequestedService(ctx, user, action);
-      return;
-    }
-
-    if (action === "marathon_price") {
-      await startConsultationRequestFlow(ctx, user, {
-        requestedService: "operator",
-        priority: "urgent_contact",
-        presetReason: "Pret maraton",
-      });
-      return;
-    }
-
-    if (action === "lessons") {
-      const lessonsMenu = await getLessonsMenu(user.id);
-      await ctx.reply(lessonsMenu.text, {
-        parse_mode: "Markdown",
-        reply_markup: lessonsMenu.replyMarkup,
-      });
-      return;
-    }
-
-    if (action === "wants_course") {
-      const currentUser = await prisma.user.findUnique({
-        where: { id: user.id },
-      });
-
-      if (!currentUser?.leadFormCompleted) {
-        await ctx.reply("Inainte de flow-ul comercial, am nevoie de datele de contact de baza.");
-        await startLeadCapture(ctx, user, "wants_course");
-        return;
-      }
-
-      await startCourseInterestFlow(ctx, user);
-      return;
-    }
-
-    if (action === "ask_ai") {
-      await startAiQuestionFlow(ctx, user);
-      return;
-    }
-
-    if (action === "website") {
-      await ctx.reply(STATIC_PAGES.website.body, {
-        reply_markup: getBackToMenuKeyboard(showLessonsInMenu(user)).reply_markup,
-      });
-      return;
-    }
-
-    const staticPageKeys = ["programs", "method", "mistakes", "career", "busy_people"] as const;
-    if (staticPageKeys.includes(action as (typeof staticPageKeys)[number])) {
-      await ctx.reply(buildStaticPageMessage(action as keyof typeof STATIC_PAGES), {
-        parse_mode: "Markdown",
-        reply_markup: getBackToMenuKeyboard(showLessonsInMenu(user)).reply_markup,
-      });
-    }
+    await handleMenuAction(ctx, user, action, session);
   });
 
   bot.action(/^consent:(privacy|marketing):(yes|no)$/, async (ctx) => {
@@ -316,6 +324,14 @@ export function createBot(): Telegraf<Context> {
     }
     const session = await getSession(user.id);
     const text = ctx.message.text.trim();
+
+    if (!session?.flowType) {
+      const menuAction = resolveMenuActionFromLabel(text);
+      if (menuAction) {
+        await handleMenuAction(ctx, user, menuAction, session);
+        return;
+      }
+    }
 
     if (!session?.flowType) {
       if (!user.leadFormCompleted) {

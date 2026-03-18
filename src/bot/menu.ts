@@ -9,50 +9,47 @@ function getMenuItem(key: MainMenuKey) {
   return item;
 }
 
-function buildSingleColumnKeyboard(labels: Array<{ label: string; action: string }>) {
-  return Markup.inlineKeyboard(labels.map((item) => [Markup.button.callback(item.label, `menu:${item.action}`)]));
-}
-
-export function getPublicMenuKeyboard() {
-  const items = [{ label: getMenuItem("free_lessons").label, action: "free_lessons" }];
+function buildMainMenuRows(options?: { showAi?: boolean }) {
+  const rows: string[][] = [[getMenuItem("free_lessons").label]];
+  const remainingKeys: MainMenuKey[] = [];
 
   if (isMarathonVisible()) {
-    items.push({ label: getMenuItem("marathon").label, action: "marathon" });
+    remainingKeys.push("marathon");
   }
 
-  items.push({ label: getMenuItem("lessons").label, action: "lessons" });
-
-  return buildSingleColumnKeyboard([
-    ...items,
-    ...PUBLIC_ENTRY_MENU.filter((item) => item.key !== "free_lessons" && item.key !== "marathon").map((item) => ({
-      label: item.label,
-      action: item.key,
-    })),
-  ]);
-}
-
-export function getMainMenuKeyboard(options?: { showLessons?: boolean; showAi?: boolean }) {
-  const rows: Array<Array<ReturnType<typeof Markup.button.callback>>> = [];
-
-  rows.push([Markup.button.callback(getMenuItem("free_lessons").label, "menu:free_lessons")]);
-  if (isMarathonVisible()) {
-    rows.push([Markup.button.callback(getMenuItem("marathon").label, "menu:marathon")]);
-  }
-  rows.push([Markup.button.callback(getMenuItem("lessons").label, "menu:lessons")]);
+  remainingKeys.push("lessons");
 
   for (const item of PUBLIC_ENTRY_MENU.filter((entry) => entry.key !== "free_lessons" && entry.key !== "marathon")) {
-    rows.push([Markup.button.callback(item.label, `menu:${item.key}`)]);
+    remainingKeys.push(item.key);
   }
 
   if (options?.showAi) {
-    rows.push([Markup.button.callback(getMenuItem("ask_ai").label, "menu:ask_ai")]);
+    remainingKeys.push("ask_ai");
   }
 
-  return Markup.inlineKeyboard(rows);
+  for (let index = 0; index < remainingKeys.length; index += 2) {
+    rows.push(remainingKeys.slice(index, index + 2).map((key) => getMenuItem(key).label));
+  }
+
+  return rows;
+}
+
+export function getPublicMenuKeyboard() {
+  return Markup.keyboard(buildMainMenuRows()).resize();
+}
+
+export function getMainMenuKeyboard(options?: { showLessons?: boolean; showAi?: boolean }) {
+  return Markup.keyboard(buildMainMenuRows({ showAi: options?.showAi })).resize();
 }
 
 export function getStartFreeLessonsKeyboard() {
   return getPublicMenuKeyboard();
+}
+
+export function resolveMenuActionFromLabel(label: string): MainMenuKey | null {
+  const normalizedLabel = label.trim();
+  const match = MAIN_MENU.find((entry) => entry.label === normalizedLabel);
+  return match?.key ?? null;
 }
 
 export function getBackToMenuKeyboard(_showLessons = false) {
@@ -80,10 +77,6 @@ export function getPhoneRequestKeyboard() {
 
 export function getReasonChoiceKeyboard(options: string[]) {
   return Markup.keyboard(options.map((option) => [option])).resize().oneTime();
-}
-
-export function getSkipMessageKeyboard() {
-  return Markup.keyboard([["Sari peste mesaj"]]).resize().oneTime();
 }
 
 export function buildStaticPageMessage(pageKey: keyof typeof STATIC_PAGES): string {
