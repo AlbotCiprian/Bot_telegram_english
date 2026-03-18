@@ -28,7 +28,7 @@ export const PUBLIC_ENTRY_MENU = [
   },
   {
     key: "marathon",
-    label: "🚀 Maraton 21 zile",
+    label: "🚀 Maraton Engleza",
   },
   {
     key: "fear_speaking",
