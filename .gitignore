@@ -14,3 +14,5 @@ npm-debug.log*
 src/db/prisma/dev.db
 src/db/prisma/dev.db-journal
 src/db/prisma/migrations/**/migration_lock.toml.tmp
+video/*.mp4
+video/*.mov
