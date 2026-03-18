@@ -63,6 +63,7 @@ const envSchema = z.object({
   MARATHON_PREMIUM_TERM: z.string().default(""),
   MARATHON_VIP_PRICE: z.string().default(""),
   MARATHON_VIP_TERM: z.string().default(""),
+  WELCOME_IMAGE_PATH: z.string().default("video/Image_welcome.JPG"),
   WELCOME_IMAGE_URL: z
     .string()
     .default("https://www.expres.allengual.md/assets/favicon/web-app-manifest-192x192.png"),

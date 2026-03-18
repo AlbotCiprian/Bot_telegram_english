@@ -51,6 +51,7 @@ Completezi neaparat:
 - `TELEGRAM_LOCAL_API_HASH`
 - `GROQ_API_KEY`
 - toate valorile `KOMMO_*`
+- `WELCOME_IMAGE_PATH`
 - `MONITOR_BOT_TOKEN`
 - `MONITOR_ALLOWED_USER_IDS`
 - `MONITOR_ALERT_CHAT_ID`
@@ -65,6 +66,7 @@ DATABASE_URL=postgresql://postgres:postgres@postgres:5432/botdb?schema=public
 REDIS_URL=redis://redis:6379
 LESSON_DELAY_MODE=prod
 NODE_ENV=production
+WELCOME_IMAGE_PATH=/app/video/Image_welcome.JPG
 ```
 
 Pentru CRM si monitoring:
@@ -104,6 +106,7 @@ Scriptul:
 In folderul proiectului, botul cauta:
 
 ```text
+video/Image_welcome.JPG
 video/lesson-1.mp4
 video/lesson-2.mp4
 video/lesson-3.mp4
@@ -187,3 +190,4 @@ docker compose --env-file .env.vps -f docker-compose.prod.yml up -d
 - `Contact operator` merge in `Consultation Requested Urgent`
 - `Consultatie cariera` merge in `Consultation Requested`
 - `ops-bot` poate fi restrictionat simultan prin `MONITOR_ALLOWED_USER_IDS` si parola din `MONITOR_ACCESS_PASSWORD`
+- `WELCOME_IMAGE_PATH` trebuie sa pointeze spre imaginea locala montata in `/app/video/Image_welcome.JPG`

@@ -26,6 +26,8 @@
     "reset:bot-state": "tsx src/scripts/resetLocalState.ts",
     "telegram:logout-cloud": "tsx src/scripts/logoutTelegramCloud.ts",
     "test:e2e-local": "vitest run",
+    "audit:local": "tsx src/scripts/auditLocalReadiness.ts",
+    "smoke:crm": "tsx src/scripts/smokeCrmFlow.ts",
     "verify:ai": "tsx src/scripts/verifyAi.ts",
     "verify:deepseek": "tsx src/scripts/verifyDeepSeek.ts",
     "verify:telegram": "tsx src/scripts/verifyTelegram.ts",

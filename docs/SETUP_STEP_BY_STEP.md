@@ -18,6 +18,10 @@ NODE_ENV=development
 APP_PORT=3000
 APP_HOST=0.0.0.0
 TELEGRAM_BOT_TOKEN=
+TELEGRAM_API_ROOT=http://telegram-bot-api:8081
+TELEGRAM_USE_LOCAL_API=true
+TELEGRAM_LOCAL_API_ID=
+TELEGRAM_LOCAL_API_HASH=
 AI_PROVIDER=groq
 AI_API_KEY=
 AI_MODEL=
@@ -44,6 +48,7 @@ KOMMO_CUSTOM_FIELD_SOURCE=
 KOMMO_CUSTOM_FIELD_LAST_ACTIVITY=
 LESSON_DELAY_MODE=dev
 WEBSITE_SOURCE_URL=https://www.expres.allengual.md/
+WELCOME_IMAGE_PATH=video/Image_welcome.JPG
 EMBEDDING_DIMENSION=384
 LOG_LEVEL=info
 ```
@@ -255,18 +260,12 @@ Codul curent foloseste provider AI configurabil, vezi [src/services/aiService.ts
 ## 7. Pornirea proiectului
 
 ```powershell
-docker compose up -d postgres redis
+docker compose --env-file .env.local up -d postgres redis telegram-bot-api
 npm install
 npm run prisma:generate
 npm run prisma:migrate
 npm run prisma:seed
-npm run dev
-```
-
-In alt terminal:
-
-```powershell
-npm run worker
+docker compose --env-file .env.local up -d bot worker ops-bot
 ```
 
 Verificari:

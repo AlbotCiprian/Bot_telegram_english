@@ -10,6 +10,7 @@ const MEDIA_FILE_ALIASES: Record<string, string[]> = {
   "method.mp4": ["method.mp4", "Video_metda_depredare!.mp4"],
   "academy.mp4": ["academy.mp4", "Despre academie.mp4", "Despre_academie.mp4"],
   "webinar-fear.mp4": ["webinar-fear.mp4", "Webinar_fear_speaking.mp4"],
+  "Image_welcome.JPG": ["Image_welcome.JPG", "Image_welcome.jpg", "welcome.jpg", "welcome.jpeg"],
 };
 
 function getCandidateFileNames(fileName: string): string[] {
@@ -24,6 +25,11 @@ export function resolveExistingMediaFile(fileName: string): string | null {
 
   if (path.isAbsolute(fileName) && fs.existsSync(fileName) && fs.statSync(fileName).isFile()) {
     return fileName;
+  }
+
+  const projectRelative = path.resolve(process.cwd(), fileName);
+  if (fs.existsSync(projectRelative) && fs.statSync(projectRelative).isFile()) {
+    return projectRelative;
   }
 
   for (const candidate of getCandidateFileNames(fileName)) {

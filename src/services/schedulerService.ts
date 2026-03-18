@@ -24,22 +24,22 @@ export type CrmJobPayload =
 
 function buildCampaignJobId(payload: CampaignJobPayload): string {
   if (payload.type === "lesson_unlock") {
-    return `campaign:${payload.userId}:${payload.type}:${payload.dayNumber}`;
+    return `campaign__${payload.userId}__${payload.type}__${payload.dayNumber}`;
   }
 
   if (payload.type === "lesson_nudge") {
-    return `campaign:${payload.userId}:${payload.type}:${payload.dayNumber}:${payload.afterHours}`;
+    return `campaign__${payload.userId}__${payload.type}__${payload.dayNumber}__${payload.afterHours}`;
   }
 
-  return `campaign:${payload.userId}:${payload.type}`;
+  return `campaign__${payload.userId}__${payload.type}`;
 }
 
 function buildCrmJobId(payload: CrmJobPayload): string {
   if (payload.action === "request_consultation") {
-    return `crm:${payload.userId}:${payload.action}:${payload.requestedService}:${payload.requestKey}`;
+    return `crm__${payload.userId}__${payload.action}__${payload.requestedService}__${payload.requestKey}`;
   }
 
-  return `crm:${payload.userId}:${payload.action}`;
+  return `crm__${payload.userId}__${payload.action}`;
 }
 
 export async function scheduleFreeLessonCampaign(userId: number): Promise<void> {

@@ -36,6 +36,8 @@ Bot Telegram local-first pentru Express English Academy.
 - `npm run reset:bot-state`
 - `npm run test:e2e-local`
 - `npm run verify:ai`
+- `npm run audit:local`
+- `npm run smoke:crm`
 
 ## Documentatie
 

@@ -1,8 +1,10 @@
-import { Context } from "telegraf";
+import { Context, Input } from "telegraf";
 import { STATIC_PAGES } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
 import { BotUser } from "../../types/bot.js";
 import { config } from "../../utils/config.js";
+import { logger } from "../../utils/logger.js";
+import { resolveExistingMediaFile } from "../../utils/mediaAssets.js";
 import { buildHelpMessage, getMainMenuKeyboard, getPublicMenuKeyboard } from "../menu.js";
 
 function buildWelcomeCaption(showMainMenu: boolean, showLessons: boolean): string {
@@ -19,20 +21,38 @@ async function replyWelcomeCard(ctx: Context, caption: string, showMainMenu: boo
   const replyMarkup = showMainMenu
     ? getMainMenuKeyboard({ showLessons }).reply_markup
     : getPublicMenuKeyboard().reply_markup;
+  const localWelcomeImage = resolveExistingMediaFile(config.WELCOME_IMAGE_PATH);
 
-  try {
-    await ctx.replyWithPhoto(config.WELCOME_IMAGE_URL, {
-      caption,
-      parse_mode: "Markdown",
-      reply_markup: replyMarkup,
-    });
-    return;
-  } catch {
-    await ctx.reply(caption, {
-      parse_mode: "Markdown",
-      reply_markup: replyMarkup,
-    });
+  if (localWelcomeImage) {
+    try {
+      await ctx.replyWithPhoto(Input.fromLocalFile(localWelcomeImage), {
+        caption,
+        parse_mode: "Markdown",
+        reply_markup: replyMarkup,
+      });
+      return;
+    } catch (error) {
+      logger.warn({ err: error, localWelcomeImage }, "Nu am putut trimite welcome image din fisier local.");
+    }
   }
+
+  if (config.WELCOME_IMAGE_URL.trim()) {
+    try {
+      await ctx.replyWithPhoto(config.WELCOME_IMAGE_URL, {
+        caption,
+        parse_mode: "Markdown",
+        reply_markup: replyMarkup,
+      });
+      return;
+    } catch (error) {
+      logger.warn({ err: error }, "Nu am putut trimite welcome image din URL.");
+    }
+  }
+
+  await ctx.reply(caption, {
+    parse_mode: "Markdown",
+    reply_markup: replyMarkup,
+  });
 }
 
 export async function handleStart(

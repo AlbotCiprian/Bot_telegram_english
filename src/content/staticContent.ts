@@ -1,5 +1,7 @@
 import { config } from "../utils/config.js";
 
+const MARATHON_TIMEZONE = "Europe/Chisinau";
+
 export const BRANDING = {
   schoolName: "Express English Academy",
   websiteUrl: "https://www.expres.allengual.md/",
@@ -23,6 +25,20 @@ export const LEAD_GOAL_OPTIONS = [
   "Dezvoltare personala",
 ] as const;
 
+function buildDateKey(date: Date, timeZone = MARATHON_TIMEZONE): string {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = formatter.formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value ?? "0000";
+  const month = parts.find((part) => part.type === "month")?.value ?? "00";
+  const day = parts.find((part) => part.type === "day")?.value ?? "00";
+  return `${year}-${month}-${day}`;
+}
+
 function parseOptionalDate(value: string): Date | null {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -33,6 +49,20 @@ function parseOptionalDate(value: string): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+function parseOptionalDateKey(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  const parsed = parseOptionalDate(trimmed);
+  return parsed ? buildDateKey(parsed) : null;
+}
+
 function formatDateLabel(date: Date): string {
   return new Intl.DateTimeFormat("ro-RO", {
     day: "2-digit",
@@ -41,16 +71,20 @@ function formatDateLabel(date: Date): string {
   }).format(date);
 }
 
-export function isMarathonVisible(now = new Date()): boolean {
-  const start = parseOptionalDate(config.MARATHON_START_DATE);
-  const end = parseOptionalDate(config.MARATHON_END_DATE);
+export function isMarathonVisible(
+  now = new Date(),
+  overrides?: { startDate?: string; endDate?: string },
+): boolean {
+  const start = parseOptionalDateKey(overrides?.startDate ?? config.MARATHON_START_DATE);
+  const end = parseOptionalDateKey(overrides?.endDate ?? config.MARATHON_END_DATE);
 
   if (!start && !end) {
     return true;
   }
 
-  const afterStart = !start || now >= start;
-  const beforeEnd = !end || now <= end;
+  const nowKey = buildDateKey(now);
+  const afterStart = !start || nowKey >= start;
+  const beforeEnd = !end || nowKey <= end;
   return afterStart && beforeEnd;
 }
 

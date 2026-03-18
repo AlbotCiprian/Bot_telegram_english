@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { getDelayMap } from "../utils/schedule.js";
 import { embedTextLocally, splitIntoChunks } from "../services/vectorService.js";
 import { isValidEmail, isValidPhone, normalizePhone } from "../utils/validators.js";
-import { MAIN_MENU } from "../content/staticContent.js";
+import { MAIN_MENU, isMarathonVisible } from "../content/staticContent.js";
+import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
 
 describe("local runtime invariants", () => {
   it("exposes the full main menu", () => {
@@ -42,5 +43,23 @@ describe("local runtime invariants", () => {
     const delays = getDelayMap();
     expect(delays.lesson2Ms).toBeGreaterThan(0);
     expect(delays.longReminderMs).toBeGreaterThan(delays.lesson3Ms);
+  });
+
+  it("shows marathon by default when no visibility window is set", () => {
+    expect(isMarathonVisible()).toBe(true);
+  });
+
+  it("treats marathon start and end dates as inclusive Chisinau calendar days", () => {
+    const window = {
+      startDate: "2026-04-10",
+      endDate: "2026-04-30",
+    };
+    expect(isMarathonVisible(new Date("2026-04-10T00:01:00+03:00"), window)).toBe(true);
+    expect(isMarathonVisible(new Date("2026-04-30T23:59:00+03:00"), window)).toBe(true);
+    expect(isMarathonVisible(new Date("2026-05-01T00:00:00+03:00"), window)).toBe(false);
+  });
+
+  it("resolves the local welcome image asset", () => {
+    expect(resolveExistingMediaFile("Image_welcome.JPG")).toBeTruthy();
   });
 });

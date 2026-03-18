@@ -3,13 +3,14 @@
 ## Modul 1 - Foundation
 
 1. Copiaza `.env.example` in `.env.local`.
-2. Porneste serviciile locale cu `docker compose up -d postgres redis`.
+2. Porneste serviciile locale cu `docker compose --env-file .env.local up -d postgres redis telegram-bot-api`.
 3. Instaleaza dependintele cu `npm install`.
 4. Ruleaza `npm run prisma:generate`.
 5. Ruleaza `npm run prisma:migrate`.
 6. Ruleaza `npm run prisma:seed`.
-6. Ruleaza `npm run dev` si `npm run worker`.
+6. Ruleaza `docker compose --env-file .env.local up -d bot worker ops-bot`.
 7. Verifica `http://localhost:3000/health`.
+8. Ruleaza `npm run audit:local`.
 
 Rezultat asteptat: raspuns JSON cu `status: "ok"`.
 
@@ -38,6 +39,7 @@ Rezultat asteptat: raspuns JSON cu `status: "ok"`.
 2. Completeaza din nou formularul cu un user nou.
 3. Verifica tabelul `crm_sync_logs`.
 4. Confirma lead-ul in Kommo.
+5. Optional, ruleaza `npm run smoke:crm` pentru un smoke test real de create/update/stage in Kommo.
 
 ## Modul 6 - Crawl
 

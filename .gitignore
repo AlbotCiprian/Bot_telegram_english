@@ -16,3 +16,4 @@ src/db/prisma/dev.db-journal
 src/db/prisma/migrations/**/migration_lock.toml.tmp
 video/*.mp4
 video/*.mov
+!video/Image_welcome.JPG
