@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "worker": "tsx watch src/worker.ts",
+    "ops-bot": "tsx watch src/opsBot.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "start:worker": "node dist/worker.js",

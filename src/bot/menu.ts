@@ -1,7 +1,7 @@
 import { Markup } from "telegraf";
-import { MAIN_MENU, PUBLIC_ENTRY_MENU, STATIC_PAGES } from "../content/staticContent.js";
+import { MAIN_MENU, MainMenuKey, PUBLIC_ENTRY_MENU, STATIC_PAGES, isMarathonVisible } from "../content/staticContent.js";
 
-function getMenuItem(key: (typeof MAIN_MENU)[number]["key"]) {
+function getMenuItem(key: MainMenuKey) {
   const item = MAIN_MENU.find((entry) => entry.key === key);
   if (!item) {
     throw new Error(`Menu item lipseste pentru cheia ${key}.`);
@@ -14,10 +14,16 @@ function buildSingleColumnKeyboard(labels: Array<{ label: string; action: string
 }
 
 export function getPublicMenuKeyboard() {
+  const items = [{ label: getMenuItem("free_lessons").label, action: "free_lessons" }];
+
+  if (isMarathonVisible()) {
+    items.push({ label: getMenuItem("marathon").label, action: "marathon" });
+  }
+
+  items.push({ label: getMenuItem("lessons").label, action: "lessons" });
+
   return buildSingleColumnKeyboard([
-    { label: getMenuItem("free_lessons").label, action: "free_lessons" },
-    { label: getMenuItem("marathon").label, action: "marathon" },
-    { label: getMenuItem("lessons").label, action: "lessons" },
+    ...items,
     ...PUBLIC_ENTRY_MENU.filter((item) => item.key !== "free_lessons" && item.key !== "marathon").map((item) => ({
       label: item.label,
       action: item.key,
@@ -29,7 +35,9 @@ export function getMainMenuKeyboard(options?: { showLessons?: boolean; showAi?: 
   const rows: Array<Array<ReturnType<typeof Markup.button.callback>>> = [];
 
   rows.push([Markup.button.callback(getMenuItem("free_lessons").label, "menu:free_lessons")]);
-  rows.push([Markup.button.callback(getMenuItem("marathon").label, "menu:marathon")]);
+  if (isMarathonVisible()) {
+    rows.push([Markup.button.callback(getMenuItem("marathon").label, "menu:marathon")]);
+  }
   rows.push([Markup.button.callback(getMenuItem("lessons").label, "menu:lessons")]);
 
   for (const item of PUBLIC_ENTRY_MENU.filter((entry) => entry.key !== "free_lessons" && entry.key !== "marathon")) {

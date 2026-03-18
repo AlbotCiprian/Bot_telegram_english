@@ -19,7 +19,19 @@ type SendVideoAssetParams = {
   options: VideoSendOptions;
   uploadNoticeText?: string;
   missingFileText?: string;
+  uploadFailedText?: string;
 };
+
+type SendVideoAssetStatus = "cached" | "uploaded" | "missing" | "failed";
+
+function getTelegramErrorDescription(error: unknown): string | null {
+  if (!error || typeof error !== "object") {
+    return null;
+  }
+
+  const response = (error as { response?: { description?: string } }).response;
+  return typeof response?.description === "string" ? response.description : null;
+}
 
 function extractTelegramFileId(message: unknown): { fileId?: string; uniqueId?: string } {
   if (!message || typeof message !== "object") {
@@ -49,7 +61,7 @@ export function buildMediaAssetKey(scope: string, fileName: string): string {
   return `${scope}:${fileName}`;
 }
 
-export async function sendVideoAsset(params: SendVideoAssetParams): Promise<"cached" | "uploaded" | "missing"> {
+export async function sendVideoAsset(params: SendVideoAssetParams): Promise<SendVideoAssetStatus> {
   const telegram = getTelegramClient();
   const cachedAsset = await prisma.telegramMediaAsset.findUnique({
     where: { assetKey: params.assetKey },
@@ -78,7 +90,27 @@ export async function sendVideoAsset(params: SendVideoAssetParams): Promise<"cac
     await telegram.sendMessage(params.chatId, params.uploadNoticeText);
   }
 
-  const message = await telegram.sendVideo(params.chatId, Input.fromLocalFile(params.localFilePath), params.options);
+  let message: Awaited<ReturnType<typeof telegram.sendVideo>>;
+  try {
+    message = await telegram.sendVideo(params.chatId, Input.fromLocalFile(params.localFilePath), params.options);
+  } catch (error) {
+    logger.error({ err: error, assetKey: params.assetKey }, "Upload-ul video din fisier local a esuat.");
+
+    if (params.uploadFailedText) {
+      const description = getTelegramErrorDescription(error);
+      await telegram.sendMessage(
+        params.chatId,
+        description ? `${params.uploadFailedText}\n\nDetaliu Telegram: ${description}` : params.uploadFailedText,
+        {
+          parse_mode: params.options.parse_mode,
+          reply_markup: params.options.reply_markup,
+        },
+      );
+    }
+
+    return "failed";
+  }
+
   const uploadedFile = extractTelegramFileId(message);
 
   if (uploadedFile.fileId) {

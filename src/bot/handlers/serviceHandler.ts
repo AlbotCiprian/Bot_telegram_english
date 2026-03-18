@@ -1,6 +1,6 @@
 import { Context, Markup } from "telegraf";
 import { prisma } from "../../db/client.js";
-import { BRANDING, PUBLIC_ENTRY_LABELS, PublicEntryKey, SERVICE_VIDEO_FILES, STATIC_PAGES } from "../../content/staticContent.js";
+import { BRANDING, PUBLIC_ENTRY_LABELS, PublicEntryKey, SERVICE_VIDEO_FILES, STATIC_PAGES, isMarathonVisible } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
 import { deliverLesson, getLessonsMenu } from "../../services/lessonService.js";
 import { scheduleFreeLessonCampaign } from "../../services/schedulerService.js";
@@ -181,6 +181,10 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
   if (action === "free_lessons") {
     await startFreeLessonsForUser(ctx, user.id);
   } else if (action === "marathon") {
+    if (!isMarathonVisible()) {
+      await ctx.reply("Maraton Engleza nu este activ in aceasta perioada. Revino in intervalul configurat.");
+      return;
+    }
     await ctx.reply(buildStaticPageMessage("marathon"), {
       parse_mode: "Markdown",
       reply_markup: buildActionButtons({

@@ -197,6 +197,8 @@ async function sendLessonBody(params: {
       sourceFileName: params.mediaUrl,
       uploadNoticeText: "Pregatesc lectia video. Prima incarcare poate dura cateva secunde.",
       missingFileText: `${caption}\n\nVideo-ul pentru aceasta lectie trebuie copiat in folderul video/ pe server.`,
+      uploadFailedText:
+        "Nu am putut livra video-ul acestei lectii in configuratia curenta. Pentru fisierele mari, activeaza Local Bot API Server si incearca din nou.",
       options: {
         caption,
         parse_mode: "Markdown",
@@ -205,7 +207,11 @@ async function sendLessonBody(params: {
       },
     });
 
-    if (status !== "missing") {
+    if (status !== "missing" && status !== "failed") {
+      return;
+    }
+
+    if (status === "failed") {
       return;
     }
   }

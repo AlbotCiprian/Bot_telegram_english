@@ -51,6 +51,18 @@ const envSchema = z.object({
   WEBINAR_URL: z.string().default("https://youtu.be/yBGyEyWSCMg?si=1wLJkhP2Mpmv5dVY"),
   OPERATOR_CONTACT_URL: z.string().default("https://www.expres.allengual.md/"),
   ASTROLOGY_CONSULTATION_URL: z.string().default("https://www.expres.allengual.md/"),
+  MARATHON_START_DATE: z.string().default(""),
+  MARATHON_END_DATE: z.string().default(""),
+  MARATHON_BASIC_PRICE: z.string().default(""),
+  MARATHON_BASIC_TERM: z.string().default(""),
+  MARATHON_SILVER_PRICE: z.string().default(""),
+  MARATHON_SILVER_TERM: z.string().default(""),
+  MARATHON_GOLD_PRICE: z.string().default(""),
+  MARATHON_GOLD_TERM: z.string().default(""),
+  MARATHON_PREMIUM_PRICE: z.string().default(""),
+  MARATHON_PREMIUM_TERM: z.string().default(""),
+  MARATHON_VIP_PRICE: z.string().default(""),
+  MARATHON_VIP_TERM: z.string().default(""),
   WELCOME_IMAGE_URL: z
     .string()
     .default("https://www.expres.allengual.md/assets/favicon/web-app-manifest-192x192.png"),
@@ -75,10 +87,13 @@ const envSchema = z.object({
 
 const parsedEnv = envSchema.parse(process.env);
 
+const usingDockerComposeNetwork =
+  parsedEnv.DATABASE_URL.includes("@postgres:") || parsedEnv.REDIS_URL.includes("redis://redis");
+
 const telegramApiRoot = parsedEnv.TELEGRAM_API_ROOT.trim().length > 0
   ? parsedEnv.TELEGRAM_API_ROOT.trim()
   : parsedEnv.TELEGRAM_USE_LOCAL_API === "true"
-    ? parsedEnv.NODE_ENV === "production"
+    ? parsedEnv.NODE_ENV === "production" || usingDockerComposeNetwork
       ? "http://telegram-bot-api:8081"
       : "http://localhost:8081"
     : "https://api.telegram.org";

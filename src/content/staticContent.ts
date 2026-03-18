@@ -1,3 +1,5 @@
+import { config } from "../utils/config.js";
+
 export const BRANDING = {
   schoolName: "Express English Academy",
   websiteUrl: "https://www.expres.allengual.md/",
@@ -21,36 +23,182 @@ export const LEAD_GOAL_OPTIONS = [
   "Dezvoltare personala",
 ] as const;
 
+function parseOptionalDate(value: string): Date | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatDateLabel(date: Date): string {
+  return new Intl.DateTimeFormat("ro-RO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+export function isMarathonVisible(now = new Date()): boolean {
+  const start = parseOptionalDate(config.MARATHON_START_DATE);
+  const end = parseOptionalDate(config.MARATHON_END_DATE);
+
+  if (!start && !end) {
+    return true;
+  }
+
+  const afterStart = !start || now >= start;
+  const beforeEnd = !end || now <= end;
+  return afterStart && beforeEnd;
+}
+
+function buildMarathonPeriodLabel(): string {
+  const start = parseOptionalDate(config.MARATHON_START_DATE);
+  const end = parseOptionalDate(config.MARATHON_END_DATE);
+
+  if (start && end) {
+    return `Perioada activa: ${formatDateLabel(start)} - ${formatDateLabel(end)}.`;
+  }
+
+  if (start) {
+    return `Perioada activa incepe la ${formatDateLabel(start)}.`;
+  }
+
+  if (end) {
+    return `Perioada activa este deschisa pana la ${formatDateLabel(end)}.`;
+  }
+
+  return "Programul incepe dupa 10 aprilie si ruleaza pe parcursul a cateva saptamani.";
+}
+
+function buildMarathonPackageBlock(params: {
+  title: string;
+  price: string;
+  term: string;
+  bullets: string[];
+}): string[] {
+  const lines = [`*${params.title}*`];
+
+  if (params.price.trim()) {
+    lines.push(`Pret: ${params.price.trim()}`);
+  }
+
+  if (params.term.trim()) {
+    lines.push(`Termen: ${params.term.trim()}`);
+  }
+
+  for (const bullet of params.bullets) {
+    lines.push(`- ${bullet}`);
+  }
+
+  lines.push("");
+  return lines;
+}
+
+function buildMarathonBody(): string {
+  return [
+    "Program intensiv de 21 de zile, cu 21 de lectii scurte de 2-3 minute si exercitii interactive dupa fiecare lectie.",
+    "",
+    "Potrivit pentru nivelurile 0 - B1 si construit pentru practica zilnica, rezultate rapide si mai multa incredere in vorbire.",
+    "",
+    buildMarathonPeriodLabel(),
+    "",
+    "*Pachete disponibile*",
+    ...buildMarathonPackageBlock({
+      title: "Basic",
+      price: config.MARATHON_BASIC_PRICE,
+      term: config.MARATHON_BASIC_TERM,
+      bullets: ["acces complet la maraton (21 lectii + exercitii interactive)"],
+    }),
+    ...buildMarathonPackageBlock({
+      title: "Silver",
+      price: config.MARATHON_SILVER_PRICE,
+      term: config.MARATHON_SILVER_TERM,
+      bullets: [
+        "acces complet la maraton",
+        "meditatie audio cu afirmatii pozitive in engleza",
+        "acces la chat suport cu Victoria",
+      ],
+    }),
+    ...buildMarathonPackageBlock({
+      title: "Gold",
+      price: config.MARATHON_GOLD_PRICE,
+      term: config.MARATHON_GOLD_TERM,
+      bullets: [
+        "acces complet la maraton",
+        "meditatie audio cu afirmatii pozitive in engleza",
+        "chat suport cu Victoria",
+        "consultanta astrologica EXPRESS de cariera",
+      ],
+    }),
+    ...buildMarathonPackageBlock({
+      title: "Premium",
+      price: config.MARATHON_PREMIUM_PRICE,
+      term: config.MARATHON_PREMIUM_TERM,
+      bullets: [
+        "tot din Gold",
+        'acces la webinar LIVE din 21 aprilie: "Cum a construit un imperiu educational de la credite"',
+      ],
+    }),
+    ...buildMarathonPackageBlock({
+      title: "VIP (doar 5 locuri)",
+      price: config.MARATHON_VIP_PRICE,
+      term: config.MARATHON_VIP_TERM,
+      bullets: ["tot din Premium", "consultanta individuala 1 la 1 cu Victoria"],
+    }),
+    "Accesul la maraton, meditatie si webinar este valabil 6 luni.",
+    "",
+    "Pentru pret, apasa pe butonul de mai jos si iti deschidem imediat cererea in CRM.",
+  ].join("\n");
+}
+
+export const PUBLIC_ENTRY_LABELS = {
+  free_lessons: "🎓 3 zile gratuite",
+  marathon: "🚀 Maraton Engleza",
+  fear_speaking: "🗣️ Webinar: fara frica",
+  teaching_method: "🎥 Metoda noastra",
+  services: "💼 Programe si preturi",
+  operator: "⚡ Contact operator",
+  career_astrology: "🔮 Consultatie cariera",
+} as const;
+
+export type PublicEntryKey = keyof typeof PUBLIC_ENTRY_LABELS;
+
+const marathonMenuEntries = isMarathonVisible()
+  ? ([{ key: "marathon", label: PUBLIC_ENTRY_LABELS.marathon }] as const)
+  : ([] as const);
+
 export const PUBLIC_ENTRY_MENU = [
   {
     key: "free_lessons",
-    label: "🎓 3 zile gratuite",
+    label: PUBLIC_ENTRY_LABELS.free_lessons,
   },
-  {
-    key: "marathon",
-    label: "🚀 Maraton Engleza",
-  },
+  ...marathonMenuEntries,
   {
     key: "fear_speaking",
-    label: "🗣️ Webinar: fara frica",
+    label: PUBLIC_ENTRY_LABELS.fear_speaking,
   },
   {
     key: "teaching_method",
-    label: "🎥 Metoda noastra",
+    label: PUBLIC_ENTRY_LABELS.teaching_method,
   },
   {
     key: "services",
-    label: "💼 Programe si preturi",
+    label: PUBLIC_ENTRY_LABELS.services,
   },
   {
     key: "operator",
-    label: "⚡ Contact operator",
+    label: PUBLIC_ENTRY_LABELS.operator,
   },
   {
     key: "career_astrology",
-    label: "🔮 Consultatie cariera",
+    label: PUBLIC_ENTRY_LABELS.career_astrology,
   },
 ] as const;
+
+export type MainMenuKey = "lessons" | PublicEntryKey | "ask_ai";
 
 export const MAIN_MENU = [
   {
@@ -64,57 +212,19 @@ export const MAIN_MENU = [
   },
 ] as const;
 
-export type PublicEntryKey = (typeof PUBLIC_ENTRY_MENU)[number]["key"];
-
-export const PUBLIC_ENTRY_LABELS: Record<PublicEntryKey, string> = Object.fromEntries(
-  PUBLIC_ENTRY_MENU.map((item) => [item.key, item.label]),
-) as Record<PublicEntryKey, string>;
-
 export const STATIC_PAGES = {
   welcome: {
     title: "Buna, bine ai venit la Express English Academy",
     body:
-      "Alege intre 3 lectii gratuite sau Maratonul de 21 de zile si pornim rapid, cu un onboarding scurt si clar.",
+      "Alege intre 3 lectii gratuite sau Maraton Engleza si pornim rapid, cu un onboarding scurt si clar.",
   },
   academy: {
     title: "Despre academie",
     body: "Express English Academy este pentru oameni care vor sa vorbeasca engleza clar, aplicat si cu incredere.",
   },
   marathon: {
-    title: "Maratonul «Vorbeste engleza fluent EXPRESS»",
-    body: [
-      "Program intensiv de 21 de zile, cu 21 de lectii scurte de 2-3 minute si exercitii interactive dupa fiecare lectie.",
-      "",
-      "Potrivit pentru nivelurile 0 - B1 si construit pentru practica zilnica, rezultate rapide si mai multa incredere in vorbire.",
-      "",
-      "*Pachete disponibile*",
-      "🔹 *Basic*",
-      "– acces complet la maraton (21 lectii + exercitii interactive)",
-      "",
-      "🔘 *Silver*",
-      "– acces complet la maraton",
-      "– meditatie audio cu afirmatii pozitive in engleza",
-      "– acces la chat suport cu Victoria",
-      "",
-      "🔸 *Gold*",
-      "– acces complet la maraton",
-      "– meditatie audio cu afirmatii pozitive in engleza",
-      "– chat suport cu Victoria",
-      "– consultanta astrologica EXPRESS de cariera",
-      "",
-      "🔺 *Premium*",
-      "– tot din Gold",
-      "– acces la webinar LIVE din 21 aprilie: «Cum a construit un imperiu educational de la credite»",
-      "",
-      "🟤 *VIP* (doar 5 locuri)",
-      "– tot din Premium",
-      "– consultanta individuala 1 la 1 cu Victoria",
-      "",
-      "Accesul la maraton, meditatie si webinar este valabil 6 luni.",
-      "Programul incepe dupa 10 aprilie si ruleaza pe parcursul a cateva saptamani.",
-      "",
-      "Pentru pret, apasa pe butonul de mai jos si iti deschidem imediat cererea in CRM.",
-    ].join("\n"),
+    title: 'Maratonul "Vorbeste engleza fluent EXPRESS"',
+    body: buildMarathonBody(),
   },
   programs: {
     title: "Programe si preturi",
