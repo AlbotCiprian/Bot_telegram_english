@@ -9,13 +9,32 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
   }));
 
   fastify.get("/admin/stats", async () => {
-    const [users, formsCompleted, lessonsSent, aiQuestions, crmSuccess, crmFailed] = await Promise.all([
+    const [users, formsCompleted, lessonsSent, aiQuestions, crmSuccess, crmFailed, urgentRequests, consultRequests, mediaCache] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { leadFormCompleted: true } }),
       prisma.userEvent.count({ where: { eventType: "lesson_delivered" } }),
       prisma.userEvent.count({ where: { eventType: "ai_question_answered" } }),
       prisma.crmSyncLog.count({ where: { status: "success" } }),
       prisma.crmSyncLog.count({ where: { status: "failed" } }),
+      prisma.crmSyncLog.count({
+        where: {
+          action: "request_consultation",
+          requestPayload: {
+            path: ["priority"],
+            equals: "urgent_contact",
+          },
+        },
+      }),
+      prisma.crmSyncLog.count({
+        where: {
+          action: "request_consultation",
+          requestPayload: {
+            path: ["priority"],
+            equals: "consultation",
+          },
+        },
+      }),
+      prisma.telegramMediaAsset.count(),
     ]);
 
     return {
@@ -25,6 +44,9 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
       aiQuestions,
       crmSuccess,
       crmFailed,
+      urgentRequests,
+      consultRequests,
+      mediaCache,
     };
   });
 

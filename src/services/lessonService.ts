@@ -1,11 +1,12 @@
 import { User } from "@prisma/client";
-import { Input, Markup } from "telegraf";
+import { Markup } from "telegraf";
 import { prisma } from "../db/client.js";
 import { LESSON_ONE_QUIZ } from "../content/staticContent.js";
 import { logUserEvent } from "./eventService.js";
 import { getTelegramClient } from "./telegram.js";
 import { scheduleCampaignJob } from "./schedulerService.js";
 import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
+import { buildMediaAssetKey, sendVideoAsset } from "./mediaAssetService.js";
 
 type LessonDay = 1 | 2 | 3;
 type UnlockDay = 2 | 3;
@@ -188,14 +189,25 @@ async function sendLessonBody(params: {
   const caption = [`*${params.title}*`, "", params.messageText].join("\n");
   const localVideoPath = params.mediaUrl ? resolveExistingMediaFile(params.mediaUrl) : null;
 
-  if (localVideoPath) {
-    await telegram.sendVideo(params.chatId, Input.fromLocalFile(localVideoPath), {
-      caption,
-      parse_mode: "Markdown",
-      supports_streaming: true,
-      reply_markup: buildDeliveredLessonKeyboard(params.dayNumber).reply_markup,
+  if (params.mediaUrl) {
+    const status = await sendVideoAsset({
+      chatId: params.chatId,
+      assetKey: buildMediaAssetKey("lesson", params.mediaUrl),
+      localFilePath: localVideoPath,
+      sourceFileName: params.mediaUrl,
+      uploadNoticeText: "Pregatesc lectia video. Prima incarcare poate dura cateva secunde.",
+      missingFileText: `${caption}\n\nVideo-ul pentru aceasta lectie trebuie copiat in folderul video/ pe server.`,
+      options: {
+        caption,
+        parse_mode: "Markdown",
+        supports_streaming: true,
+        reply_markup: buildDeliveredLessonKeyboard(params.dayNumber).reply_markup,
+      },
     });
-    return;
+
+    if (status !== "missing") {
+      return;
+    }
   }
 
   await telegram.sendMessage(
@@ -208,9 +220,147 @@ async function sendLessonBody(params: {
   );
 }
 
+async function sendCourseFollowUp(chatId: string): Promise<void> {
+  const telegram = getTelegramClient();
+  await telegram.sendMessage(
+    chatId,
+    "Felicitari! Ai terminat cele 3 lectii gratuite.\n\nVrei sa vezi ce program ti se potriveste?",
+    {
+      reply_markup: buildCourseCtaKeyboard().reply_markup,
+    },
+  );
+}
+
+async function markLessonCompletion(userId: number, dayNumber: LessonDay, lessonKey: string) {
+  await logUserEvent({
+    userId,
+    eventType: "lesson_delivered",
+    metadata: {
+      dayNumber,
+      lessonKey,
+    },
+  });
+}
+
+export async function getLessonVideoCacheStats() {
+  return prisma.telegramMediaAsset.count({
+    where: {
+      assetKey: {
+        startsWith: "lesson:",
+      },
+    },
+  });
+}
+
+export async function getTotalMediaCacheStats() {
+  return prisma.telegramMediaAsset.count();
+}
+
+export async function markLessonOpened(userId: number, dayNumber: LessonDay): Promise<void> {
+  await prisma.lessonProgress.upsert({
+    where: {
+      userId_dayNumber: {
+        userId,
+        dayNumber,
+      },
+    },
+    update: {
+      openedAt: new Date(),
+    },
+    create: {
+      userId,
+      dayNumber,
+      openedAt: new Date(),
+      videoSentAt: new Date(),
+      quizAvailableAt: new Date(Date.now() + QUIZ_UNLOCK_DELAY_MS),
+    },
+  });
+}
+
+export async function markLessonVideoSent(userId: number, dayNumber: LessonDay): Promise<void> {
+  const now = new Date();
+  await prisma.lessonProgress.upsert({
+    where: {
+      userId_dayNumber: {
+        userId,
+        dayNumber,
+      },
+    },
+    update: {
+      videoSentAt: now,
+      openedAt: now,
+      quizAvailableAt: new Date(now.getTime() + QUIZ_UNLOCK_DELAY_MS),
+    },
+    create: {
+      userId,
+      dayNumber,
+      videoSentAt: now,
+      openedAt: now,
+      quizAvailableAt: new Date(now.getTime() + QUIZ_UNLOCK_DELAY_MS),
+    },
+  });
+}
+
+export async function sendLessonMedia(
+  chatId: string,
+  dayNumber: LessonDay,
+  title: string,
+  messageText: string,
+  mediaUrl: string | null,
+) {
+  await sendLessonBody({
+    chatId,
+    dayNumber,
+    title,
+    messageText,
+    mediaUrl,
+  });
+}
+
+export async function sendReminder(userId: number, kind: "follow_up" | "inactive" | "long_reminder"): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { profile: true },
+  });
+
+  if (!user) {
+    return;
+  }
+
+  if (user.profile?.consultationWanted) {
+    return;
+  }
+
+  if (user.profile && !user.profile.consentMarketing && kind !== "follow_up") {
+    return;
+  }
+
+  const reminderMap = {
+    follow_up: "Cum ti s-au parut primele lectii? Daca vrei continuarea potrivita, apasa pe Vreau la curs.",
+    inactive: "Ai deja urmatoarea lectie disponibila. Deschide botul si continua in cateva minute.",
+    long_reminder: "Daca vrei sa revii la engleza intr-un ritm clar si sustenabil, iti reactivam imediat traseul potrivit.",
+  };
+
+  const telegram = getTelegramClient();
+  await telegram.sendMessage(user.telegramId.toString(), reminderMap[kind], {
+    reply_markup: Markup.inlineKeyboard([
+      [Markup.button.callback("📞 Vreau la curs", "menu:wants_course")],
+      [Markup.button.callback("📚 Lectiile tale", "menu:lessons")],
+      [Markup.button.callback("⬅️ Meniul principal", "menu:menu")],
+    ]).reply_markup,
+  });
+
+  await logUserEvent({
+    userId,
+    eventType: "reminder_sent",
+    metadata: {
+      kind,
+    },
+  });
+}
+
 async function sendLessonOneQuiz(chatId: string): Promise<void> {
   const telegram = getTelegramClient();
-
   await telegram.sendMessage(
     chatId,
     "📝 Tema 1 - Present Simple\n\nRaspunde la intrebarile de mai jos direct in Telegram.",
@@ -410,26 +560,11 @@ export async function deliverLesson(userId: number, dayNumber: LessonDay): Promi
     },
   });
 
-  await ensureLessonProgress(userId, dayNumber);
-
-  await logUserEvent({
-    userId,
-    eventType: "lesson_delivered",
-    metadata: {
-      dayNumber,
-      lessonKey: lesson.key,
-    },
-  });
+  await markLessonVideoSent(userId, dayNumber);
+  await markLessonCompletion(userId, dayNumber, lesson.key);
 
   if (dayNumber === 3) {
-    const telegram = getTelegramClient();
-    await telegram.sendMessage(
-      user.telegramId.toString(),
-      "Felicitari! Ai terminat cele 3 lectii gratuite.\n\nVrei sa vezi ce program ti se potriveste?",
-      {
-        reply_markup: buildCourseCtaKeyboard().reply_markup,
-      },
-    );
+    await sendCourseFollowUp(user.telegramId.toString());
   }
 }
 
@@ -544,44 +679,6 @@ export async function sendLessonNudge(userId: number, dayNumber: UnlockDay, afte
     metadata: {
       dayNumber,
       afterHours,
-    },
-  });
-}
-
-export async function sendReminder(userId: number, kind: "follow_up" | "inactive" | "long_reminder"): Promise<void> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: { profile: true },
-  });
-
-  if (!user) {
-    return;
-  }
-
-  if (user.profile && !user.profile.consentMarketing && kind !== "follow_up") {
-    return;
-  }
-
-  const reminderMap = {
-    follow_up: "Cum ti s-au parut lectiile gratuite? Daca vrei continuarea potrivita, apasa pe Vreau la curs.",
-    inactive: "Daca vrei sa revii la engleza, seria gratuita te asteapta in bot.",
-    long_reminder: "Mai vrei sa continui cu engleza intr-un ritm sustenabil? Apasa pe Vreau la curs.",
-  };
-
-  const telegram = getTelegramClient();
-  await telegram.sendMessage(user.telegramId.toString(), reminderMap[kind], {
-    reply_markup: Markup.inlineKeyboard([
-      [Markup.button.callback("📞 Vreau la curs", "menu:wants_course")],
-      [Markup.button.callback("📚 Lectiile tale", "menu:lessons")],
-      [Markup.button.callback("⬅️ Meniul principal", "menu:menu")],
-    ]).reply_markup,
-  });
-
-  await logUserEvent({
-    userId,
-    eventType: "reminder_sent",
-    metadata: {
-      kind,
     },
   });
 }

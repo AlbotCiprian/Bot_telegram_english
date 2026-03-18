@@ -12,6 +12,11 @@ export async function processCrmJob(job: Job<CrmJobPayload>): Promise<void> {
   }
 
   if (job.data.action === "request_consultation") {
-    await requestConsultationInKommo(job.data.userId, job.data.requestedService);
+    await requestConsultationInKommo(job.data.userId, {
+      requestedService: job.data.requestedService,
+      priority: job.data.priority,
+      reason: job.data.reason,
+      note: job.data.note,
+    });
   }
 }

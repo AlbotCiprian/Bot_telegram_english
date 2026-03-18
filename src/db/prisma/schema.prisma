@@ -185,6 +185,18 @@ model CrmSyncLog {
   @@map("crm_sync_logs")
 }
 
+model TelegramMediaAsset {
+  id                   Int      @id @default(autoincrement())
+  assetKey             String   @unique @map("asset_key")
+  telegramFileId       String   @map("telegram_file_id")
+  telegramFileUniqueId String?  @map("telegram_file_unique_id")
+  sourceFileName       String?  @map("source_file_name")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@map("telegram_media_assets")
+}
+
 model UserEvent {
   id        Int      @id @default(autoincrement())
   userId    Int?     @map("user_id")

@@ -9,6 +9,8 @@ describe("local runtime invariants", () => {
     expect(MAIN_MENU).toHaveLength(9);
     expect(MAIN_MENU[0]?.key).toBe("lessons");
     expect(MAIN_MENU[1]?.key).toBe("free_lessons");
+    expect(MAIN_MENU.some((item) => item.key === "marathon")).toBe(true);
+    expect(MAIN_MENU.map((item) => item.key)).not.toContain("about_academy");
   });
 
   it("normalizes and validates phone numbers", () => {

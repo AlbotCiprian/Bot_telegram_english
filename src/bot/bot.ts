@@ -3,7 +3,7 @@ import { prisma } from "../db/client.js";
 import { STATIC_PAGES } from "../content/staticContent.js";
 import { logUserEvent } from "../services/eventService.js";
 import { getSession } from "../services/sessionService.js";
-import { getOrCreateUser, touchUser } from "../services/userService.js";
+import { getOrCreateUser } from "../services/userService.js";
 import { config } from "../utils/config.js";
 import { logger } from "../utils/logger.js";
 import { buildStaticPageMessage, getBackToMenuKeyboard, getMainMenuKeyboard, getPublicMenuKeyboard, getStartFreeLessonsKeyboard } from "./menu.js";
@@ -19,10 +19,16 @@ import {
   startLeadCapture,
 } from "./handlers/leadHandler.js";
 import { handleHelp, handleMenu, handleStart } from "./handlers/startHandler.js";
-import { LeadCaptureStep, SessionPayload } from "../types/session.js";
+import { ConsultationRequestStep, LeadCaptureStep, SessionPayload } from "../types/session.js";
 import { resetUserForTesting } from "../services/userService.js";
 import { continueRequestedService, isPublicEntryAction } from "./handlers/serviceHandler.js";
 import { getTelegramApiClientOptions } from "../services/telegram.js";
+import {
+  handleConsultationContactInput,
+  handleConsultationTextInput,
+  resumeConsultationRequest,
+  startConsultationRequestFlow,
+} from "./handlers/consultationHandler.js";
 
 function isTextMessage(ctx: Context): ctx is Context & { message: { text: string } } {
   return "message" in ctx && typeof (ctx.message as { text?: string })?.text === "string";
@@ -41,6 +47,21 @@ function showLessonsInMenu(user: {
   return Boolean(user.lesson1Unlocked || user.lesson2Unlocked || user.lesson3Unlocked || (user.currentLessonDay ?? 0) > 0);
 }
 
+async function getContextUser(ctx: Context) {
+  const cached = (ctx.state as { botUser?: Awaited<ReturnType<typeof getOrCreateUser>> }).botUser;
+  if (cached) {
+    return cached;
+  }
+
+  if (!ctx.from) {
+    return null;
+  }
+
+  const user = await getOrCreateUser(ctx.from);
+  (ctx.state as { botUser?: Awaited<ReturnType<typeof getOrCreateUser>> }).botUser = user;
+  return user;
+}
+
 export function createBot(): Telegraf<Context> {
   const bot = new Telegraf<Context>(config.TELEGRAM_BOT_TOKEN, {
     telegram: getTelegramApiClientOptions(),
@@ -52,16 +73,15 @@ export function createBot(): Telegraf<Context> {
     }
 
     const user = await getOrCreateUser(ctx.from);
-    await touchUser(user.id);
+    (ctx.state as { botUser?: typeof user }).botUser = user;
     await next();
   });
 
   bot.start(async (ctx) => {
-    if (!ctx.from) {
+    const user = await getContextUser(ctx);
+    if (!user) {
       return;
     }
-
-    const user = await getOrCreateUser(ctx.from);
     if (user.leadFormCompleted) {
       await handleStart(ctx, user, {
         showMainMenu: true,
@@ -77,11 +97,10 @@ export function createBot(): Telegraf<Context> {
   });
 
   bot.command("menu", async (ctx) => {
-    if (!ctx.from) {
+    const user = await getContextUser(ctx);
+    if (!user) {
       return;
     }
-
-    const user = await getOrCreateUser(ctx.from);
     if (!user.leadFormCompleted) {
       await handleStart(ctx, user, { showMainMenu: false, showLessons: false });
       return;
@@ -91,16 +110,15 @@ export function createBot(): Telegraf<Context> {
   });
 
   bot.command("help", async (ctx) => {
-    const user = ctx.from ? await getOrCreateUser(ctx.from) : null;
+    const user = await getContextUser(ctx);
     await handleHelp(ctx, user?.id, { showLessons: user ? showLessonsInMenu(user) : false });
   });
 
   bot.command("reset", async (ctx) => {
-    if (!ctx.from) {
+    const user = await getContextUser(ctx);
+    if (!user) {
       return;
     }
-
-    const user = await getOrCreateUser(ctx.from);
     await resetUserForTesting(user.id);
     await ctx.reply(
       "Starea ta locala a fost resetata. Acum poti da din nou /start ca sa testezi onboarding-ul de la zero.",
@@ -110,11 +128,10 @@ export function createBot(): Telegraf<Context> {
   bot.action(/^menu:(.+)$/, async (ctx) => {
     await ctx.answerCbQuery();
 
-    if (!ctx.from) {
+    const user = await getContextUser(ctx);
+    if (!user) {
       return;
     }
-
-    const user = await getOrCreateUser(ctx.from);
     const action = ctx.match[1];
     const session = await getSession(user.id);
 
@@ -122,6 +139,10 @@ export function createBot(): Telegraf<Context> {
       if (!user.leadFormCompleted) {
         if (session?.flowType === "lead_capture") {
           await resumeLeadCapture(ctx, session.step as LeadCaptureStep);
+          return;
+        }
+        if (session?.flowType === "consultation_request") {
+          await resumeConsultationRequest(ctx, session.step as ConsultationRequestStep, (session.payload as SessionPayload | null) ?? {});
           return;
         }
         await handleStart(ctx, user, { showMainMenu: false, showLessons: false });
@@ -146,6 +167,15 @@ export function createBot(): Telegraf<Context> {
 
     if (isPublicEntryAction(action)) {
       await continueRequestedService(ctx, user, action);
+      return;
+    }
+
+    if (action === "marathon_price") {
+      await startConsultationRequestFlow(ctx, user, {
+        requestedService: "operator",
+        priority: "urgent_contact",
+        presetReason: "Pret maraton",
+      });
       return;
     }
 
@@ -256,13 +286,19 @@ export function createBot(): Telegraf<Context> {
   });
 
   bot.on("contact", async (ctx) => {
-    if (!ctx.from || !isContactMessage(ctx)) {
+    if (!isContactMessage(ctx)) {
       return;
     }
 
-    const user = await getOrCreateUser(ctx.from);
+    const user = await getContextUser(ctx);
+    if (!user) {
+      return;
+    }
     const session = await getSession(user.id);
     if (session?.flowType !== "lead_capture" || session.step !== "phone") {
+      if (session?.flowType === "consultation_request" && session.step === "phone") {
+        await handleConsultationContactInput(ctx, user, ctx.message.contact, (session.payload as SessionPayload | null) ?? {});
+      }
       return;
     }
 
@@ -270,11 +306,14 @@ export function createBot(): Telegraf<Context> {
   });
 
   bot.on("text", async (ctx) => {
-    if (!ctx.from || !isTextMessage(ctx)) {
+    if (!isTextMessage(ctx)) {
       return;
     }
 
-    const user = await getOrCreateUser(ctx.from);
+    const user = await getContextUser(ctx);
+    if (!user) {
+      return;
+    }
     const session = await getSession(user.id);
     const text = ctx.message.text.trim();
 
@@ -309,6 +348,11 @@ export function createBot(): Telegraf<Context> {
       return;
     }
 
+    if (session.flowType === "consultation_request") {
+      await handleConsultationTextInput(ctx, user, session.step as ConsultationRequestStep, text, payload);
+      return;
+    }
+
     if (session.flowType === "ai_question") {
       await handleAiQuestionInput(ctx, user, text);
     }
@@ -316,8 +360,8 @@ export function createBot(): Telegraf<Context> {
 
   bot.catch(async (error, ctx) => {
     logger.error({ err: error }, "Eroare neasteptata in bot.");
-    if (ctx.from) {
-      const user = await getOrCreateUser(ctx.from);
+    const user = await getContextUser(ctx);
+    if (user) {
       await logUserEvent({
         userId: user.id,
         eventType: "bot_error",

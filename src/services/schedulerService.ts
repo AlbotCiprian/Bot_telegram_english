@@ -12,7 +12,15 @@ export type CampaignJobPayload =
 export type CrmJobPayload =
   | { userId: number; action: "create_lead"; firstRequestedService?: string | null }
   | { userId: number; action: "qualify_lead" }
-  | { userId: number; action: "request_consultation"; requestedService: "operator" | "career_astrology" };
+  | {
+      userId: number;
+      action: "request_consultation";
+      requestedService: "operator" | "career_astrology";
+      priority: "urgent_contact" | "consultation";
+      reason?: string | null;
+      note?: string | null;
+      requestKey: string;
+    };
 
 function buildCampaignJobId(payload: CampaignJobPayload): string {
   if (payload.type === "lesson_unlock") {
@@ -28,7 +36,7 @@ function buildCampaignJobId(payload: CampaignJobPayload): string {
 
 function buildCrmJobId(payload: CrmJobPayload): string {
   if (payload.action === "request_consultation") {
-    return `crm:${payload.userId}:${payload.action}:${payload.requestedService}`;
+    return `crm:${payload.userId}:${payload.action}:${payload.requestedService}:${payload.requestKey}`;
   }
 
   return `crm:${payload.userId}:${payload.action}`;
@@ -70,6 +78,9 @@ export async function scheduleFreeLessonCampaign(userId: number): Promise<void> 
   const delayMap = getDelayMap();
   await scheduleCampaignJob({ userId, type: "lesson_unlock", dayNumber: 2 }, delayMap.lesson2Ms);
   await scheduleCampaignJob({ userId, type: "lesson_unlock", dayNumber: 3 }, delayMap.lesson3Ms);
+  await scheduleCampaignJob({ userId, type: "follow_up" }, delayMap.followUpMs);
+  await scheduleCampaignJob({ userId, type: "inactive" }, delayMap.inactiveMs);
+  await scheduleCampaignJob({ userId, type: "long_reminder" }, delayMap.longReminderMs);
 }
 
 export async function scheduleCampaignJob(payload: CampaignJobPayload, delayMs: number): Promise<void> {

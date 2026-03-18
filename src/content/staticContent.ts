@@ -27,6 +27,10 @@ export const PUBLIC_ENTRY_MENU = [
     label: "🎓 3 zile gratuite",
   },
   {
+    key: "marathon",
+    label: "🚀 Maraton 21 zile",
+  },
+  {
     key: "fear_speaking",
     label: "🗣️ Webinar: fara frica",
   },
@@ -35,16 +39,12 @@ export const PUBLIC_ENTRY_MENU = [
     label: "🎥 Metoda noastra",
   },
   {
-    key: "about_academy",
-    label: "🏛️ Despre academie",
-  },
-  {
     key: "services",
     label: "💼 Programe si preturi",
   },
   {
     key: "operator",
-    label: "📞 Contact operator",
+    label: "⚡ Contact operator",
   },
   {
     key: "career_astrology",
@@ -74,11 +74,47 @@ export const STATIC_PAGES = {
   welcome: {
     title: "Buna, bine ai venit la Express English Academy",
     body:
-      "Incepe cu 3 lectii gratuite si vezi cum poti vorbi mai clar, mai liber si cu mai multa incredere, in doar cateva minute pe zi.",
+      "Alege intre 3 lectii gratuite sau Maratonul de 21 de zile si pornim rapid, cu un onboarding scurt si clar.",
   },
   academy: {
     title: "Despre academie",
     body: "Express English Academy este pentru oameni care vor sa vorbeasca engleza clar, aplicat si cu incredere.",
+  },
+  marathon: {
+    title: "Maratonul «Vorbeste engleza fluent EXPRESS»",
+    body: [
+      "Program intensiv de 21 de zile, cu 21 de lectii scurte de 2-3 minute si exercitii interactive dupa fiecare lectie.",
+      "",
+      "Potrivit pentru nivelurile 0 - B1 si construit pentru practica zilnica, rezultate rapide si mai multa incredere in vorbire.",
+      "",
+      "*Pachete disponibile*",
+      "🔹 *Basic*",
+      "– acces complet la maraton (21 lectii + exercitii interactive)",
+      "",
+      "🔘 *Silver*",
+      "– acces complet la maraton",
+      "– meditatie audio cu afirmatii pozitive in engleza",
+      "– acces la chat suport cu Victoria",
+      "",
+      "🔸 *Gold*",
+      "– acces complet la maraton",
+      "– meditatie audio cu afirmatii pozitive in engleza",
+      "– chat suport cu Victoria",
+      "– consultanta astrologica EXPRESS de cariera",
+      "",
+      "🔺 *Premium*",
+      "– tot din Gold",
+      "– acces la webinar LIVE din 21 aprilie: «Cum a construit un imperiu educational de la credite»",
+      "",
+      "🟤 *VIP* (doar 5 locuri)",
+      "– tot din Premium",
+      "– consultanta individuala 1 la 1 cu Victoria",
+      "",
+      "Accesul la maraton, meditatie si webinar este valabil 6 luni.",
+      "Programul incepe dupa 10 aprilie si ruleaza pe parcursul a cateva saptamani.",
+      "",
+      "Pentru pret, apasa pe butonul de mai jos si iti deschidem imediat cererea in CRM.",
+    ].join("\n"),
   },
   programs: {
     title: "Programe si preturi",
@@ -105,11 +141,11 @@ export const STATIC_PAGES = {
   },
   operator: {
     title: "Contact operator",
-    body: "Cererea ta a fost trimisa. Poti deschide contactul direct sau poti astepta preluarea in CRM.",
+    body: "Completeaza formularul scurt si trimitem cererea direct in CRM cu prioritate mare.",
   },
   astrology: {
     title: "Consultatie cariera",
-    body: "Cererea ta a fost trimisa. Deschide consultatia din linkul de mai jos.",
+    body: "Completeaza formularul scurt si trimitem cererea in CRM pentru consultatia de cariera.",
   },
   mistakes: {
     title: "TOP 5 greseli",

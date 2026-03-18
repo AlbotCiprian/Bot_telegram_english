@@ -38,6 +38,7 @@ const envSchema = z.object({
   KOMMO_STAGE_NEW_ID: z.string().default(""),
   KOMMO_STAGE_WARM_ID: z.string().default(""),
   KOMMO_STAGE_CONSULT_ID: z.string().default(""),
+  KOMMO_STAGE_URGENT_ID: z.string().default(""),
   KOMMO_CUSTOM_FIELD_TELEGRAM_ID: z.string().default(""),
   KOMMO_CUSTOM_FIELD_TELEGRAM_USERNAME: z.string().default(""),
   KOMMO_CUSTOM_FIELD_ENGLISH_LEVEL: z.string().default(""),
@@ -53,6 +54,19 @@ const envSchema = z.object({
   WELCOME_IMAGE_URL: z
     .string()
     .default("https://www.expres.allengual.md/assets/favicon/web-app-manifest-192x192.png"),
+  MONITOR_BOT_TOKEN: z.string().default(""),
+  MONITOR_ALLOWED_USER_IDS: z.string().default(""),
+  MONITOR_ALERT_CHAT_ID: z.string().default(""),
+  MONITOR_TARGET_BASE_URL: z.string().default("http://bot:3000"),
+  MONITOR_POLL_INTERVAL_SEC: z.coerce.number().default(60),
+  MONITOR_DAILY_REPORT_HOUR: z.coerce.number().default(9),
+  MONITOR_TIMEZONE: z.string().default("Europe/Chisinau"),
+  MONITOR_ENABLE_DANGEROUS_COMMANDS: z.enum(["true", "false"]).default("false"),
+  DOCKER_SOCKET_PATH: z.string().default("/var/run/docker.sock"),
+  MONITOR_EXPRESS_BOT_CONTAINER: z.string().default("allengual-bot-prod"),
+  MONITOR_EXPRESS_WORKER_CONTAINER: z.string().default("allengual-worker-prod"),
+  MONITOR_EXPRESS_DB_CONTAINER: z.string().default("allengual-postgres-prod"),
+  MONITOR_EXPRESS_REDIS_CONTAINER: z.string().default("allengual-redis-prod"),
   EMBEDDING_DIMENSION: z.coerce.number().default(384),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
 });
@@ -70,6 +84,7 @@ const telegramApiRoot = parsedEnv.TELEGRAM_API_ROOT.trim().length > 0
 export const config = {
   ...parsedEnv,
   telegramUseLocalApi: parsedEnv.TELEGRAM_USE_LOCAL_API === "true",
+  monitorDangerousCommands: parsedEnv.MONITOR_ENABLE_DANGEROUS_COMMANDS === "true",
   telegramApiRoot,
   kommoBaseUrl: `https://${parsedEnv.KOMMO_SUBDOMAIN}.kommo.com`,
 } as const;

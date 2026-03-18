@@ -284,9 +284,14 @@ export async function createLeadInKommo(userId: number, firstRequestedService?: 
 
 export async function requestConsultationInKommo(
   userId: number,
-  requestedService: "operator" | "career_astrology",
+  params: {
+    requestedService: "operator" | "career_astrology";
+    priority: "urgent_contact" | "consultation";
+    reason?: string | null;
+    note?: string | null;
+  },
 ): Promise<void> {
-  const serviceLabel = PUBLIC_ENTRY_LABELS[requestedService] ?? requestedService;
+  const serviceLabel = PUBLIC_ENTRY_LABELS[params.requestedService] ?? params.requestedService;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -298,7 +303,7 @@ export async function requestConsultationInKommo(
   }
 
   if (!user.kommoLeadId) {
-    await createLeadInKommo(userId, requestedService);
+    await createLeadInKommo(userId, params.requestedService);
   }
 
   const refreshedUser = await prisma.user.findUnique({
@@ -314,7 +319,10 @@ export async function requestConsultationInKommo(
     {
       id: Number(refreshedUser.kommoLeadId),
       pipeline_id: parseOptionalId(config.KOMMO_PIPELINE_ID),
-      status_id: parseOptionalId(config.KOMMO_STAGE_CONSULT_ID),
+      status_id:
+        params.priority === "urgent_contact"
+          ? parseOptionalId(config.KOMMO_STAGE_URGENT_ID) ?? parseOptionalId(config.KOMMO_STAGE_CONSULT_ID)
+          : parseOptionalId(config.KOMMO_STAGE_CONSULT_ID),
     },
   ];
 
@@ -326,6 +334,9 @@ export async function requestConsultationInKommo(
         text: [
           "Cerere noua din botul Telegram:",
           `Tip cerere: ${serviceLabel}`,
+          `Prioritate: ${params.priority === "urgent_contact" ? "Urgent contact" : "Consultation Requested"}`,
+          `Motiv: ${params.reason?.trim() || "nespecificat"}`,
+          `Mesaj: ${params.note?.trim() || "fara mesaj suplimentar"}`,
           `Telefon: ${refreshedUser.phone ?? "nesetat"}`,
           `Telegram: ${refreshedUser.username ? `@${refreshedUser.username}` : refreshedUser.telegramId.toString()}`,
         ].join("\n"),
@@ -339,7 +350,10 @@ export async function requestConsultationInKommo(
       action: "request_consultation",
       status: "pending",
       requestPayload: {
-        requestedService,
+        requestedService: params.requestedService,
+        priority: params.priority,
+        reason: params.reason ?? null,
+        note: params.note ?? null,
         patchPayload,
         notePayload,
       },
@@ -358,7 +372,10 @@ export async function requestConsultationInKommo(
         action: "request_consultation",
         status: "success",
         requestPayload: {
-          requestedService,
+          requestedService: params.requestedService,
+          priority: params.priority,
+          reason: params.reason ?? null,
+          note: params.note ?? null,
           patchPayload,
           notePayload,
         },
@@ -370,14 +387,17 @@ export async function requestConsultationInKommo(
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
-    logger.error({ err: error, userId, requestedService }, "Kommo request consultation esuat.");
+    logger.error({ err: error, userId, requestedService: params.requestedService }, "Kommo request consultation esuat.");
     await prisma.crmSyncLog.create({
       data: {
         userId,
         action: "request_consultation",
         status: "failed",
         requestPayload: {
-          requestedService,
+          requestedService: params.requestedService,
+          priority: params.priority,
+          reason: params.reason ?? null,
+          note: params.note ?? null,
           patchPayload,
           notePayload,
         },

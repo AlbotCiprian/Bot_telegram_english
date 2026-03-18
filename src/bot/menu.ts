@@ -16,8 +16,9 @@ function buildSingleColumnKeyboard(labels: Array<{ label: string; action: string
 export function getPublicMenuKeyboard() {
   return buildSingleColumnKeyboard([
     { label: getMenuItem("free_lessons").label, action: "free_lessons" },
+    { label: getMenuItem("marathon").label, action: "marathon" },
     { label: getMenuItem("lessons").label, action: "lessons" },
-    ...PUBLIC_ENTRY_MENU.filter((item) => item.key !== "free_lessons").map((item) => ({
+    ...PUBLIC_ENTRY_MENU.filter((item) => item.key !== "free_lessons" && item.key !== "marathon").map((item) => ({
       label: item.label,
       action: item.key,
     })),
@@ -28,9 +29,10 @@ export function getMainMenuKeyboard(options?: { showLessons?: boolean; showAi?: 
   const rows: Array<Array<ReturnType<typeof Markup.button.callback>>> = [];
 
   rows.push([Markup.button.callback(getMenuItem("free_lessons").label, "menu:free_lessons")]);
+  rows.push([Markup.button.callback(getMenuItem("marathon").label, "menu:marathon")]);
   rows.push([Markup.button.callback(getMenuItem("lessons").label, "menu:lessons")]);
 
-  for (const item of PUBLIC_ENTRY_MENU.filter((entry) => entry.key !== "free_lessons")) {
+  for (const item of PUBLIC_ENTRY_MENU.filter((entry) => entry.key !== "free_lessons" && entry.key !== "marathon")) {
     rows.push([Markup.button.callback(item.label, `menu:${item.key}`)]);
   }
 
@@ -66,6 +68,14 @@ export function getPhoneRequestKeyboard() {
   ])
     .resize()
     .oneTime();
+}
+
+export function getReasonChoiceKeyboard(options: string[]) {
+  return Markup.keyboard(options.map((option) => [option])).resize().oneTime();
+}
+
+export function getSkipMessageKeyboard() {
+  return Markup.keyboard([["Sari peste mesaj"]]).resize().oneTime();
 }
 
 export function buildStaticPageMessage(pageKey: keyof typeof STATIC_PAGES): string {

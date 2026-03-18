@@ -1,15 +1,15 @@
-import { Context, Input, Markup } from "telegraf";
+import { Context, Markup } from "telegraf";
 import { prisma } from "../../db/client.js";
 import { BRANDING, PUBLIC_ENTRY_LABELS, PublicEntryKey, SERVICE_VIDEO_FILES, STATIC_PAGES } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
 import { deliverLesson, getLessonsMenu } from "../../services/lessonService.js";
-import { scheduleCrmJob, scheduleFreeLessonCampaign } from "../../services/schedulerService.js";
-import { ensureProfile } from "../../services/userService.js";
+import { scheduleFreeLessonCampaign } from "../../services/schedulerService.js";
+import { buildMediaAssetKey, sendVideoAsset } from "../../services/mediaAssetService.js";
 import { BotUser } from "../../types/bot.js";
 import { config } from "../../utils/config.js";
-import { logger } from "../../utils/logger.js";
 import { resolveExistingMediaFile } from "../../utils/mediaAssets.js";
 import { getMainMenuKeyboard } from "../menu.js";
+import { startConsultationRequestFlow } from "./consultationHandler.js";
 
 type InlineActionButton = ReturnType<typeof Markup.button.url> | ReturnType<typeof Markup.button.callback>;
 
@@ -26,12 +26,15 @@ function buildActionButtons(params: {
   showLessons: boolean;
   primaryUrl?: string;
   primaryLabel?: string;
+  primaryCallback?: string;
   includeCourseCta?: boolean;
   operatorShortcut?: boolean;
 }) {
   const buttons: InlineActionButton[] = [];
 
-  if (params.primaryUrl && params.primaryLabel) {
+  if (params.primaryCallback && params.primaryLabel) {
+    buttons.push(Markup.button.callback(params.primaryLabel, params.primaryCallback));
+  } else if (params.primaryUrl && params.primaryLabel) {
     buttons.push(Markup.button.url(params.primaryLabel, params.primaryUrl));
   }
 
@@ -68,9 +71,15 @@ async function replyWithSharedVideo(
   const localVideoPath = params.fileName ? resolveExistingMediaFile(params.fileName) : null;
   const caption = `*${params.title}*\n\n${params.body}`;
 
-  if (localVideoPath) {
-    try {
-      await ctx.replyWithVideo(Input.fromLocalFile(localVideoPath), {
+  if (ctx.chat?.id && params.fileName) {
+    const result = await sendVideoAsset({
+      chatId: ctx.chat.id.toString(),
+      assetKey: buildMediaAssetKey("service", params.fileName),
+      localFilePath: localVideoPath,
+      sourceFileName: params.fileName,
+      uploadNoticeText: "Pregatesc video-ul. Prima incarcare poate dura cateva secunde.",
+      missingFileText: `${caption}\n\nVideo-ul final trebuie inlocuit cu un MP4 optimizat pentru redare directa in Telegram.`,
+      options: {
         caption,
         parse_mode: "Markdown",
         supports_streaming: true,
@@ -79,22 +88,10 @@ async function replyWithSharedVideo(
           includeCourseCta: params.includeCourseCta,
           operatorShortcut: params.operatorShortcut,
         }).reply_markup,
-      });
-      return;
-    } catch {
-      await ctx.reply(
-        `${caption}\n\nVideo-ul final trebuie inlocuit cu un MP4 optimizat pentru redare directa in Telegram.`,
-        {
-          parse_mode: "Markdown",
-          reply_markup: buildActionButtons({
-            showLessons: params.showLessons,
-            primaryUrl: params.fallbackUrl,
-            primaryLabel: params.fallbackLabel,
-            includeCourseCta: params.includeCourseCta,
-            operatorShortcut: params.operatorShortcut,
-          }).reply_markup,
-        },
-      );
+      },
+    });
+
+    if (result !== "missing") {
       return;
     }
   }
@@ -124,26 +121,6 @@ async function replyWithSharedVideo(
       operatorShortcut: params.operatorShortcut,
     }).reply_markup,
   });
-}
-
-async function trackConsultationIntent(userId: number, action: "operator" | "career_astrology"): Promise<void> {
-  await ensureProfile(userId);
-  await prisma.userProfile.update({
-    where: { userId },
-    data: {
-      consultationWanted: true,
-    },
-  });
-
-  try {
-    await scheduleCrmJob({
-      userId,
-      action: "request_consultation",
-      requestedService: action,
-    });
-  } catch (error) {
-    logger.error({ err: error, userId, action }, "Nu am putut programa request_consultation in Kommo.");
-  }
 }
 
 export async function startFreeLessonsForUser(ctx: Context, userId: number): Promise<void> {
@@ -203,6 +180,16 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
 
   if (action === "free_lessons") {
     await startFreeLessonsForUser(ctx, user.id);
+  } else if (action === "marathon") {
+    await ctx.reply(buildStaticPageMessage("marathon"), {
+      parse_mode: "Markdown",
+      reply_markup: buildActionButtons({
+        showLessons,
+        primaryCallback: "menu:marathon_price",
+        primaryLabel: "💬 Cere PRET",
+        operatorShortcut: true,
+      }).reply_markup,
+    });
   } else if (action === "fear_speaking") {
     await replyWithSharedVideo(ctx, {
       title: STATIC_PAGES.fear_speaking.title,
@@ -219,15 +206,6 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       showLessons,
       fileName: SERVICE_VIDEO_FILES.teachingMethod,
     });
-  } else if (action === "about_academy") {
-    await replyWithSharedVideo(ctx, {
-      title: STATIC_PAGES.academy.title,
-      body: STATIC_PAGES.academy.body,
-      showLessons,
-      fileName: SERVICE_VIDEO_FILES.aboutAcademy,
-      fallbackUrl: BRANDING.websiteUrl,
-      fallbackLabel: "🌐 Site oficial",
-    });
   } else if (action === "services") {
     await ctx.reply(buildStaticPageMessage("programs"), {
       parse_mode: "Markdown",
@@ -238,25 +216,26 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       }).reply_markup,
     });
   } else if (action === "operator") {
-    await trackConsultationIntent(user.id, "operator");
     await ctx.reply(buildStaticPageMessage("operator"), {
       parse_mode: "Markdown",
       reply_markup: buildActionButtons({
         showLessons,
-        primaryUrl: config.OPERATOR_CONTACT_URL,
-        primaryLabel: "📲 Contact operator",
       }).reply_markup,
     });
+    await startConsultationRequestFlow(ctx, user, {
+      requestedService: "operator",
+      priority: "urgent_contact",
+    });
   } else if (action === "career_astrology") {
-    await trackConsultationIntent(user.id, "career_astrology");
     await ctx.reply(buildStaticPageMessage("astrology"), {
       parse_mode: "Markdown",
       reply_markup: buildActionButtons({
         showLessons,
-        primaryUrl: config.ASTROLOGY_CONSULTATION_URL,
-        primaryLabel: "🔮 Deschide consultatia",
-        operatorShortcut: true,
       }).reply_markup,
+    });
+    await startConsultationRequestFlow(ctx, user, {
+      requestedService: "career_astrology",
+      priority: "consultation",
     });
   }
 
