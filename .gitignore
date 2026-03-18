@@ -7,7 +7,9 @@ dist/
 coverage/
 .turbo/
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 .DS_Store
 npm-debug.log*
 *.log

@@ -44,6 +44,8 @@ Bot Telegram local-first pentru Express English Academy.
 - [Testare locala](./docs/LOCAL_TESTING.md)
 - [Setup step by step](./docs/SETUP_STEP_BY_STEP.md)
 - [Deploy pe VPS](./docs/DEPLOY_VPS.md)
+- [Audit proiect](./docs/PROJECT_AUDIT.md)
+- [Export PDF](./docs/PDF_EXPORT.md)
 
 ## Productie
 
