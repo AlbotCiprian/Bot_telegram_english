@@ -1,4 +1,5 @@
 import { Context, Telegraf } from "telegraf";
+import { TelegramError } from "telegraf";
 import { closeResetResources, wipeBotState } from "./services/resetService.js";
 import { config, isConfigured } from "./utils/config.js";
 import { logger } from "./utils/logger.js";
@@ -48,13 +49,37 @@ function hasTextMessage(ctx: Context): ctx is Context & { message: { text: strin
 }
 
 async function safeReply(ctx: Context, text: string): Promise<void> {
-  await ctx.reply(text, {
-    parse_mode: "Markdown",
-  });
+  try {
+    await ctx.reply(text, {
+      parse_mode: "Markdown",
+    });
+  } catch (error) {
+    if (error instanceof TelegramError && error.response?.error_code === 400) {
+      await ctx.reply(text);
+      return;
+    }
+
+    throw error;
+  }
 }
 
 async function safePlainReply(ctx: Context, text: string): Promise<void> {
   await ctx.reply(text);
+}
+
+async function safeAlertMessage(bot: Telegraf<Context>, chatId: string, text: string): Promise<void> {
+  try {
+    await bot.telegram.sendMessage(chatId, text, {
+      parse_mode: "Markdown",
+    });
+  } catch (error) {
+    if (error instanceof TelegramError && error.response?.error_code === 400) {
+      await bot.telegram.sendMessage(chatId, text);
+      return;
+    }
+
+    throw error;
+  }
 }
 
 function trimForTelegram(text: string): string {
@@ -249,17 +274,13 @@ async function bootstrapOpsBot(): Promise<void> {
 
     if (incidentNow && !incidentOpen) {
       incidentOpen = true;
-      await bot.telegram.sendMessage(targetChatId, `ALERTA\n\n${formatOpsStatus(status)}`, {
-        parse_mode: "Markdown",
-      });
+      await safeAlertMessage(bot, targetChatId, `ALERTA\n\n${formatOpsStatus(status)}`);
       return;
     }
 
     if (!incidentNow && incidentOpen) {
       incidentOpen = false;
-      await bot.telegram.sendMessage(targetChatId, `RECOVERED\n\n${formatOpsStatus(status)}`, {
-        parse_mode: "Markdown",
-      });
+      await safeAlertMessage(bot, targetChatId, `RECOVERED\n\n${formatOpsStatus(status)}`);
       return;
     }
 
@@ -267,9 +288,7 @@ async function bootstrapOpsBot(): Promise<void> {
     const reportKey = getDailyReportKey(now);
     if (isDailyReportMoment(now) && reportKey !== lastDailyReportKey) {
       lastDailyReportKey = reportKey;
-      await bot.telegram.sendMessage(targetChatId, formatOpsStatus(status), {
-        parse_mode: "Markdown",
-      });
+      await safeAlertMessage(bot, targetChatId, formatOpsStatus(status));
     }
   };
 
