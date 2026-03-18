@@ -16,6 +16,27 @@ Important:
 /allengual-telegram-bot
 ```
 
+## 0. Clonezi repo-ul pe VPS
+
+Pentru un deploy complet de la zero:
+
+```bash
+cd /opt
+git clone <PRIVATE_GIT_REMOTE> /allengual-telegram-bot
+cd /allengual-telegram-bot
+```
+
+Inainte sa completezi `.env.vps`, verifica in Kommo ca folosesti acelasi pipeline:
+
+- pipeline: `Telegram Bot Leads`
+- stage activ nou: `Consultation Requested Urgent`
+
+Routarea finala este:
+
+- `⚡ Contact operator` -> `Consultation Requested Urgent`
+- `🔮 Consultatie cariera` -> `Consultation Requested`
+- `🚀 Maraton Engleza -> 💬 Cere PRET` -> `Consultation Requested Urgent`
+
 ## 1. Configurezi `.env.vps`
 
 ```bash
@@ -30,6 +51,9 @@ Completezi neaparat:
 - `TELEGRAM_LOCAL_API_HASH`
 - `GROQ_API_KEY`
 - toate valorile `KOMMO_*`
+- `MONITOR_BOT_TOKEN`
+- `MONITOR_ALLOWED_USER_IDS`
+- `MONITOR_ALERT_CHAT_ID`
 
 Verifica neaparat:
 
@@ -40,6 +64,22 @@ DATABASE_URL=postgresql://postgres:postgres@postgres:5432/botdb?schema=public
 REDIS_URL=redis://redis:6379
 LESSON_DELAY_MODE=prod
 NODE_ENV=production
+```
+
+Pentru CRM si monitoring:
+
+```env
+KOMMO_STAGE_URGENT_ID=
+MONITOR_TARGET_BASE_URL=http://bot:3000
+MONITOR_POLL_INTERVAL_SEC=60
+MONITOR_DAILY_REPORT_HOUR=9
+MONITOR_TIMEZONE=Europe/Chisinau
+MONITOR_ENABLE_DANGEROUS_COMMANDS=false
+DOCKER_SOCKET_PATH=/var/run/docker.sock
+MONITOR_EXPRESS_BOT_CONTAINER=allengual-bot-prod
+MONITOR_EXPRESS_WORKER_CONTAINER=allengual-worker-prod
+MONITOR_EXPRESS_DB_CONTAINER=allengual-postgres-prod
+MONITOR_EXPRESS_REDIS_CONTAINER=allengual-redis-prod
 ```
 
 ## 2. Migrare de la cloud Bot API la Local Bot API Server
@@ -69,6 +109,12 @@ video/academy.mp4
 video/webinar-fear.mp4
 ```
 
+Asigura-te ca folderul exista:
+
+```bash
+mkdir -p /allengual-telegram-bot/video
+```
+
 ## 4. Build + migrate + seed
 
 Foloseste mereu `--env-file .env.vps` la productie:
@@ -96,12 +142,13 @@ docker compose --env-file .env.vps -f docker-compose.prod.yml ps
 docker compose --env-file .env.vps -f docker-compose.prod.yml logs --tail=100 telegram-bot-api
 docker compose --env-file .env.vps -f docker-compose.prod.yml logs --tail=100 bot
 docker compose --env-file .env.vps -f docker-compose.prod.yml logs --tail=100 worker
+docker compose --env-file .env.vps -f docker-compose.prod.yml logs --tail=100 ops-bot
 curl http://127.0.0.1:3000/health
 curl http://127.0.0.1:8082
 ```
 
 Trebuie sa vezi:
-- `telegram-bot-api`, `bot`, `worker`, `postgres`, `redis` in `Up`
+- `telegram-bot-api`, `bot`, `worker`, `ops-bot`, `postgres`, `redis` in `Up`
 - `/health` cu `status=ok`
 - in logul botului:
   - `Bot Telegram pornit in polling mode.`
@@ -121,8 +168,18 @@ docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm r
 docker compose --env-file .env.vps -f docker-compose.prod.yml up -d
 ```
 
+## 8. Reset complet pentru retestarea onboardingului
+
+```bash
+cd /allengual-telegram-bot
+docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm run reset:bot-state
+docker compose --env-file .env.vps -f docker-compose.prod.yml up -d
+```
+
 ## Observatii
 
 - `Local Bot API Server` permite upload-ul de fisiere video mai mari decat limita standard cloud
 - botul trimite video-urile direct din folderul `video/`
-- daca inlocuiesti fisierele video, trebuie rebuild la imagini, fiindca `Dockerfile.prod` foloseste `COPY video ./video`
+- in productie, `bot` si `worker` monteaza direct `./video:/app/video:ro`, deci fisierele pot fi inlocuite pe host fara commit in git
+- `Contact operator` merge in `Consultation Requested Urgent`
+- `Consultatie cariera` merge in `Consultation Requested`

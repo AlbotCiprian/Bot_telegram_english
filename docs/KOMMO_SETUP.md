@@ -30,14 +30,23 @@ Create a sales pipeline named:
 
 - `Telegram Bot Leads`
 
+Pastram acelasi pipeline si adaugam doar un stage nou pentru urgenta, nu pipeline separat.
+
 Add these stages:
 
 - `New Telegram Lead`
 - `3 Free Lessons Started`
 - `Warm Lead`
 - `Consultation Requested`
+- `Consultation Requested Urgent`
 - `Enrolled`
 - `Lost / No Response`
+
+Routing recomandat in bot:
+
+- `⚡ Contact operator` -> `Consultation Requested Urgent`
+- `🔮 Consultatie cariera` -> `Consultation Requested`
+- `🚀 Maraton Engleza -> 💬 Cere PRET` -> `Consultation Requested Urgent`
 
 ## 3. Custom fields
 
@@ -65,6 +74,7 @@ KOMMO_PIPELINE_ID=
 KOMMO_STAGE_NEW_ID=
 KOMMO_STAGE_WARM_ID=
 KOMMO_STAGE_CONSULT_ID=
+KOMMO_STAGE_URGENT_ID=
 KOMMO_CUSTOM_FIELD_TELEGRAM_ID=
 KOMMO_CUSTOM_FIELD_TELEGRAM_USERNAME=
 KOMMO_CUSTOM_FIELD_ENGLISH_LEVEL=

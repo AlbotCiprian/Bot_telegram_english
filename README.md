@@ -1,6 +1,6 @@
-# Allengual Telegram Bot
+# Express English Academy Bot
 
-Bot Telegram local-first pentru English Express / Allengual.
+Bot Telegram local-first pentru Express English Academy.
 
 ## Stack
 
@@ -27,10 +27,13 @@ Bot Telegram local-first pentru English Express / Allengual.
 
 - `npm run dev`
 - `npm run worker`
+- `npm run start:ops-bot`
 - `npm run prisma:migrate`
 - `npm run prisma:seed`
 - `npm run crawl`
 - `npm run embed`
+- `npm run telegram:logout-cloud`
+- `npm run reset:bot-state`
 - `npm run test:e2e-local`
 - `npm run verify:ai`
 
@@ -48,3 +51,4 @@ Pentru VPS foloseste:
 - `docker-compose.prod.yml`
 - `.env.vps.example` -> copie in `.env.vps`
 - `Local Bot API Server` in acelasi compose pentru video mari
+- `ops-bot` separat pentru monitoring, alerte si restart controlat
