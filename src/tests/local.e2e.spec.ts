@@ -5,6 +5,14 @@ import { isValidEmail, isValidPhone, normalizePhone } from "../utils/validators.
 import { MAIN_MENU, isMarathonVisible } from "../content/staticContent.js";
 import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
 import { getMainMenuKeyboard, resolveMenuActionFromLabel } from "../bot/menu.js";
+import {
+  buildMarathonLandingMessage,
+  buildMarathonOfferMessage,
+  buildMarathonPackageMessage,
+  getMarathonOffer,
+  getMarathonPackageByKey,
+  getMarathonPackageCatalog,
+} from "../content/marathonContent.js";
 
 describe("local runtime invariants", () => {
   it("exposes the full main menu", () => {
@@ -87,5 +95,43 @@ describe("local runtime invariants", () => {
     expect(resolveMenuActionFromLabel("\uD83C\uDF93 3 zile gratuite")).toBe("free_lessons");
     expect(resolveMenuActionFromLabel("\uD83D\uDCDA Lectiile tale")).toBe("lessons");
     expect(resolveMenuActionFromLabel("\u26A1 Contact operator")).toBe("operator");
+  });
+
+  it("builds the marathon package catalog from the configured defaults", () => {
+    const catalog = getMarathonPackageCatalog();
+    expect(catalog.map((item) => item.key)).toEqual(["basic", "silver", "gold", "premium", "vip"]);
+    expect(catalog.find((item) => item.key === "basic")?.availableOffers).toHaveLength(3);
+    expect(catalog.find((item) => item.key === "silver")?.availableOffers).toHaveLength(3);
+    expect(catalog.find((item) => item.key === "gold")?.availableOffers).toHaveLength(3);
+    expect(catalog.find((item) => item.key === "premium")?.availableOffers).toHaveLength(3);
+    expect(catalog.find((item) => item.key === "vip")?.availableOffers).toHaveLength(2);
+  });
+
+  it("maps marathon offers positionally by cohort", () => {
+    expect(getMarathonOffer("basic", 0)).toMatchObject({
+      cohortLabel: "29 martie",
+      priceLabel: expect.stringMatching(/^89\s*eur$/i),
+    });
+    expect(getMarathonOffer("premium", 2)).toMatchObject({
+      cohortLabel: "10 aprilie",
+      priceLabel: expect.stringMatching(/^300\s*eur$/i),
+    });
+    expect(getMarathonOffer("vip", 2)).toBeNull();
+  });
+
+  it("renders short marathon landing and package messages", () => {
+    const basicPackage = getMarathonPackageByKey("basic");
+    if (!basicPackage) {
+      throw new Error("Pachetul Basic nu a fost gasit.");
+    }
+
+    const offer = getMarathonOffer("basic", 1);
+    if (!offer) {
+      throw new Error("Oferta Basic pentru index 1 nu a fost gasita.");
+    }
+
+    expect(buildMarathonLandingMessage()).toContain("Alege pachetul potrivit");
+    expect(buildMarathonPackageMessage(basicPackage)).toContain("Alege data de start disponibila");
+    expect(buildMarathonOfferMessage(basicPackage, offer)).toMatch(/Pret:\s*109\s*eur/i);
   });
 });

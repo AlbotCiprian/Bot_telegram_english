@@ -1,5 +1,10 @@
 import { Job } from "bullmq";
-import { createLeadInKommo, qualifyLeadInKommo, requestConsultationInKommo } from "../services/crmService.js";
+import {
+  createLeadInKommo,
+  qualifyLeadInKommo,
+  requestConsultationInKommo,
+  requestMarathonInterestInKommo,
+} from "../services/crmService.js";
 import { CrmJobPayload } from "../services/schedulerService.js";
 
 export async function processCrmJob(job: Job<CrmJobPayload>): Promise<void> {
@@ -17,6 +22,15 @@ export async function processCrmJob(job: Job<CrmJobPayload>): Promise<void> {
       priority: job.data.priority,
       reason: job.data.reason,
       note: job.data.note,
+    });
+  }
+
+  if (job.data.action === "request_marathon_interest") {
+    await requestMarathonInterestInKommo(job.data.userId, {
+      packageKey: job.data.packageKey,
+      packageLabel: job.data.packageLabel,
+      cohortLabel: job.data.cohortLabel,
+      priceLabel: job.data.priceLabel,
     });
   }
 }

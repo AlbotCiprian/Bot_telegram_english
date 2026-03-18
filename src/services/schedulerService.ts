@@ -20,6 +20,15 @@ export type CrmJobPayload =
       reason?: string | null;
       note?: string | null;
       requestKey: string;
+    }
+  | {
+      userId: number;
+      action: "request_marathon_interest";
+      packageKey: "basic" | "silver" | "gold" | "premium" | "vip";
+      packageLabel: string;
+      cohortLabel: string;
+      priceLabel: string;
+      requestKey: string;
     };
 
 function buildCampaignJobId(payload: CampaignJobPayload): string {
@@ -37,6 +46,10 @@ function buildCampaignJobId(payload: CampaignJobPayload): string {
 function buildCrmJobId(payload: CrmJobPayload): string {
   if (payload.action === "request_consultation") {
     return `crm__${payload.userId}__${payload.action}__${payload.requestedService}__${payload.requestKey}`;
+  }
+
+  if (payload.action === "request_marathon_interest") {
+    return `crm__${payload.userId}__${payload.action}__${payload.packageKey}__${payload.requestKey}`;
   }
 
   return `crm__${payload.userId}__${payload.action}`;

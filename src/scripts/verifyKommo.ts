@@ -96,6 +96,7 @@ async function main(): Promise<void> {
     console.log(`KOMMO_STAGE_WARM_ID=${findByName(stages, "Warm Lead")?.id ?? ""}`);
     console.log(`KOMMO_STAGE_CONSULT_ID=${findByName(stages, "Consultation Requested")?.id ?? ""}`);
     console.log(`KOMMO_STAGE_URGENT_ID=${findByName(stages, "Consultation Requested Urgent")?.id ?? ""}`);
+    console.log(`KOMMO_STAGE_MARATON_ID=${findByName(stages, "Maraton Interested")?.id ?? ""}`);
   } else {
     console.log("");
     console.log('Pipeline "Telegram Bot Leads" nu exista inca.');

@@ -14,6 +14,10 @@ function parseOptionalId(value: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+function resolveConfiguredStageId(primaryValue: string, fallbackValue: string): number | undefined {
+  return parseOptionalId(primaryValue) ?? parseOptionalId(fallbackValue);
+}
+
 function buildCustomField(fieldId: string, value: string | number | null | undefined) {
   const parsedFieldId = parseOptionalId(fieldId);
   if (!parsedFieldId || value === null || value === undefined || value === "") {
@@ -321,7 +325,7 @@ export async function requestConsultationInKommo(
       pipeline_id: parseOptionalId(config.KOMMO_PIPELINE_ID),
       status_id:
         params.priority === "urgent_contact"
-          ? parseOptionalId(config.KOMMO_STAGE_URGENT_ID) ?? parseOptionalId(config.KOMMO_STAGE_CONSULT_ID)
+          ? resolveConfiguredStageId(config.KOMMO_STAGE_URGENT_ID, config.KOMMO_STAGE_CONSULT_ID)
           : parseOptionalId(config.KOMMO_STAGE_CONSULT_ID),
     },
   ];
@@ -398,6 +402,132 @@ export async function requestConsultationInKommo(
           priority: params.priority,
           reason: params.reason ?? null,
           note: params.note ?? null,
+          patchPayload,
+          notePayload,
+        },
+        errorMessage: message,
+      },
+    });
+    throw error;
+  }
+}
+
+export async function requestMarathonInterestInKommo(
+  userId: number,
+  params: {
+    packageKey: "basic" | "silver" | "gold" | "premium" | "vip";
+    packageLabel: string;
+    cohortLabel: string;
+    priceLabel: string;
+  },
+): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { profile: true },
+  });
+
+  if (!user) {
+    throw new Error(`User ${userId} nu exista.`);
+  }
+
+  if (!user.kommoLeadId) {
+    await createLeadInKommo(userId, "marathon");
+  }
+
+  const refreshedUser = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { profile: true },
+  });
+
+  if (!refreshedUser?.kommoLeadId) {
+    throw new Error("Lead-ul Kommo nu a putut fi creat inainte de request_marathon_interest.");
+  }
+
+  const stageId = resolveConfiguredStageId(config.KOMMO_STAGE_MARATON_ID, config.KOMMO_STAGE_NEW_ID);
+  if (!parseOptionalId(config.KOMMO_STAGE_MARATON_ID)) {
+    logger.warn("KOMMO_STAGE_MARATON_ID lipseste. Folosesc fallback spre KOMMO_STAGE_NEW_ID pana este creat stage-ul dedicat.");
+  }
+
+  const patchPayload = [
+    {
+      id: Number(refreshedUser.kommoLeadId),
+      pipeline_id: parseOptionalId(config.KOMMO_PIPELINE_ID),
+      status_id: stageId,
+    },
+  ];
+
+  const notePayload = [
+    {
+      entity_id: Number(refreshedUser.kommoLeadId),
+      note_type: "common",
+      params: {
+        text: [
+          "Cerere noua din botul Telegram:",
+          "Tip cerere: Maraton Engleza",
+          `Pachet: ${params.packageLabel}`,
+          `Data start: ${params.cohortLabel}`,
+          `Pret: ${params.priceLabel}`,
+          `Telefon: ${refreshedUser.phone ?? "nesetat"}`,
+          `Telegram: ${refreshedUser.username ? `@${refreshedUser.username}` : refreshedUser.telegramId.toString()}`,
+        ].join("\n"),
+      },
+    },
+  ];
+
+  await prisma.crmSyncLog.create({
+    data: {
+      userId,
+      action: "request_marathon_interest",
+      status: "pending",
+      requestPayload: {
+        packageKey: params.packageKey,
+        packageLabel: params.packageLabel,
+        cohortLabel: params.cohortLabel,
+        priceLabel: params.priceLabel,
+        patchPayload,
+        notePayload,
+      },
+    },
+  });
+
+  try {
+    const [leadResponse, noteResponse] = await Promise.all([
+      kommoApi.patch("/leads", patchPayload, { headers: getKommoHeaders() }),
+      kommoApi.post("/leads/notes", notePayload, { headers: getKommoHeaders() }),
+    ]);
+
+    await prisma.crmSyncLog.create({
+      data: {
+        userId,
+        action: "request_marathon_interest",
+        status: "success",
+        requestPayload: {
+          packageKey: params.packageKey,
+          packageLabel: params.packageLabel,
+          cohortLabel: params.cohortLabel,
+          priceLabel: params.priceLabel,
+          patchPayload,
+          notePayload,
+        },
+        responsePayload: {
+          lead: leadResponse.data,
+          notes: noteResponse.data,
+        },
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    logger.error({ err: error, userId, packageKey: params.packageKey }, "Kommo request marathon interest esuat.");
+    await prisma.crmSyncLog.create({
+      data: {
+        userId,
+        action: "request_marathon_interest",
+        status: "failed",
+        requestPayload: {
+          packageKey: params.packageKey,
+          packageLabel: params.packageLabel,
+          cohortLabel: params.cohortLabel,
+          priceLabel: params.priceLabel,
           patchPayload,
           notePayload,
         },

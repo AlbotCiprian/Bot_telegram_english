@@ -10,6 +10,7 @@ import { config } from "../../utils/config.js";
 import { resolveExistingMediaFile } from "../../utils/mediaAssets.js";
 import { getMainMenuKeyboard } from "../menu.js";
 import { startConsultationRequestFlow } from "./consultationHandler.js";
+import { startMarathonFlow } from "./marathonHandler.js";
 
 type InlineActionButton = ReturnType<typeof Markup.button.url> | ReturnType<typeof Markup.button.callback>;
 
@@ -185,15 +186,8 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       await ctx.reply("Maraton Engleza nu este activ in aceasta perioada. Revino in intervalul configurat.");
       return;
     }
-    await ctx.reply(buildStaticPageMessage("marathon"), {
-      parse_mode: "Markdown",
-      reply_markup: buildActionButtons({
-        showLessons,
-        primaryCallback: "menu:marathon_price",
-        primaryLabel: "💬 Cere PRET",
-        operatorShortcut: true,
-      }).reply_markup,
-    });
+
+    await startMarathonFlow(ctx, user);
   } else if (action === "fear_speaking") {
     await replyWithSharedVideo(ctx, {
       title: STATIC_PAGES.fear_speaking.title,

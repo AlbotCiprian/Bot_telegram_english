@@ -39,6 +39,7 @@ const envSchema = z.object({
   KOMMO_STAGE_WARM_ID: z.string().default(""),
   KOMMO_STAGE_CONSULT_ID: z.string().default(""),
   KOMMO_STAGE_URGENT_ID: z.string().default(""),
+  KOMMO_STAGE_MARATON_ID: z.string().default(""),
   KOMMO_CUSTOM_FIELD_TELEGRAM_ID: z.string().default(""),
   KOMMO_CUSTOM_FIELD_TELEGRAM_USERNAME: z.string().default(""),
   KOMMO_CUSTOM_FIELD_ENGLISH_LEVEL: z.string().default(""),
@@ -63,6 +64,12 @@ const envSchema = z.object({
   MARATHON_PREMIUM_TERM: z.string().default(""),
   MARATHON_VIP_PRICE: z.string().default(""),
   MARATHON_VIP_TERM: z.string().default(""),
+  MARATHON_COHORT_OPTIONS: z.string().default(""),
+  MARATHON_BASIC_PRICES: z.string().default(""),
+  MARATHON_SILVER_PRICES: z.string().default(""),
+  MARATHON_GOLD_PRICES: z.string().default(""),
+  MARATHON_PREMIUM_PRICES: z.string().default(""),
+  MARATHON_VIP_PRICES: z.string().default(""),
   WELCOME_IMAGE_PATH: z.string().default("video/Image_welcome.JPG"),
   WELCOME_IMAGE_URL: z
     .string()

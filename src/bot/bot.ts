@@ -2,7 +2,7 @@ import { Context, Telegraf } from "telegraf";
 import { prisma } from "../db/client.js";
 import { STATIC_PAGES } from "../content/staticContent.js";
 import { logUserEvent } from "../services/eventService.js";
-import { getSession } from "../services/sessionService.js";
+import { clearSession, getSession } from "../services/sessionService.js";
 import { getOrCreateUser } from "../services/userService.js";
 import { config } from "../utils/config.js";
 import { logger } from "../utils/logger.js";
@@ -19,7 +19,7 @@ import {
   startLeadCapture,
 } from "./handlers/leadHandler.js";
 import { handleHelp, handleMenu, handleStart } from "./handlers/startHandler.js";
-import { ConsultationRequestStep, LeadCaptureStep, SessionPayload } from "../types/session.js";
+import { ConsultationRequestStep, LeadCaptureStep, MarathonInterestStep, SessionPayload } from "../types/session.js";
 import { resetUserForTesting } from "../services/userService.js";
 import { continueRequestedService, isPublicEntryAction } from "./handlers/serviceHandler.js";
 import { getTelegramApiClientOptions } from "../services/telegram.js";
@@ -27,8 +27,13 @@ import {
   handleConsultationContactInput,
   handleConsultationTextInput,
   resumeConsultationRequest,
-  startConsultationRequestFlow,
 } from "./handlers/consultationHandler.js";
+import {
+  handleMarathonCallback,
+  handleMarathonContactInput,
+  handleMarathonTextInput,
+  resumeMarathonFlow,
+} from "./handlers/marathonHandler.js";
 
 function isTextMessage(ctx: Context): ctx is Context & { message: { text: string } } {
   return "message" in ctx && typeof (ctx.message as { text?: string })?.text === "string";
@@ -78,6 +83,10 @@ async function handleMenuAction(
         await resumeConsultationRequest(ctx, session.step as ConsultationRequestStep, (session.payload as SessionPayload | null) ?? {});
         return;
       }
+      if (session?.flowType === "marathon_interest") {
+        await resumeMarathonFlow(ctx, session.step as MarathonInterestStep, (session.payload as SessionPayload | null) ?? {});
+        return;
+      }
       await handleStart(ctx, user, { showMainMenu: false, showLessons: false });
       return;
     }
@@ -100,15 +109,6 @@ async function handleMenuAction(
 
   if (isPublicEntryAction(action)) {
     await continueRequestedService(ctx, user, action);
-    return;
-  }
-
-  if (action === "marathon_price") {
-    await startConsultationRequestFlow(ctx, user, {
-      requestedService: "operator",
-      priority: "urgent_contact",
-      presetReason: "Pret maraton",
-    });
     return;
   }
 
@@ -232,6 +232,17 @@ export function createBot(): Telegraf<Context> {
     await handleMenuAction(ctx, user, action, session);
   });
 
+  bot.action(/^marathon:(.+)$/, async (ctx) => {
+    await ctx.answerCbQuery();
+
+    const user = await getContextUser(ctx);
+    if (!user) {
+      return;
+    }
+
+    await handleMarathonCallback(ctx, user, ctx.match[1]);
+  });
+
   bot.action(/^consent:(privacy|marketing):(yes|no)$/, async (ctx) => {
     await ctx.answerCbQuery();
 
@@ -306,6 +317,10 @@ export function createBot(): Telegraf<Context> {
     if (session?.flowType !== "lead_capture" || session.step !== "phone") {
       if (session?.flowType === "consultation_request" && session.step === "phone") {
         await handleConsultationContactInput(ctx, user, ctx.message.contact, (session.payload as SessionPayload | null) ?? {});
+        return;
+      }
+      if (session?.flowType === "marathon_interest" && session.step === "phone") {
+        await handleMarathonContactInput(ctx, user, ctx.message.contact, (session.payload as SessionPayload | null) ?? {});
       }
       return;
     }
@@ -324,9 +339,15 @@ export function createBot(): Telegraf<Context> {
     }
     const session = await getSession(user.id);
     const text = ctx.message.text.trim();
+    const menuAction = resolveMenuActionFromLabel(text);
+
+    if (session?.flowType === "marathon_interest" && menuAction) {
+      await clearSession(user.id);
+      await handleMenuAction(ctx, user, menuAction, null);
+      return;
+    }
 
     if (!session?.flowType) {
-      const menuAction = resolveMenuActionFromLabel(text);
       if (menuAction) {
         await handleMenuAction(ctx, user, menuAction, session);
         return;
@@ -366,6 +387,11 @@ export function createBot(): Telegraf<Context> {
 
     if (session.flowType === "consultation_request") {
       await handleConsultationTextInput(ctx, user, session.step as ConsultationRequestStep, text, payload);
+      return;
+    }
+
+    if (session.flowType === "marathon_interest") {
+      await handleMarathonTextInput(ctx, user, session.step as MarathonInterestStep, text, payload);
       return;
     }
 

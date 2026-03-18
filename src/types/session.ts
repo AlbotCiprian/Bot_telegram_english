@@ -1,4 +1,4 @@
-export type SessionFlow = "lead_capture" | "course_interest" | "consultation_request" | "ai_question";
+export type SessionFlow = "lead_capture" | "course_interest" | "consultation_request" | "marathon_interest" | "ai_question";
 
 export type LeadCaptureStep =
   | "first_name"
@@ -15,9 +15,13 @@ export type ConsultationRequestStep =
   | "phone"
   | "reason";
 
+export type MarathonInterestStep =
+  | "menu"
+  | "phone";
+
 export type AiQuestionStep = "awaiting_question";
 
-export type SessionStep = LeadCaptureStep | CourseInterestStep | ConsultationRequestStep | AiQuestionStep;
+export type SessionStep = LeadCaptureStep | CourseInterestStep | ConsultationRequestStep | MarathonInterestStep | AiQuestionStep;
 
 export type SessionPayload = Record<string, unknown>;
 
@@ -37,4 +41,9 @@ export const COURSE_INTEREST_STEPS: CourseInterestStep[] = [
 export const CONSULTATION_REQUEST_STEPS: ConsultationRequestStep[] = [
   "phone",
   "reason",
+];
+
+export const MARATHON_INTEREST_STEPS: MarathonInterestStep[] = [
+  "menu",
+  "phone",
 ];

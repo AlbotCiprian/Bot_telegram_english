@@ -18,6 +18,7 @@ type StatsPayload = {
   crmFailed: number;
   urgentRequests: number;
   consultRequests: number;
+  marathonRequests: number;
   mediaCache: number;
 };
 
@@ -151,6 +152,7 @@ export function formatOpsStatus(status: Awaited<ReturnType<typeof getOpsStatus>>
     `- crmFailed: ${status.stats.crmFailed}`,
     `- urgentRequests: ${status.stats.urgentRequests}`,
     `- consultRequests: ${status.stats.consultRequests}`,
+    `- marathonRequests: ${status.stats.marathonRequests}`,
     `- mediaCache: ${status.stats.mediaCache}`,
     `- recentCrmFailures(${config.MONITOR_CRM_FAILURE_WINDOW_MIN}m): ${status.recentCrmFailures}`,
     "",

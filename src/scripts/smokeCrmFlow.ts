@@ -1,6 +1,11 @@
 import axios from "axios";
 import { prisma } from "../db/client.js";
-import { createLeadInKommo, qualifyLeadInKommo, requestConsultationInKommo } from "../services/crmService.js";
+import {
+  createLeadInKommo,
+  qualifyLeadInKommo,
+  requestConsultationInKommo,
+  requestMarathonInterestInKommo,
+} from "../services/crmService.js";
 import { campaignQueue, crmQueue } from "../services/queue.js";
 import { ensureProfile } from "../services/userService.js";
 import { config } from "../utils/config.js";
@@ -89,10 +94,14 @@ async function main(): Promise<void> {
   const expectedWarm = parseStageId(config.KOMMO_STAGE_WARM_ID, "KOMMO_STAGE_WARM_ID");
   const expectedConsult = parseStageId(config.KOMMO_STAGE_CONSULT_ID, "KOMMO_STAGE_CONSULT_ID");
   const expectedUrgent = parseStageId(config.KOMMO_STAGE_URGENT_ID, "KOMMO_STAGE_URGENT_ID");
+  const expectedMarathon = config.KOMMO_STAGE_MARATON_ID.trim()
+    ? parseStageId(config.KOMMO_STAGE_MARATON_ID, "KOMMO_STAGE_MARATON_ID")
+    : null;
 
   const baseId = BigInt(Date.now());
   const urgentUser = await createAuditUser("urgent", baseId);
   const consultUser = await createAuditUser("consult", baseId + 1n);
+  const marathonUser = expectedMarathon ? await createAuditUser("marathon", baseId + 2n) : null;
 
   await createLeadInKommo(urgentUser.id, "free_lessons");
   const urgentLead = await prisma.user.findUniqueOrThrow({ where: { id: urgentUser.id } });
@@ -139,10 +148,33 @@ async function main(): Promise<void> {
     throw new Error(`Stage consultation invalid. expected=${expectedConsult} actual=${consultStage}`);
   }
 
+  let marathonLeadId: string | null = null;
+  let marathonStage: number | null = null;
+  if (marathonUser && expectedMarathon !== null) {
+    await createLeadInKommo(marathonUser.id, "marathon");
+    const marathonLead = await prisma.user.findUniqueOrThrow({ where: { id: marathonUser.id } });
+    if (!marathonLead.kommoLeadId) {
+      throw new Error("Lead marathon nu a fost creat in Kommo.");
+    }
+
+    await requestMarathonInterestInKommo(marathonUser.id, {
+      packageKey: "basic",
+      packageLabel: "🔹 Basic",
+      cohortLabel: "29 martie",
+      priceLabel: "89 eur",
+    });
+    marathonStage = await getLeadStatus(marathonLead.kommoLeadId);
+    if (marathonStage !== expectedMarathon) {
+      throw new Error(`Stage marathon invalid. expected=${expectedMarathon} actual=${marathonStage}`);
+    }
+
+    marathonLeadId = marathonLead.kommoLeadId.toString();
+  }
+
   const recentLogs = await prisma.crmSyncLog.findMany({
     where: {
       userId: {
-        in: [urgentUser.id, consultUser.id],
+        in: [urgentUser.id, consultUser.id, ...(marathonUser ? [marathonUser.id] : [])],
       },
     },
     orderBy: { createdAt: "desc" },
@@ -161,12 +193,20 @@ async function main(): Promise<void> {
       {
         urgentLeadId: urgentLead.kommoLeadId.toString(),
         consultLeadId: consultLead.kommoLeadId.toString(),
+        marathonLeadId,
         expectedStages: {
           new: expectedNew,
           warm: expectedWarm,
           urgent: expectedUrgent,
           consultation: expectedConsult,
+          marathon: expectedMarathon,
         },
+        resolvedStages: {
+          urgent: urgentStage,
+          consultation: consultStage,
+          marathon: marathonStage,
+        },
+        marathonSmoke: expectedMarathon === null ? "skipped_missing_KOMMO_STAGE_MARATON_ID" : "ok",
         recentLogs,
       },
       null,
