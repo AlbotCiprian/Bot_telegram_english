@@ -28,6 +28,20 @@ function isAuthorized(ctx: Context, allowedUserIds: Set<number>): boolean {
   return Boolean(ctx.from?.id && allowedUserIds.has(ctx.from.id));
 }
 
+type AuthState = {
+  authenticated: boolean;
+  failedAttempts: number;
+  locked: boolean;
+};
+
+function getUserId(ctx: Context): number | null {
+  return typeof ctx.from?.id === "number" ? ctx.from.id : null;
+}
+
+function hasTextMessage(ctx: Context): ctx is Context & { message: { text: string } } {
+  return "message" in ctx && typeof (ctx.message as { text?: unknown })?.text === "string";
+}
+
 async function safeReply(ctx: Context, text: string): Promise<void> {
   await ctx.reply(text, {
     parse_mode: "Markdown",
@@ -42,6 +56,9 @@ async function bootstrapOpsBot(): Promise<void> {
 
   const bot = new Telegraf<Context>(config.MONITOR_BOT_TOKEN);
   const allowedUserIds = parseAllowedUserIds();
+  const authStates = new Map<number, AuthState>();
+  const monitorPassword = config.MONITOR_ACCESS_PASSWORD.trim();
+  const maxLoginAttempts = Math.max(config.MONITOR_MAX_LOGIN_ATTEMPTS, 1);
   let incidentOpen = false;
   let lastDailyReportKey = "";
 
@@ -50,21 +67,78 @@ async function bootstrapOpsBot(): Promise<void> {
       await ctx.reply("Nu ai acces la acest bot de monitoring.");
       return;
     }
-    await next();
+
+    if (!monitorPassword) {
+      await next();
+      return;
+    }
+
+    const userId = getUserId(ctx);
+    if (!userId) {
+      await ctx.reply("Nu am putut determina utilizatorul Telegram.");
+      return;
+    }
+
+    const state = authStates.get(userId) ?? {
+      authenticated: false,
+      failedAttempts: 0,
+      locked: false,
+    };
+    authStates.set(userId, state);
+
+    if (state.locked) {
+      await ctx.reply("Acces blocat dupa prea multe incercari gresite.");
+      return;
+    }
+
+    if (state.authenticated) {
+      await next();
+      return;
+    }
+
+    const text = hasTextMessage(ctx) ? ctx.message.text.trim() : "";
+
+    if (!text || text.startsWith("/")) {
+      await ctx.reply(`Introdu parola pentru access la ops-bot. Ai maxim ${maxLoginAttempts} incercari.`);
+      return;
+    }
+
+    if (text === monitorPassword) {
+      state.authenticated = true;
+      state.failedAttempts = 0;
+      await safeReply(
+        ctx,
+        [
+          "*Autentificare reusita*",
+          "",
+          "Comenzi disponibile:",
+          "/status",
+          "/restart_express",
+          "/reset_state CONFIRM",
+        ].join("\n"),
+      );
+      return;
+    }
+
+    state.failedAttempts += 1;
+    const attemptsLeft = maxLoginAttempts - state.failedAttempts;
+    if (attemptsLeft <= 0) {
+      state.locked = true;
+      await ctx.reply("Parola gresita. Acces blocat dupa prea multe incercari.");
+      return;
+    }
+
+    await ctx.reply(`Parola gresita. Mai ai ${attemptsLeft} incercari.`);
+    return;
   });
 
   bot.start(async (ctx) => {
-    await safeReply(
-      ctx,
-      [
-        "*Ops Bot*",
-        "",
-        "Comenzi disponibile:",
-        "/status",
-        "/restart_express",
-        "/reset_state CONFIRM",
-      ].join("\n"),
-    );
+    if (monitorPassword) {
+      await ctx.reply(`Ops Bot este protejat cu parola. Introdu parola. Ai maxim ${maxLoginAttempts} incercari.`);
+      return;
+    }
+
+    await safeReply(ctx, ["*Ops Bot*", "", "Comenzi disponibile:", "/status", "/restart_express", "/reset_state CONFIRM"].join("\n"));
   });
 
   bot.command("status", async (ctx) => {

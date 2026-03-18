@@ -33,9 +33,9 @@ Inainte sa completezi `.env.vps`, verifica in Kommo ca folosesti acelasi pipelin
 
 Routarea finala este:
 
-- `⚡ Contact operator` -> `Consultation Requested Urgent`
-- `🔮 Consultatie cariera` -> `Consultation Requested`
-- `🚀 Maraton Engleza -> 💬 Cere PRET` -> `Consultation Requested Urgent`
+- `Contact operator` -> `Consultation Requested Urgent`
+- `Consultatie cariera` -> `Consultation Requested`
+- `Maraton Engleza -> Cere PRET` -> `Consultation Requested Urgent`
 
 ## 1. Configurezi `.env.vps`
 
@@ -54,6 +54,7 @@ Completezi neaparat:
 - `MONITOR_BOT_TOKEN`
 - `MONITOR_ALLOWED_USER_IDS`
 - `MONITOR_ALERT_CHAT_ID`
+- `MONITOR_ACCESS_PASSWORD`
 
 Verifica neaparat:
 
@@ -70,6 +71,8 @@ Pentru CRM si monitoring:
 
 ```env
 KOMMO_STAGE_URGENT_ID=
+MONITOR_ACCESS_PASSWORD=
+MONITOR_MAX_LOGIN_ATTEMPTS=3
 MONITOR_TARGET_BASE_URL=http://bot:3000
 MONITOR_POLL_INTERVAL_SEC=60
 MONITOR_DAILY_REPORT_HOUR=9
@@ -183,3 +186,4 @@ docker compose --env-file .env.vps -f docker-compose.prod.yml up -d
 - in productie, `bot` si `worker` monteaza direct `./video:/app/video:ro`, deci fisierele pot fi inlocuite pe host fara commit in git
 - `Contact operator` merge in `Consultation Requested Urgent`
 - `Consultatie cariera` merge in `Consultation Requested`
+- `ops-bot` poate fi restrictionat simultan prin `MONITOR_ALLOWED_USER_IDS` si parola din `MONITOR_ACCESS_PASSWORD`

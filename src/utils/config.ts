@@ -57,6 +57,8 @@ const envSchema = z.object({
   MONITOR_BOT_TOKEN: z.string().default(""),
   MONITOR_ALLOWED_USER_IDS: z.string().default(""),
   MONITOR_ALERT_CHAT_ID: z.string().default(""),
+  MONITOR_ACCESS_PASSWORD: z.string().default(""),
+  MONITOR_MAX_LOGIN_ATTEMPTS: z.coerce.number().default(3),
   MONITOR_TARGET_BASE_URL: z.string().default("http://bot:3000"),
   MONITOR_POLL_INTERVAL_SEC: z.coerce.number().default(60),
   MONITOR_DAILY_REPORT_HOUR: z.coerce.number().default(9),
