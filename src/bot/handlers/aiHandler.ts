@@ -18,7 +18,7 @@ export async function startAiQuestionFlow(ctx: Context, user: BotUser): Promise<
   });
 
   await ctx.reply(
-    "🤖 Salut! Sunt colegul AI Express English Academy.\n\nScrie-mi o intrebare despre cursuri, preturi, niveluri sau program si iti raspund doar pe baza informatiilor disponibile.",
+    "🤖 Salut! Sunt colegul AI Express English Academy.\n\nScrie-mi o întrebare despre cursuri, prețuri, niveluri sau program și îți răspund doar pe baza informațiilor disponibile.",
   );
 }
 

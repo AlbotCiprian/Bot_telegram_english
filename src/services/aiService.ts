@@ -12,26 +12,26 @@ type AiAnswer = {
 function sanitizeAiAnswer(answer: string): string {
   return answer
     .replace(/\[Context\s*\d+\]\s*/gi, "")
-    .replace(/\bContextul\s*\d+\b/gi, "informatiile disponibile")
-    .replace(/\bContext\s*\d+\b/gi, "informatiile disponibile")
-    .replace(/informatiile confirmate din\s*\./gi, "informatiile confirmate din sectiunea Programe si preturi.")
+    .replace(/\bContextul\s*\d+\b/gi, "informațiile disponibile")
+    .replace(/\bContext\s*\d+\b/gi, "informațiile disponibile")
+    .replace(/informatiile confirmate din\s*\./gi, "informațiile confirmate din secțiunea Programe și prețuri.")
     .trim();
 }
 
 function isPricingQuestion(question: string): boolean {
-  return /(pret|preturi|costa|cost|abonament|abonamente|program|programe|pachet|pachete|oferta|oferte|serviciu|servicii|basic|medium|advanced|eur|euro)/i.test(
+  return /(pret|preț|preturi|prețuri|costa|costă|cost|abonament|abonamente|program|programe|pachet|pachete|oferta|ofertă|oferte|serviciu|servicii|basic|medium|advanced|eur|euro)/i.test(
     question,
   );
 }
 
 function isSchoolOverviewQuestion(question: string): boolean {
-  return /(scoala|academie|academy|allengual|english express|express english academy|cine sunteti|ce este|despre voi|despre scoala|metoda voastra|cum functioneaza)/i.test(
+  return /(scoala|școală|academie|academy|allengual|english express|express english academy|cine sunteti|cine sunteți|ce este|despre voi|despre scoala|despre școală|metoda voastra|metoda voastră|cum functioneaza|cum funcționează)/i.test(
     question,
   );
 }
 
 function hasPricingContext(context: string): boolean {
-  return /(250 eur|350 eur|400 eur|550 eur|basic|medium|advanced|pret|preturi|programe|pachete|abonamente|oferta|oferte)/i.test(
+  return /(250 eur|350 eur|400 eur|550 eur|basic|medium|advanced|pret|preț|preturi|prețuri|programe|pachete|abonamente|oferta|ofertă|oferte)/i.test(
     context,
   );
 }
@@ -66,7 +66,7 @@ function buildFallbackAnswer(question: string, context: string[], sources: strin
   if (context.length === 0) {
     return {
       answer:
-        "Nu am gasit suficient context in baza de cunostinte. Daca vrei, apasa pe Vreau la curs sau cere o consultatie pentru un raspuns mai exact.",
+        "Nu am găsit suficient context în baza de cunoștințe. Dacă vrei, apasă pe Vreau la curs sau cere o consultație pentru un răspuns mai exact.",
       usedFallback: true,
       sources,
     };
@@ -74,11 +74,11 @@ function buildFallbackAnswer(question: string, context: string[], sources: strin
 
   return {
     answer: [
-      `Am gasit cateva informatii relevante pentru intrebarea: "${question}".`,
+      `Am găsit câteva informații relevante pentru întrebarea: "${question}".`,
       "",
       context.slice(0, 2).join("\n\n"),
       "",
-      "Daca vrei un raspuns personalizat pentru situatia ta, intra in flow-ul Vreau la curs.",
+      "Dacă vrei un răspuns personalizat pentru situația ta, intră în flow-ul Vreau la curs.",
       "",
       `Surse utile:\n${sources.slice(0, 3).join("\n")}`,
     ].join("\n"),
@@ -167,8 +167,8 @@ export async function answerQuestion(question: string): Promise<AiAnswer> {
           {
             role: "user",
             content:
-              `Intrebarea utilizatorului: ${question}\n\n` +
-              "Daca utilizatorul intreaba despre preturi sau programe, raspunde doar cu datele exacte din context.\n\n" +
+              `Întrebarea utilizatorului: ${question}\n\n` +
+              "Dacă utilizatorul întreabă despre prețuri sau programe, răspunde doar cu datele exacte din context.\n\n" +
               `Knowledge base:\n${context}`,
           },
         ],
@@ -179,7 +179,7 @@ export async function answerQuestion(question: string): Promise<AiAnswer> {
       const errorText = await response.text();
       logger.error(
         { provider: aiConfig.provider, status: response.status, errorText },
-        "AI request esuat.",
+        "AI request eșuat.",
       );
       return buildFallbackAnswer(
         question,

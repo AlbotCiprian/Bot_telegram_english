@@ -40,7 +40,7 @@ const MARATHON_PACKAGE_DEFINITIONS: MarathonPackageDefinition[] = [
     key: "basic",
     label: "🔹 Basic",
     title: "Basic",
-    details: ["acces complet la maraton (21 lectii + exercitii interactive)"],
+    details: ["acces complet la maraton (21 lecții + exerciții interactive)"],
     configuredPrices: config.MARATHON_BASIC_PRICES,
     legacyPrices: config.MARATHON_BASIC_PRICE,
   },
@@ -49,8 +49,8 @@ const MARATHON_PACKAGE_DEFINITIONS: MarathonPackageDefinition[] = [
     label: "🔘 Silver",
     title: "Silver",
     details: [
-      "acces complet la maraton (21 lectii + exercitii interactive)",
-      "meditatie audio cu afirmatii pozitive in limba engleza",
+      "acces complet la maraton (21 lecții + exerciții interactive)",
+      "meditație audio cu afirmații pozitive în limba engleză",
       "acces la chat suport cu Victoria",
     ],
     configuredPrices: config.MARATHON_SILVER_PRICES,
@@ -61,10 +61,10 @@ const MARATHON_PACKAGE_DEFINITIONS: MarathonPackageDefinition[] = [
     label: "🔸 Gold",
     title: "Gold",
     details: [
-      "acces complet la maraton (21 lectii + exercitii interactive)",
-      "meditatie audio cu afirmatii pozitive in limba engleza",
+      "acces complet la maraton (21 lecții + exerciții interactive)",
+      "meditație audio cu afirmații pozitive în limba engleză",
       "chat suport cu Victoria",
-      "consultanta astrologica EXPRESS de cariera",
+      "consultație astrologică EXPRESS de carieră",
     ],
     configuredPrices: config.MARATHON_GOLD_PRICES,
     legacyPrices: config.MARATHON_GOLD_PRICE,
@@ -75,7 +75,7 @@ const MARATHON_PACKAGE_DEFINITIONS: MarathonPackageDefinition[] = [
     title: "Premium",
     details: [
       "tot ce include Gold",
-      'acces la webinar LIVE din 21 aprilie: "Cum a construit un imperiu educational de la credite"',
+      'acces la webinar LIVE din 21 aprilie: "Cum a construit un imperiu educațional de la credite"',
     ],
     configuredPrices: config.MARATHON_PREMIUM_PRICES,
     legacyPrices: config.MARATHON_PREMIUM_PRICE,
@@ -86,7 +86,7 @@ const MARATHON_PACKAGE_DEFINITIONS: MarathonPackageDefinition[] = [
     title: "VIP - 5 locuri",
     details: [
       "tot ce include Premium",
-      "consultanta individuala 1 la 1 cu Victoria",
+      "consultație individuală 1 la 1 cu Victoria",
     ],
     configuredPrices: config.MARATHON_VIP_PRICES,
     legacyPrices: config.MARATHON_VIP_PRICE,
@@ -187,10 +187,10 @@ export function getMarathonOffer(packageKey: MarathonPackageKey, offerIndex: num
 
 export function buildMarathonLandingMessage(): string {
   return [
-    '*Maratonul "Vorbeste engleza fluent EXPRESS"*',
+    '*Maratonul "Vorbește engleză fluent EXPRESS"*',
     "",
-    "Program de 21 de zile cu lectii scurte si exercitii interactive.",
-    "Alege pachetul potrivit si vezi imediat detaliile, data de start si pretul.",
+    "Program de 21 de zile cu lecții scurte și exerciții interactive.",
+    "Alege pachetul potrivit și vezi imediat detaliile, data de start și prețul.",
   ].join("\n");
 }
 
@@ -204,8 +204,8 @@ export function buildMarathonPackageMessage(marathonPackage: MarathonPackage): s
   lines.push("");
   lines.push(
     marathonPackage.availableOffers.length > 0
-      ? "Alege data de start disponibila pentru acest pachet."
-      : "Preturile pentru acest pachet nu sunt configurate inca.",
+      ? "Alege data de start disponibilă pentru acest pachet."
+      : "Prețurile pentru acest pachet nu sunt configurate încă.",
   );
 
   return lines.join("\n");
@@ -215,11 +215,11 @@ export function buildMarathonOfferMessage(marathonPackage: MarathonPackage, offe
   return [
     `*${marathonPackage.label}*`,
     "",
-    `Data start: ${offer.cohortLabel}`,
-    `Pret: ${offer.priceLabel}`,
+    `Data de start: ${offer.cohortLabel}`,
+    `Preț: ${offer.priceLabel}`,
     "",
     ...marathonPackage.details.map((detail) => `- ${detail}`),
     "",
-    "Accesul inclus in acest pachet este valabil 6 luni.",
+    "Accesul inclus în acest pachet este valabil 6 luni.",
   ].join("\n");
 }

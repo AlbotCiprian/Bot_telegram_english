@@ -1,4 +1,5 @@
 import { Context, Input } from "telegraf";
+import { SHARED_COPY } from "../../content/copy.js";
 import { STATIC_PAGES } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
 import { BotUser } from "../../types/bot.js";
@@ -32,7 +33,7 @@ async function replyWelcomeCard(ctx: Context, caption: string, showMainMenu: boo
       });
       return;
     } catch (error) {
-      logger.warn({ err: error, localWelcomeImage }, "Nu am putut trimite welcome image din fisier local.");
+      logger.warn({ err: error, localWelcomeImage }, "Nu am putut trimite imaginea de bun venit din fișier local.");
     }
   }
 
@@ -45,7 +46,7 @@ async function replyWelcomeCard(ctx: Context, caption: string, showMainMenu: boo
       });
       return;
     } catch (error) {
-      logger.warn({ err: error }, "Nu am putut trimite welcome image din URL.");
+      logger.warn({ err: error }, "Nu am putut trimite imaginea de bun venit din URL.");
     }
   }
 
@@ -76,7 +77,7 @@ export async function handleStart(
 }
 
 export async function handleMenu(ctx: Context, options?: { showLessons?: boolean }): Promise<void> {
-  await ctx.reply("Alege cum vrei sa continuam:", {
+  await ctx.reply(SHARED_COPY.chooseHowToContinue, {
     reply_markup: getMainMenuKeyboard({ showLessons: options?.showLessons }).reply_markup,
   });
 }

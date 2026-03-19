@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { Context, Markup } from "telegraf";
+import { SHARED_COPY, UI_LABELS } from "../../content/copy.js";
 import {
   buildMarathonLandingMessage,
   buildMarathonOfferMessage,
@@ -66,7 +67,7 @@ function getMarathonPackagesKeyboard() {
   const packageButtons = getMarathonPackageCatalog().map((item) => [Markup.button.callback(item.label, `marathon:package:${item.key}`)]);
   return Markup.inlineKeyboard([
     ...packageButtons,
-    [Markup.button.callback("⬅️ Meniul principal", "marathon:menu")],
+    [Markup.button.callback(UI_LABELS.backToMenu, "marathon:menu")],
   ]);
 }
 
@@ -82,17 +83,17 @@ function getMarathonPackageKeyboard(packageKey: MarathonPackageKey) {
 
   return Markup.inlineKeyboard([
     ...offerButtons,
-    [Markup.button.callback("⬅️ Inapoi la pachete", "marathon:packages")],
-    [Markup.button.callback("⬅️ Meniul principal", "marathon:menu")],
+    [Markup.button.callback("⬅️ Înapoi la pachete", "marathon:packages")],
+    [Markup.button.callback(UI_LABELS.backToMenu, "marathon:menu")],
   ]);
 }
 
 function getMarathonOfferKeyboard(packageKey: MarathonPackageKey, offerIndex: number) {
   return Markup.inlineKeyboard([
-    [Markup.button.callback("📩 Contacteaza pentru acest pachet", `marathon:contact:${packageKey}:${offerIndex}`)],
-    [Markup.button.callback("⬅️ Inapoi la date", `marathon:package:${packageKey}`)],
-    [Markup.button.callback("⬅️ Inapoi la pachete", "marathon:packages")],
-    [Markup.button.callback("⬅️ Meniul principal", "marathon:menu")],
+    [Markup.button.callback(UI_LABELS.contactForPackage, `marathon:contact:${packageKey}:${offerIndex}`)],
+    [Markup.button.callback("⬅️ Înapoi la date", `marathon:package:${packageKey}`)],
+    [Markup.button.callback("⬅️ Înapoi la pachete", "marathon:packages")],
+    [Markup.button.callback(UI_LABELS.backToMenu, "marathon:menu")],
   ]);
 }
 
@@ -179,7 +180,7 @@ async function promptMarathonPhone(ctx: Context, payload: MarathonSessionPayload
   }
 
   await ctx.reply(
-    `Te rog trimite numarul de telefon pentru ${currentOffer.marathonPackage.label}, start ${currentOffer.offer.cohortLabel}.`,
+    `Te rog să trimiți numărul de telefon pentru ${currentOffer.marathonPackage.label}, start ${currentOffer.offer.cohortLabel}.`,
     {
       reply_markup: getPhoneRequestKeyboard().reply_markup,
     },
@@ -193,7 +194,7 @@ async function finalizeMarathonInterest(
 ): Promise<void> {
   const currentOffer = getCurrentOffer(payload);
   if (!currentOffer) {
-    await ctx.reply("Oferta selectata nu mai este disponibila. Reiau meniul de pachete.", {
+    await ctx.reply("Oferta selectată nu mai este disponibilă. Reiau meniul de pachete.", {
       reply_markup: getMainMenuKeyboard({ showLessons: Boolean(user.lesson1Unlocked || user.currentLessonDay > 0) }).reply_markup,
     });
     await clearSession(user.id);
@@ -233,9 +234,9 @@ async function finalizeMarathonInterest(
   await ctx.reply(
     [
       `Am trimis cererea ta pentru ${currentOffer.marathonPackage.label}.`,
-      `Data aleasa: ${currentOffer.offer.cohortLabel}`,
-      `Pret: ${currentOffer.offer.priceLabel}`,
-      "Revenim cat mai curand cu toate detaliile.",
+      `Data aleasă: ${currentOffer.offer.cohortLabel}`,
+      `Preț: ${currentOffer.offer.priceLabel}`,
+      "Revenim cât mai curând cu toate detaliile.",
     ].join("\n"),
     {
       reply_markup: getMainMenuKeyboard({ showLessons: Boolean(user.lesson1Unlocked || user.currentLessonDay > 0) }).reply_markup,
@@ -271,7 +272,7 @@ export async function resumeMarathonFlow(
   const parsed = parseMarathonPayload(payload);
 
   if (step === "phone") {
-    await ctx.reply("Continuam exact de unde ai ramas.");
+    await ctx.reply(SHARED_COPY.continueFromWhereLeftOff);
     await promptMarathonPhone(ctx, parsed);
     return;
   }
@@ -288,7 +289,7 @@ export async function handleMarathonCallback(
 
   if (command === "menu") {
     await clearSession(user.id);
-    await ctx.reply("Alege cum vrei sa continuam:", {
+    await ctx.reply(SHARED_COPY.chooseHowToContinue, {
       reply_markup: getMainMenuKeyboard({ showLessons: Boolean(user.lesson1Unlocked || user.currentLessonDay > 0) }).reply_markup,
     });
     return;
@@ -406,19 +407,19 @@ export async function handleMarathonTextInput(
   const parsed = parseMarathonPayload(payload);
 
   if (step === "menu") {
-    await ctx.reply("Foloseste butoanele de mai jos ca sa alegi pachetul si data potrivita.");
+    await ctx.reply("Folosește butoanele de mai jos ca să alegi pachetul și data potrivită.");
     await renderCurrentMarathonView(ctx, parsed);
     return;
   }
 
   const value = normalizeWhitespace(text);
-  if (value.toLowerCase() === "voi scrie manual") {
-    await ctx.reply("Scrie numarul tau in formatul +373XXXXXXXX.");
+  if (value.toLowerCase() === UI_LABELS.writePhoneManually.toLowerCase()) {
+    await ctx.reply(SHARED_COPY.phoneFormatPrompt);
     return;
   }
 
   if (!isValidPhone(value)) {
-    await ctx.reply("Numarul nu pare valid. Incearca formatul +373XXXXXXXX sau foloseste butonul dedicat.");
+    await ctx.reply(SHARED_COPY.invalidPhonePrompt);
     return;
   }
 

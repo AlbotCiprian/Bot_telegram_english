@@ -1,0 +1,37 @@
+export const UI_LABELS = {
+  freeLessons: "🎓 3 zile gratuite",
+  marathon: "🚀 Maraton de engleză",
+  fearSpeaking: "🗣️ Webinar: fără frică",
+  teachingMethod: "🎥 Metoda noastră",
+  services: "💼 Programe și prețuri",
+  operator: "⚡ Contact operator",
+  careerAstrology: "🔮 Consultație în carieră",
+  lessons: "📚 Lecțiile tale",
+  askAi: "🤖 Întreabă AI-ul",
+  backToMenu: "⬅️ Meniul principal",
+  acceptPrivacy: "✔ Accept",
+  yes: "Da",
+  no: "Nu",
+  sendPhone: "📱 Trimite numărul",
+  writePhoneManually: "Voi scrie manual",
+  wantsCourse: "📞 Vreau la curs",
+  wantsCourseInfo: "📞 Vreau să aflu despre curs",
+  openLesson: "▶️ Deschide lecția",
+  testYourself: "📝 Testează-te",
+  viewServices: "🌐 Vezi serviciile",
+  contactForPackage: "📩 Contactează pentru acest pachet",
+  opsHelp: "ℹ️ Ajutor",
+} as const;
+
+export const SHARED_COPY = {
+  chooseHowToContinue: "Alege cum vrei să continuăm:",
+  continueFromWhereLeftOff: "Continuăm exact de unde ai rămas.",
+  phoneFormatPrompt: "Scrie numărul tău în formatul +373XXXXXXXX.",
+  invalidPhonePrompt:
+    "Numărul nu pare valid. Încearcă formatul +373XXXXXXXX sau folosește butonul dedicat.",
+  onboardingMenuPrompt: "Alege un serviciu din meniul de mai jos ca să pornim onboardingul rapid.",
+  useMainMenuPrompt: "Folosește meniul principal pentru a continua.",
+  startMenuActivationRequired: "Mai întâi activează accesul din meniul de start.",
+  commercialContactRequired: "Înainte de flow-ul comercial, am nevoie de datele de contact de bază.",
+  acceptPrivacyRequired: "Pentru a continua cu seria gratuită, apasă butonul ✔ Accept.",
+} as const;

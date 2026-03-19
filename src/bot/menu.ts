@@ -1,4 +1,5 @@
 import { Markup } from "telegraf";
+import { UI_LABELS } from "../content/copy.js";
 import { MAIN_MENU, MainMenuKey, PUBLIC_ENTRY_MENU, STATIC_PAGES, isMarathonVisible } from "../content/staticContent.js";
 
 function getMenuItem(key: MainMenuKey) {
@@ -53,23 +54,23 @@ export function resolveMenuActionFromLabel(label: string): MainMenuKey | null {
 }
 
 export function getBackToMenuKeyboard(_showLessons = false) {
-  return Markup.inlineKeyboard([[Markup.button.callback("⬅️ Meniul principal", "menu:menu")]]);
+  return Markup.inlineKeyboard([[Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")]]);
 }
 
 export function getPrivacyChoiceKeyboard() {
-  return Markup.keyboard([["✔ Accept"]]).oneTime().resize();
+  return Markup.keyboard([[UI_LABELS.acceptPrivacy]]).oneTime().resize();
 }
 
 export function getYesNoKeyboard(prefix: string) {
   return Markup.inlineKeyboard([
-    [Markup.button.callback("Da", `${prefix}:yes`), Markup.button.callback("Nu", `${prefix}:no`)],
+    [Markup.button.callback(UI_LABELS.yes, `${prefix}:yes`), Markup.button.callback(UI_LABELS.no, `${prefix}:no`)],
   ]);
 }
 
 export function getPhoneRequestKeyboard() {
   return Markup.keyboard([
-    [Markup.button.contactRequest("📱 Trimite numarul")],
-    ["Voi scrie manual"],
+    [Markup.button.contactRequest(UI_LABELS.sendPhone)],
+    [UI_LABELS.writePhoneManually],
   ])
     .resize()
     .oneTime();
@@ -88,9 +89,9 @@ export function buildHelpMessage(): string {
   return [
     "*Ajutor*",
     "",
-    "Botul te poate ghida prin serviciile principale si prin seria de 3 zile gratuite.",
+    "Botul te poate ghida prin serviciile principale și prin seria de 3 zile gratuite.",
     "",
-    "Daca esti utilizator nou, primul pas important este onboardingul scurt pentru salvarea lead-ului in CRM.",
+    "Dacă ești utilizator nou, primul pas important este onboardingul scurt pentru salvarea lead-ului în CRM.",
     "",
     "Comenzi disponibile:",
     "/start",

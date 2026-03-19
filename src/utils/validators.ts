@@ -28,7 +28,7 @@ export function isValidPhone(value: string): boolean {
 
 export function parseBooleanChoice(value: string): boolean | null {
   const normalized = normalizeWhitespace(value).toLowerCase();
-  if (["da", "yes", "accept", "accepta", "sunt de acord", "vreau"].includes(normalized)) {
+  if (["da", "yes", "accept", "accepta", "acceptă", "sunt de acord", "vreau"].includes(normalized)) {
     return true;
   }
 

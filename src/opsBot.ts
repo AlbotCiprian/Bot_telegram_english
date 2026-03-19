@@ -1,5 +1,6 @@
 import { Context, Markup, Telegraf } from "telegraf";
 import { TelegramError } from "telegraf";
+import { UI_LABELS } from "./content/copy.js";
 import { closeResetResources, wipeBotState } from "./services/resetService.js";
 import { config, isConfigured } from "./utils/config.js";
 import { logger } from "./utils/logger.js";
@@ -48,9 +49,22 @@ function hasTextMessage(ctx: Context): ctx is Context & { message: { text: strin
   return "message" in ctx && typeof (ctx.message as { text?: unknown })?.text === "string";
 }
 
+function buildAccessDeniedMessage(ctx: Context): string {
+  const userId = getUserId(ctx);
+  if (!userId) {
+    return "Nu ai acces la acest bot de monitorizare.";
+  }
+
+  return [
+    "Nu ai acces la acest bot de monitorizare.",
+    `ID-ul tău Telegram este \`${userId}\`.`,
+    "Administratorul trebuie să te adauge în `MONITOR_ALLOWED_USER_IDS`.",
+  ].join("\n");
+}
+
 function getOpsMenuKeyboard() {
   return Markup.keyboard([
-    ["ℹ️ Help", "/status"],
+    [UI_LABELS.opsHelp, "/status"],
     ["/health", "/queues"],
     ["/jobs", "/logs_bot"],
     ["/logs_worker", "/daily_now"],
@@ -60,10 +74,10 @@ function getOpsMenuKeyboard() {
 
 function buildOpsAuthMessage(): string {
   return [
-    "*Autentificare reusita*",
+    "*Autentificare reușită*",
     "",
-    "Foloseste butoanele de mai jos.",
-    "Pentru lista scurta de comenzi: `/help`",
+    "Folosește butoanele de mai jos.",
+    "Pentru lista scurtă de comenzi: `/help`",
   ].join("\n");
 }
 
@@ -130,13 +144,13 @@ async function safeAlertMessage(bot: Telegraf<Context>, chatId: string, text: st
 }
 
 function trimForTelegram(text: string): string {
-  const trimmed = text.trim() || "Nu exista output recent.";
+  const trimmed = text.trim() || "Nu există output recent.";
   return trimmed.length > 3900 ? trimmed.slice(trimmed.length - 3900) : trimmed;
 }
 
 async function bootstrapOpsBot(): Promise<void> {
   if (!isConfigured(config.MONITOR_BOT_TOKEN)) {
-    logger.warn("MONITOR_BOT_TOKEN lipseste. Botul de monitoring nu porneste.");
+    logger.warn("MONITOR_BOT_TOKEN lipsește. Botul de monitoring nu pornește.");
     return;
   }
 
@@ -150,7 +164,16 @@ async function bootstrapOpsBot(): Promise<void> {
 
   bot.use(async (ctx, next) => {
     if (!isAuthorized(ctx, allowedUserIds)) {
-      await ctx.reply("Nu ai acces la acest bot de monitoring.");
+      logger.warn(
+        {
+          telegramUserId: getUserId(ctx),
+          telegramUsername: ctx.from?.username ?? null,
+          telegramChatId: ctx.chat?.id ?? null,
+          configuredAllowedUsers: allowedUserIds.size,
+        },
+        "Acces refuzat la ops bot pentru utilizator neautorizat.",
+      );
+      await safeReply(ctx, buildAccessDeniedMessage(ctx));
       return;
     }
 
@@ -173,7 +196,7 @@ async function bootstrapOpsBot(): Promise<void> {
     authStates.set(userId, state);
 
     if (state.locked) {
-      await ctx.reply("Acces blocat dupa prea multe incercari gresite.");
+      await ctx.reply("Acces blocat după prea multe încercări greșite.");
       return;
     }
 
@@ -185,7 +208,7 @@ async function bootstrapOpsBot(): Promise<void> {
     const text = hasTextMessage(ctx) ? ctx.message.text.trim() : "";
 
     if (!text || text.startsWith("/")) {
-      await ctx.reply(`Introdu parola pentru access la ops-bot. Ai maxim ${maxLoginAttempts} incercari.`);
+      await ctx.reply(`Introdu parola pentru acces la ops-bot. Ai maximum ${maxLoginAttempts} încercări.`);
       return;
     }
 
@@ -200,17 +223,17 @@ async function bootstrapOpsBot(): Promise<void> {
     const attemptsLeft = maxLoginAttempts - state.failedAttempts;
     if (attemptsLeft <= 0) {
       state.locked = true;
-      await ctx.reply("Parola gresita. Acces blocat dupa prea multe incercari.");
+      await ctx.reply("Parolă greșită. Acces blocat după prea multe încercări.");
       return;
     }
 
-    await ctx.reply(`Parola gresita. Mai ai ${attemptsLeft} incercari.`);
+    await ctx.reply(`Parolă greșită. Mai ai ${attemptsLeft} încercări.`);
     return;
   });
 
   bot.start(async (ctx) => {
     if (monitorPassword) {
-      await ctx.reply(`Ops Bot este protejat cu parola. Introdu parola. Ai maxim ${maxLoginAttempts} incercari.`);
+      await ctx.reply(`Ops Bot este protejat cu parolă. Introdu parola. Ai maximum ${maxLoginAttempts} încercări.`);
       return;
     }
 
@@ -221,7 +244,7 @@ async function bootstrapOpsBot(): Promise<void> {
     await safeReply(ctx, buildOpsHelpMessage(), { withMenu: true });
   });
 
-  bot.hears("ℹ️ Help", async (ctx) => {
+  bot.hears(UI_LABELS.opsHelp, async (ctx) => {
     await safeReply(ctx, buildOpsHelpMessage(), { withMenu: true });
   });
 
@@ -256,9 +279,9 @@ async function bootstrapOpsBot(): Promise<void> {
   });
 
   bot.command("restart_express", async (ctx) => {
-    await safePlainReply(ctx, "Restart bot + worker in curs...", { withMenu: true });
+    await safePlainReply(ctx, "Restart bot + worker în curs...", { withMenu: true });
     await restartExpressRuntime();
-    await safePlainReply(ctx, "Restart trimis catre containerele Express.", { withMenu: true });
+    await safePlainReply(ctx, "Restart trimis către containerele Express.", { withMenu: true });
   });
 
   bot.command("daily_now", async (ctx) => {
@@ -277,11 +300,11 @@ async function bootstrapOpsBot(): Promise<void> {
     }
 
     if (!text.includes("CONFIRM")) {
-      await safePlainReply(ctx, "Pentru reset complet foloseste exact comanda: /reset_state CONFIRM", { withMenu: true });
+      await safePlainReply(ctx, "Pentru reset complet folosește exact comanda: /reset_state CONFIRM", { withMenu: true });
       return;
     }
 
-    await safePlainReply(ctx, "Reset complet in curs. Sterg utilizatorii, sesiunile si queue-urile...", { withMenu: true });
+    await safePlainReply(ctx, "Reset complet în curs. Șterg utilizatorii, sesiunile și queue-urile...", { withMenu: true });
     await wipeBotState();
     await safePlainReply(ctx, "Reset complet finalizat.", { withMenu: true });
   });
@@ -317,7 +340,7 @@ async function bootstrapOpsBot(): Promise<void> {
 
   const interval = setInterval(() => {
     void maybeSendMonitoringReport().catch((error) => {
-      logger.error({ err: error }, "Monitor polling esuat.");
+      logger.error({ err: error }, "Monitor polling eșuat.");
     });
   }, Math.max(config.MONITOR_POLL_INTERVAL_SEC, 30) * 1000);
 
@@ -342,7 +365,7 @@ async function bootstrapOpsBot(): Promise<void> {
 }
 
 bootstrapOpsBot().catch(async (error) => {
-  logger.error({ err: error }, "Pornirea ops bot a esuat.");
+  logger.error({ err: error }, "Pornirea ops bot a eșuat.");
   await closeResetResources();
   process.exit(1);
 });

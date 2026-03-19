@@ -1,4 +1,5 @@
 import { Context, Markup } from "telegraf";
+import { UI_LABELS } from "../../content/copy.js";
 import { prisma } from "../../db/client.js";
 import { BRANDING, PUBLIC_ENTRY_LABELS, PublicEntryKey, SERVICE_VIDEO_FILES, STATIC_PAGES, isMarathonVisible } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
@@ -40,18 +41,18 @@ function buildActionButtons(params: {
   }
 
   if (params.includeCourseCta !== false) {
-    buttons.push(Markup.button.callback("📞 Vreau la curs", "menu:wants_course"));
+    buttons.push(Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course"));
   }
 
   if (params.operatorShortcut) {
-    buttons.push(Markup.button.callback("📞 Contact operator", "menu:operator"));
+    buttons.push(Markup.button.callback(UI_LABELS.operator, "menu:operator"));
   }
 
   if (params.showLessons) {
-    buttons.push(Markup.button.callback("📚 Lectiile tale", "menu:lessons"));
+    buttons.push(Markup.button.callback(UI_LABELS.lessons, "menu:lessons"));
   }
 
-  buttons.push(Markup.button.callback("⬅️ Meniul principal", "menu:menu"));
+  buttons.push(Markup.button.callback(UI_LABELS.backToMenu, "menu:menu"));
   return Markup.inlineKeyboard(buttons, { columns: 1 });
 }
 
@@ -78,8 +79,8 @@ async function replyWithSharedVideo(
       assetKey: buildMediaAssetKey("service", params.fileName),
       localFilePath: localVideoPath,
       sourceFileName: params.fileName,
-      uploadNoticeText: "Pregatesc video-ul. Prima incarcare poate dura cateva secunde.",
-      missingFileText: `${caption}\n\nVideo-ul final trebuie inlocuit cu un MP4 optimizat pentru redare directa in Telegram.`,
+      uploadNoticeText: "Pregătesc video-ul. Prima încărcare poate dura câteva secunde.",
+      missingFileText: `${caption}\n\nVideo-ul final trebuie înlocuit cu un MP4 optimizat pentru redare directă în Telegram.`,
       options: {
         caption,
         parse_mode: "Markdown",
@@ -158,7 +159,7 @@ export async function startFreeLessonsForUser(ctx: Context, userId: number): Pro
   });
 
   await ctx.reply(
-    "Perfect. Ti-am activat seria gratuita. Lectia 1 este disponibila acum, iar Lectiile 2 si 3 se deblocheaza automat, cate una pe zi.",
+    "Perfect. Ți-am activat seria gratuită. Lecția 1 este disponibilă acum, iar lecțiile 2 și 3 se deblochează automat, câte una pe zi.",
     {
       reply_markup: getMainMenuKeyboard({ showLessons: true }).reply_markup,
     },
@@ -183,7 +184,7 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
     await startFreeLessonsForUser(ctx, user.id);
   } else if (action === "marathon") {
     if (!isMarathonVisible()) {
-      await ctx.reply("Maraton Engleza nu este activ in aceasta perioada. Revino in intervalul configurat.");
+      await ctx.reply("Maratonul de engleză nu este activ în această perioadă. Revino în intervalul configurat.");
       return;
     }
 
@@ -210,7 +211,7 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       reply_markup: buildActionButtons({
         showLessons,
         primaryUrl: BRANDING.websiteUrl,
-        primaryLabel: "🌐 Vezi serviciile",
+        primaryLabel: UI_LABELS.viewServices,
       }).reply_markup,
     });
   } else if (action === "operator") {

@@ -24,6 +24,7 @@
     "embed": "tsx src/crawler/embeddingPipeline.ts",
     "reset:local-state": "tsx src/scripts/resetLocalState.ts",
     "reset:bot-state": "tsx src/scripts/resetLocalState.ts",
+    "media:invalidate-cache": "tsx src/scripts/invalidateTelegramMediaCache.ts",
     "telegram:logout-cloud": "tsx src/scripts/logoutTelegramCloud.ts",
     "test:e2e-local": "vitest run",
     "audit:local": "tsx src/scripts/auditLocalReadiness.ts",

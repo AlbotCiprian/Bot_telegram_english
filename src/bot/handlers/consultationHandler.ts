@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { Context } from "telegraf";
+import { SHARED_COPY, UI_LABELS } from "../../content/copy.js";
 import { prisma } from "../../db/client.js";
 import { PUBLIC_ENTRY_LABELS } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
@@ -16,16 +17,16 @@ export type ConsultationPriority = "urgent_contact" | "consultation";
 
 const CONSULTATION_REASON_OPTIONS: Record<ConsultationRequestType, string[]> = {
   operator: [
-    "Vreau sa fiu sunat cat mai curand",
-    "Vreau preturile",
-    "Vreau sa ma inscriu",
-    "Alta intrebare",
+    "Vreau să fiu sunat cât mai curând",
+    "Vreau prețurile",
+    "Vreau să mă înscriu",
+    "Altă întrebare",
   ],
   career_astrology: [
-    "Vreau consultatia de cariera",
+    "Vreau consultația de carieră",
     "Vreau detalii despre pachete",
-    "Vreau sa fiu sunat",
-    "Alta intrebare",
+    "Vreau să fiu sunat",
+    "Altă întrebare",
   ],
 };
 
@@ -39,13 +40,13 @@ async function replyConsultationStepPrompt(
   step: ConsultationRequestStep,
 ): Promise<void> {
   if (step === "phone") {
-    await ctx.reply(`Te rog trimite numarul de telefon pentru ${getServiceTitle(service)}.`, {
+    await ctx.reply(`Te rog să trimiți numărul de telefon pentru ${getServiceTitle(service)}.`, {
       reply_markup: getPhoneRequestKeyboard().reply_markup,
     });
     return;
   }
 
-  await ctx.reply("Care este motivul principal pentru care vrei sa fii contactat?", {
+  await ctx.reply("Care este motivul principal pentru care vrei să fii contactat?", {
     reply_markup: getReasonChoiceKeyboard(CONSULTATION_REASON_OPTIONS[service]).reply_markup,
   });
 }
@@ -106,8 +107,8 @@ async function finalizeConsultationRequest(
 
   await ctx.reply(
     params.priority === "urgent_contact"
-      ? "Am trimis cererea ta in CRM cu prioritate mare. Revenim cat mai rapid."
-      : "Am trimis cererea ta in CRM. Revenim cu consultatia de cariera cat mai curand.",
+      ? "Am trimis cererea ta în CRM cu prioritate mare. Revenim cât mai rapid."
+      : "Am trimis cererea ta în CRM. Revenim cu consultația de carieră cât mai curând.",
     {
       reply_markup: getMainMenuKeyboard({ showLessons: Boolean(user.lesson1Unlocked || user.currentLessonDay > 0) }).reply_markup,
     },
@@ -164,7 +165,7 @@ export async function resumeConsultationRequest(
   payload: SessionPayload,
 ): Promise<void> {
   const parsed = parsePayload(payload);
-  await ctx.reply("Continuam cererea exact de unde ai ramas.");
+  await ctx.reply(SHARED_COPY.continueFromWhereLeftOff);
   await replyConsultationStepPrompt(ctx, parsed.requestedService, step);
 }
 
@@ -187,7 +188,7 @@ export async function handleConsultationContactInput(
     await finalizeConsultationRequest(ctx, user, {
       requestedService: parsed.requestedService,
       priority: parsed.priority,
-      reason: parsed.reason ?? parsed.presetReason ?? "Cerere generala",
+      reason: parsed.reason ?? parsed.presetReason ?? "Cerere generală",
       message: null,
     });
     return;
@@ -208,13 +209,13 @@ export async function handleConsultationTextInput(
   const parsed = parsePayload(payload);
 
   if (step === "phone") {
-    if (value.toLowerCase() === "voi scrie manual") {
-      await ctx.reply("Scrie numarul tau in formatul +373XXXXXXXX.");
+    if (value.toLowerCase() === UI_LABELS.writePhoneManually.toLowerCase()) {
+      await ctx.reply(SHARED_COPY.phoneFormatPrompt);
       return;
     }
 
     if (!isValidPhone(value)) {
-      await ctx.reply("Numarul nu pare valid. Incearca formatul +373XXXXXXXX sau foloseste butonul dedicat.");
+      await ctx.reply(SHARED_COPY.invalidPhonePrompt);
       return;
     }
 
@@ -227,7 +228,7 @@ export async function handleConsultationTextInput(
       await finalizeConsultationRequest(ctx, user, {
         requestedService: parsed.requestedService,
         priority: parsed.priority,
-        reason: parsed.reason ?? parsed.presetReason ?? "Cerere generala",
+        reason: parsed.reason ?? parsed.presetReason ?? "Cerere generală",
         message: null,
       });
       return;

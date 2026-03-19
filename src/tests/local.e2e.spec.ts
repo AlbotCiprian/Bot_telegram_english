@@ -35,10 +35,10 @@ describe("local runtime invariants", () => {
 
     expect(rows).toEqual([
       ["\uD83C\uDF93 3 zile gratuite"],
-      ["\uD83D\uDE80 Maraton Engleza", "\uD83D\uDCDA Lectiile tale"],
-      ["\uD83D\uDDE3\uFE0F Webinar: fara frica", "\uD83C\uDFA5 Metoda noastra"],
-      ["\uD83D\uDCBC Programe si preturi", "\u26A1 Contact operator"],
-      ["\uD83D\uDD2E Consultatie cariera"],
+      ["\uD83D\uDE80 Maraton de engleză", "\uD83D\uDCDA Lecțiile tale"],
+      ["\uD83D\uDDE3\uFE0F Webinar: fără frică", "\uD83C\uDFA5 Metoda noastră"],
+      ["\uD83D\uDCBC Programe și prețuri", "\u26A1 Contact operator"],
+      ["\uD83D\uDD2E Consultație în carieră"],
     ]);
   });
 
@@ -91,9 +91,14 @@ describe("local runtime invariants", () => {
     expect(resolveExistingMediaFile("Image_welcome.JPG")).toBeTruthy();
   });
 
+  it("resolves versioned lesson and promo assets through aliases", () => {
+    expect(resolveExistingMediaFile("lesson-1-v2-landscape.mp4")).toBeTruthy();
+    expect(resolveExistingMediaFile("method-v2-vertical.mp4")).toBeTruthy();
+  });
+
   it("maps reply keyboard labels back to menu actions", () => {
     expect(resolveMenuActionFromLabel("\uD83C\uDF93 3 zile gratuite")).toBe("free_lessons");
-    expect(resolveMenuActionFromLabel("\uD83D\uDCDA Lectiile tale")).toBe("lessons");
+    expect(resolveMenuActionFromLabel("\uD83D\uDCDA Lecțiile tale")).toBe("lessons");
     expect(resolveMenuActionFromLabel("\u26A1 Contact operator")).toBe("operator");
   });
 
@@ -122,16 +127,16 @@ describe("local runtime invariants", () => {
   it("renders short marathon landing and package messages", () => {
     const basicPackage = getMarathonPackageByKey("basic");
     if (!basicPackage) {
-      throw new Error("Pachetul Basic nu a fost gasit.");
+      throw new Error("Pachetul Basic nu a fost găsit.");
     }
 
     const offer = getMarathonOffer("basic", 1);
     if (!offer) {
-      throw new Error("Oferta Basic pentru index 1 nu a fost gasita.");
+      throw new Error("Oferta Basic pentru index 1 nu a fost găsită.");
     }
 
     expect(buildMarathonLandingMessage()).toContain("Alege pachetul potrivit");
-    expect(buildMarathonPackageMessage(basicPackage)).toContain("Alege data de start disponibila");
-    expect(buildMarathonOfferMessage(basicPackage, offer)).toMatch(/Pret:\s*109\s*eur/i);
+    expect(buildMarathonPackageMessage(basicPackage)).toContain("Alege data de start disponibilă");
+    expect(buildMarathonOfferMessage(basicPackage, offer)).toMatch(/Preț:\s*109\s*eur/i);
   });
 });

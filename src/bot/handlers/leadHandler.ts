@@ -1,4 +1,5 @@
 import { Context, Markup } from "telegraf";
+import { SHARED_COPY, UI_LABELS } from "../../content/copy.js";
 import { prisma } from "../../db/client.js";
 import { PUBLIC_ENTRY_LABELS, PublicEntryKey } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
@@ -17,12 +18,12 @@ import { finalizeLeadAndStartCampaign } from "./lessonHandler.js";
 
 export async function replyLeadStepPrompt(ctx: Context, step: LeadCaptureStep): Promise<void> {
   if (step === "first_name") {
-    await ctx.reply("Cum te numesti?");
+    await ctx.reply("Cum te numești?");
     return;
   }
 
   if (step === "phone") {
-    await ctx.reply("Te rog trimite numarul tau de telefon.", {
+    await ctx.reply("Te rog să trimiți numărul tău de telefon.", {
       reply_markup: getPhoneRequestKeyboard().reply_markup,
     });
     return;
@@ -30,7 +31,7 @@ export async function replyLeadStepPrompt(ctx: Context, step: LeadCaptureStep): 
 
   if (step === "consent_privacy") {
     await ctx.reply(
-      "Accept politica de confidentialitate si sunt de acord sa primesc notificari despre cursuri si oferte.",
+      "Accept politica de confidențialitate și sunt de acord să primesc notificări despre cursuri și oferte.",
       {
         reply_markup: getPrivacyChoiceKeyboard().reply_markup,
       },
@@ -57,17 +58,17 @@ export async function startLeadCapture(
   if (!options?.silentIntro) {
     const firstRequestedService =
       options?.firstRequestedService && PUBLIC_ENTRY_LABELS[options.firstRequestedService]
-        ? `Mai intai iti activam rapid accesul pentru: ${PUBLIC_ENTRY_LABELS[options.firstRequestedService]}.`
-        : "Mai intai iti activam rapid accesul.";
+        ? `Mai întâi îți activăm rapid accesul pentru: ${PUBLIC_ENTRY_LABELS[options.firstRequestedService]}.`
+        : "Mai întâi îți activăm rapid accesul.";
 
-    await ctx.reply(`${firstRequestedService}\n\nAm nevoie de cateva date de baza ca sa continuam.`);
+    await ctx.reply(`${firstRequestedService}\n\nAm nevoie de câteva date de bază ca să continuăm.`);
   }
 
   await replyLeadStepPrompt(ctx, "first_name");
 }
 
 export async function resumeLeadCapture(ctx: Context, step: LeadCaptureStep): Promise<void> {
-  await ctx.reply("Continuam exact de unde ai ramas.");
+  await ctx.reply(SHARED_COPY.continueFromWhereLeftOff);
   await replyLeadStepPrompt(ctx, step);
 }
 
@@ -79,7 +80,7 @@ export async function startCourseInterestFlow(ctx: Context, user: BotUser): Prom
     payload: {},
   });
 
-  await ctx.reply("Hai sa te calific rapid pentru curs. Care este nivelul tau actual de engleza?");
+  await ctx.reply("Hai să te calific rapid pentru curs. Care este nivelul tău actual de engleză?");
 }
 
 export async function handleLeadContactInput(
@@ -95,7 +96,7 @@ export async function handleLeadContactInput(
   });
 
   await updateSessionStep(user.id, "consent_privacy");
-  await ctx.reply("Am salvat numarul. Mai am nevoie doar de acordul tau pentru a continua.", {
+  await ctx.reply("Am salvat numărul. Mai am nevoie doar de acordul tău pentru a continua.", {
     reply_markup: Markup.removeKeyboard().reply_markup,
   });
   await replyLeadStepPrompt(ctx, "consent_privacy");
@@ -114,7 +115,7 @@ export async function handleLeadTextInput(
     const [firstName, ...rest] = value.split(" ");
 
     if (!firstName) {
-      await ctx.reply("Scrie numele tau ca sa continuam.");
+      await ctx.reply("Scrie numele tău ca să continuăm.");
       return;
     }
 
@@ -131,13 +132,13 @@ export async function handleLeadTextInput(
   }
 
   if (step === "phone") {
-    if (value.toLowerCase() === "voi scrie manual") {
-      await ctx.reply("Scrie numarul tau in formatul +373XXXXXXXX.");
+    if (value.toLowerCase() === UI_LABELS.writePhoneManually.toLowerCase()) {
+      await ctx.reply(SHARED_COPY.phoneFormatPrompt);
       return;
     }
 
     if (!isValidPhone(value)) {
-      await ctx.reply("Numarul nu pare valid. Incearca formatul +373XXXXXXXX sau foloseste butonul dedicat.");
+      await ctx.reply(SHARED_COPY.invalidPhonePrompt);
       return;
     }
 
@@ -151,9 +152,9 @@ export async function handleLeadTextInput(
   }
 
   if (step === "consent_privacy") {
-    const parsed = value === "✔ Accept" ? true : parseBooleanChoice(value);
+    const parsed = value === UI_LABELS.acceptPrivacy ? true : parseBooleanChoice(value);
     if (parsed !== true) {
-      await ctx.reply("Pentru a continua cu seria gratuita, apasa butonul ✔ Accept.");
+      await ctx.reply(SHARED_COPY.acceptPrivacyRequired);
       return;
     }
 
@@ -190,7 +191,7 @@ export async function handleCourseInterestTextInput(
       data: { englishLevel: value },
     });
     await updateSessionStep(user.id, "goal");
-    await ctx.reply("Pentru ce iti trebuie cel mai mult engleza acum?");
+    await ctx.reply("Pentru ce îți trebuie cel mai mult engleza acum?");
     return;
   }
 
@@ -200,7 +201,7 @@ export async function handleCourseInterestTextInput(
       data: { goal: value },
     });
     await updateSessionStep(user.id, "time_available");
-    await ctx.reply("Cat timp realist poti aloca saptamanal?");
+    await ctx.reply("Cât timp realist poți aloca săptămânal?");
     return;
   }
 
@@ -210,14 +211,14 @@ export async function handleCourseInterestTextInput(
       data: { timeAvailable: value },
     });
     await updateSessionStep(user.id, "wants_contact");
-    await ctx.reply("Vrei sa fii contactat pentru o recomandare de curs? Raspunde cu Da sau Nu.");
+    await ctx.reply("Vrei să fii contactat pentru o recomandare de curs? Răspunde cu Da sau Nu.");
     return;
   }
 
   if (step === "wants_contact") {
     const parsed = parseBooleanChoice(value);
     if (parsed === null) {
-      await ctx.reply("Te rog raspunde cu Da sau Nu.");
+      await ctx.reply("Te rog să răspunzi cu Da sau Nu.");
       return;
     }
 
@@ -240,7 +241,7 @@ export async function handleCourseInterestTextInput(
       },
     });
 
-    await ctx.reply("Perfect. Am salvat interesul tau pentru curs si am trimis datele mai departe.", {
+    await ctx.reply("Perfect. Am salvat interesul tău pentru curs și am trimis datele mai departe.", {
       reply_markup: getMainMenuKeyboard({ showLessons: Boolean(user.lesson1Unlocked || user.currentLessonDay > 0) }).reply_markup,
     });
   }
@@ -257,7 +258,7 @@ export async function handleConsentCallback(
 
   if (type === "privacy") {
     if (!value) {
-      await ctx.reply("Pentru a continua cu seria gratuita, apasa butonul ✔ Accept.");
+      await ctx.reply(SHARED_COPY.acceptPrivacyRequired);
       return;
     }
 

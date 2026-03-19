@@ -1,3 +1,4 @@
+import { UI_LABELS } from "./copy.js";
 import { config } from "../utils/config.js";
 
 const MARATHON_TIMEZONE = "Europe/Chisinau";
@@ -7,22 +8,22 @@ export const BRANDING = {
   websiteUrl: "https://www.expres.allengual.md/",
   consultationUrl: "https://www.expres.allengual.md/",
   accentLine:
-    "Academia care te ajuta sa treci de la nesiguranta la engleza vorbita liber si folosita pentru crestere profesionala.",
+    "Academia care te ajută să treci de la nesiguranță la engleză vorbită liber și folosită pentru creștere profesională.",
 };
 
 export const SERVICE_VIDEO_FILES = {
-  fearSpeaking: "webinar-fear.mp4",
-  teachingMethod: "method.mp4",
-  aboutAcademy: "academy.mp4",
+  fearSpeaking: "webinar-fear-v2-vertical.mp4",
+  teachingMethod: "method-v2-vertical.mp4",
+  aboutAcademy: "academy-v2-vertical.mp4",
 } as const;
 
-export const LEAD_LEVEL_OPTIONS = ["Incepator", "Elementar", "Intermediar", "Nu stiu"] as const;
+export const LEAD_LEVEL_OPTIONS = ["Începător", "Elementar", "Intermediar", "Nu știu"] as const;
 
 export const LEAD_GOAL_OPTIONS = [
-  "Job / cariera",
-  "Calatorii",
+  "Job / carieră",
+  "Călătorii",
   "Studii",
-  "Dezvoltare personala",
+  "Dezvoltare personală",
 ] as const;
 
 function buildDateKey(date: Date, timeZone = MARATHON_TIMEZONE): string {
@@ -93,18 +94,18 @@ function buildMarathonPeriodLabel(): string {
   const end = parseOptionalDate(config.MARATHON_END_DATE);
 
   if (start && end) {
-    return `Perioada activa: ${formatDateLabel(start)} - ${formatDateLabel(end)}.`;
+    return `Perioada activă: ${formatDateLabel(start)} - ${formatDateLabel(end)}.`;
   }
 
   if (start) {
-    return `Perioada activa incepe la ${formatDateLabel(start)}.`;
+    return `Perioada activă începe la ${formatDateLabel(start)}.`;
   }
 
   if (end) {
-    return `Perioada activa este deschisa pana la ${formatDateLabel(end)}.`;
+    return `Perioada activă este deschisă până la ${formatDateLabel(end)}.`;
   }
 
-  return "Programul incepe dupa 10 aprilie si ruleaza pe parcursul a cateva saptamani.";
+  return "Programul începe după 10 aprilie și rulează pe parcursul a câteva săptămâni.";
 }
 
 function buildMarathonPackageBlock(params: {
@@ -116,7 +117,7 @@ function buildMarathonPackageBlock(params: {
   const lines = [`*${params.title}*`];
 
   if (params.price.trim()) {
-    lines.push(`Pret: ${params.price.trim()}`);
+    lines.push(`Preț: ${params.price.trim()}`);
   }
 
   if (params.term.trim()) {
@@ -133,9 +134,9 @@ function buildMarathonPackageBlock(params: {
 
 function buildMarathonBody(): string {
   return [
-    "Program intensiv de 21 de zile, cu 21 de lectii scurte de 2-3 minute si exercitii interactive dupa fiecare lectie.",
+    "Program intensiv de 21 de zile, cu 21 de lecții scurte de 2-3 minute și exerciții interactive după fiecare lecție.",
     "",
-    "Potrivit pentru nivelurile 0 - B1 si construit pentru practica zilnica, rezultate rapide si mai multa incredere in vorbire.",
+    "Potrivit pentru nivelurile 0 - B1 și construit pentru practică zilnică, rezultate rapide și mai multă încredere în vorbire.",
     "",
     buildMarathonPeriodLabel(),
     "",
@@ -144,7 +145,7 @@ function buildMarathonBody(): string {
       title: "Basic",
       price: config.MARATHON_BASIC_PRICE,
       term: config.MARATHON_BASIC_TERM,
-      bullets: ["acces complet la maraton (21 lectii + exercitii interactive)"],
+      bullets: ["acces complet la maraton (21 lecții + exerciții interactive)"],
     }),
     ...buildMarathonPackageBlock({
       title: "Silver",
@@ -152,7 +153,7 @@ function buildMarathonBody(): string {
       term: config.MARATHON_SILVER_TERM,
       bullets: [
         "acces complet la maraton",
-        "meditatie audio cu afirmatii pozitive in engleza",
+        "meditație audio cu afirmații pozitive în engleză",
         "acces la chat suport cu Victoria",
       ],
     }),
@@ -162,9 +163,9 @@ function buildMarathonBody(): string {
       term: config.MARATHON_GOLD_TERM,
       bullets: [
         "acces complet la maraton",
-        "meditatie audio cu afirmatii pozitive in engleza",
+        "meditație audio cu afirmații pozitive în engleză",
         "chat suport cu Victoria",
-        "consultanta astrologica EXPRESS de cariera",
+        "consultație astrologică EXPRESS de carieră",
       ],
     }),
     ...buildMarathonPackageBlock({
@@ -173,29 +174,29 @@ function buildMarathonBody(): string {
       term: config.MARATHON_PREMIUM_TERM,
       bullets: [
         "tot din Gold",
-        'acces la webinar LIVE din 21 aprilie: "Cum a construit un imperiu educational de la credite"',
+        'acces la webinar LIVE din 21 aprilie: "Cum a construit un imperiu educațional de la credite"',
       ],
     }),
     ...buildMarathonPackageBlock({
       title: "VIP (doar 5 locuri)",
       price: config.MARATHON_VIP_PRICE,
       term: config.MARATHON_VIP_TERM,
-      bullets: ["tot din Premium", "consultanta individuala 1 la 1 cu Victoria"],
+      bullets: ["tot din Premium", "consultație individuală 1 la 1 cu Victoria"],
     }),
-    "Accesul la maraton, meditatie si webinar este valabil 6 luni.",
+    "Accesul la maraton, meditație și webinar este valabil 6 luni.",
     "",
-    "Pentru pret, apasa pe butonul de mai jos si iti deschidem imediat cererea in CRM.",
+    "Pentru preț, apasă pe butonul de mai jos și îți deschidem imediat cererea în CRM.",
   ].join("\n");
 }
 
 export const PUBLIC_ENTRY_LABELS = {
-  free_lessons: "🎓 3 zile gratuite",
-  marathon: "🚀 Maraton Engleza",
-  fear_speaking: "🗣️ Webinar: fara frica",
-  teaching_method: "🎥 Metoda noastra",
-  services: "💼 Programe si preturi",
-  operator: "⚡ Contact operator",
-  career_astrology: "🔮 Consultatie cariera",
+  free_lessons: UI_LABELS.freeLessons,
+  marathon: UI_LABELS.marathon,
+  fear_speaking: UI_LABELS.fearSpeaking,
+  teaching_method: UI_LABELS.teachingMethod,
+  services: UI_LABELS.services,
+  operator: UI_LABELS.operator,
+  career_astrology: UI_LABELS.careerAstrology,
 } as const;
 
 export type PublicEntryKey = keyof typeof PUBLIC_ENTRY_LABELS;
@@ -237,47 +238,47 @@ export type MainMenuKey = "lessons" | PublicEntryKey | "ask_ai";
 export const MAIN_MENU = [
   {
     key: "lessons",
-    label: "📚 Lectiile tale",
+    label: UI_LABELS.lessons,
   },
   ...PUBLIC_ENTRY_MENU,
   {
     key: "ask_ai",
-    label: "🤖 Intreaba AI-ul",
+    label: UI_LABELS.askAi,
   },
 ] as const;
 
 export const STATIC_PAGES = {
   welcome: {
-    title: "Buna, bine ai venit la Express English Academy",
+    title: "Bună, bine ai venit la Express English Academy",
     body:
-      "Alege intre 3 lectii gratuite sau Maraton Engleza si pornim rapid, cu un onboarding scurt si clar.",
+      "Alege între 3 lecții gratuite sau Maratonul de engleză și pornim rapid, cu un onboarding scurt și clar.",
   },
   academy: {
     title: "Despre academie",
-    body: "Express English Academy este pentru oameni care vor sa vorbeasca engleza clar, aplicat si cu incredere.",
+    body: "Express English Academy este pentru oameni care vor să vorbească engleză clar, aplicat și cu încredere.",
   },
   marathon: {
-    title: 'Maratonul "Vorbeste engleza fluent EXPRESS"',
+    title: 'Maratonul "Vorbește engleză fluent EXPRESS"',
     body: buildMarathonBody(),
   },
   programs: {
-    title: "Programe si preturi",
+    title: "Programe și prețuri",
     body: [
-      "*Basic - Engleza pentru supravietuire* - 250 EUR",
-      "*Medium - Engleza pentru putere si curaj* - 350 EUR",
-      "*Advanced - Engleza pentru statut si influenta* - 400 EUR",
-      "*Basic + Medium* - 550 EUR in loc de 600 EUR",
+      "*Basic - Engleză pentru supraviețuire* - 250 EUR",
+      "*Medium - Engleză pentru putere și curaj* - 350 EUR",
+      "*Advanced - Engleză pentru statut și influență* - 400 EUR",
+      "*Basic + Medium* - 550 EUR în loc de 600 EUR",
       "",
-      "Deschide site-ul pentru descrierea completa a fiecarui program.",
+      "Deschide site-ul pentru descrierea completă a fiecărui program.",
     ].join("\n"),
   },
   method: {
-    title: "Metoda noastra",
-    body: "Video scurt despre cum lucram: clar, practic si orientat pe vorbire.",
+    title: "Metoda noastră",
+    body: "Video scurt despre cum lucrăm: clar, practic și orientat spre vorbire.",
   },
   fear_speaking: {
-    title: "Webinar: cum scapi de frica de vorbire",
-    body: "Video despre cum spargi blocajul si incepi sa vorbesti cu mai multa siguranta.",
+    title: "Webinar: cum scapi de frica de a vorbi",
+    body: "Video despre cum spargi blocajul și începi să vorbești cu mai multă siguranță.",
   },
   website: {
     title: "Site oficial",
@@ -285,29 +286,29 @@ export const STATIC_PAGES = {
   },
   operator: {
     title: "Contact operator",
-    body: "Completeaza formularul scurt si trimitem cererea direct in CRM cu prioritate mare.",
+    body: "Completează formularul scurt și trimitem cererea direct în CRM cu prioritate mare.",
   },
   astrology: {
-    title: "Consultatie cariera",
-    body: "Completeaza formularul scurt si trimitem cererea in CRM pentru consultatia de cariera.",
+    title: "Consultație în carieră",
+    body: "Completează formularul scurt și trimitem cererea în CRM pentru consultația de carieră.",
   },
   mistakes: {
-    title: "TOP 5 greseli",
+    title: "TOP 5 greșeli",
     body: [
-      "1. invatarea fara practica reala",
-      "2. lipsa de consecventa",
-      "3. accentul exclusiv pe gramatica",
+      "1. învățarea fără practică reală",
+      "2. lipsa de consecvență",
+      "3. accentul exclusiv pe gramatică",
       "4. frica de a vorbi",
       "5. lipsa unui plan simplu",
     ].join("\n"),
   },
   career: {
-    title: "Engleza pentru cariera",
-    body: "Interviuri, emailuri, sedinte, prezentari si comunicare mai sigura la munca.",
+    title: "Engleză pentru carieră",
+    body: "Interviuri, emailuri, ședințe, prezentări și comunicare mai sigură la muncă.",
   },
   busy_people: {
-    title: "Engleza pentru oameni ocupati",
-    body: "Lectii scurte, ritm sustenabil si follow-up clar pentru persoane cu program incarcat.",
+    title: "Engleză pentru oameni ocupați",
+    body: "Lecții scurte, ritm sustenabil și follow-up clar pentru persoane cu program încărcat.",
   },
 } as const;
 
@@ -315,37 +316,37 @@ export const LESSON_SEED_CONTENT = [
   {
     dayNumber: 1,
     key: "free-day-1",
-    title: "Lectia 1 - Present Simple",
-    messageText: "Urmareste lectia si dupa un minut poti porni testul scurt pentru Present Simple.",
+    title: "Lecția 1 - Present Simple",
+    messageText: "Urmărește lecția, iar după un minut poți porni testul scurt pentru Present Simple.",
     mediaType: "video_file",
-    mediaUrl: "lesson-1.mp4",
+    mediaUrl: "lesson-1-v2-landscape.mp4",
     cta: [
-      { label: "📚 Lectiile tale", action: "lessons" },
-      { label: "📞 Vreau la curs", action: "wants_course" },
+      { label: UI_LABELS.lessons, action: "lessons" },
+      { label: UI_LABELS.wantsCourse, action: "wants_course" },
     ],
   },
   {
     dayNumber: 2,
     key: "free-day-2",
-    title: "Lectia 2 - Daily routine",
-    messageText: "Lectia a doua consolideaza raspunsurile de baza si vocabularul de zi cu zi.",
+    title: "Lecția 2 - Daily routine",
+    messageText: "Lecția a doua consolidează răspunsurile de bază și vocabularul de zi cu zi.",
     mediaType: "video_file",
-    mediaUrl: "lesson-2.mp4",
+    mediaUrl: "lesson-2-v2-landscape.mp4",
     cta: [
-      { label: "📚 Lectiile tale", action: "lessons" },
-      { label: "📞 Vreau la curs", action: "wants_course" },
+      { label: UI_LABELS.lessons, action: "lessons" },
+      { label: UI_LABELS.wantsCourse, action: "wants_course" },
     ],
   },
   {
     dayNumber: 3,
     key: "free-day-3",
-    title: "Lectia 3 - Next step",
-    messageText: "Ai ajuns la finalul seriei gratuite. Urmareste lectia si pregateste pasul urmator.",
+    title: "Lecția 3 - Next step",
+    messageText: "Ai ajuns la finalul seriei gratuite. Urmărește lecția și pregătește pasul următor.",
     mediaType: "video_file",
-    mediaUrl: "lesson-3.mp4",
+    mediaUrl: "lesson-3-v2-landscape.mp4",
     cta: [
-      { label: "📞 Vreau la curs", action: "wants_course" },
-      { label: "🤖 Intreaba AI-ul", action: "ask_ai" },
+      { label: UI_LABELS.wantsCourse, action: "wants_course" },
+      { label: UI_LABELS.askAi, action: "ask_ai" },
     ],
   },
 ] as const;

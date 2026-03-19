@@ -1,5 +1,6 @@
 import { User } from "@prisma/client";
 import { Markup } from "telegraf";
+import { UI_LABELS } from "../content/copy.js";
 import { prisma } from "../db/client.js";
 import { LESSON_ONE_QUIZ } from "../content/staticContent.js";
 import { logUserEvent } from "./eventService.js";
@@ -83,20 +84,20 @@ function getLessonAvailability(user: User): LessonAvailability[] {
 
 function buildLessonsMenuText(user: User): string {
   const lessonAvailability = getLessonAvailability(user);
-  const lines = ["*Progresul tau in seria gratuita:*", ""];
+  const lines = ["*Progresul tău în seria gratuită:*", ""];
 
   for (const lesson of lessonAvailability) {
     if (lesson.completed) {
-      lines.push(`✅ Lectia ${lesson.dayNumber}`);
+      lines.push(`✅ Lecția ${lesson.dayNumber}`);
       continue;
     }
 
     if (lesson.unlocked) {
-      lines.push(`🎓 Lectia ${lesson.dayNumber} - disponibila acum`);
+      lines.push(`🎓 Lecția ${lesson.dayNumber} - disponibilă acum`);
       continue;
     }
 
-    lines.push(`🔒 Lectia ${lesson.dayNumber} - se deschide in ${lesson.remainingLabel ?? "00h 00m"}`);
+    lines.push(`🔒 Lecția ${lesson.dayNumber} - se deschide în ${lesson.remainingLabel ?? "00h 00m"}`);
   }
 
   return lines.join("\n");
@@ -105,8 +106,8 @@ function buildLessonsMenuText(user: User): string {
 function buildLessonsMenuKeyboard(user: User) {
   if (!hasStartedFreeLessons(user)) {
     return Markup.inlineKeyboard([
-      [Markup.button.callback("🎓 Porneste 3 zile gratuite", "menu:free_lessons")],
-      [Markup.button.callback("⬅️ Meniul principal", "menu:menu")],
+      [Markup.button.callback("🎓 Pornește 3 zile gratuite", "menu:free_lessons")],
+      [Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")],
     ]);
   }
 
@@ -114,34 +115,34 @@ function buildLessonsMenuKeyboard(user: User) {
     const unlocked = isLessonUnlocked(user, dayNumber);
     return [
       Markup.button.callback(
-        unlocked ? `▶️ Lectia ${dayNumber}` : `🔒 Lectia ${dayNumber}`,
+        unlocked ? `▶️ Lecția ${dayNumber}` : `🔒 Lecția ${dayNumber}`,
         `lesson:open:${dayNumber}`,
       ),
     ];
   });
 
-  rows.push([Markup.button.callback("📞 Vreau la curs", "menu:wants_course")]);
-  rows.push([Markup.button.callback("⬅️ Meniul principal", "menu:menu")]);
+  rows.push([Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")]);
+  rows.push([Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")]);
   return Markup.inlineKeyboard(rows);
 }
 
 function buildUnlockNotificationKeyboard(dayNumber: UnlockDay) {
   return Markup.inlineKeyboard([
-    [Markup.button.callback("▶️ Deschide lectia", `lesson:open:${dayNumber}`)],
-    [Markup.button.callback("📚 Lectiile tale", "menu:lessons")],
+    [Markup.button.callback(UI_LABELS.openLesson, `lesson:open:${dayNumber}`)],
+    [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
   ]);
 }
 
 function buildDeliveredLessonKeyboard(dayNumber: LessonDay) {
   return Markup.inlineKeyboard([
-    [Markup.button.callback("📝 Testeaza-te", `lesson:quiz:${dayNumber}`)],
-    [Markup.button.callback("📚 Lectiile tale", "menu:lessons")],
-    [Markup.button.callback("📞 Vreau la curs", "menu:wants_course")],
+    [Markup.button.callback(UI_LABELS.testYourself, `lesson:quiz:${dayNumber}`)],
+    [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
+    [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
   ]);
 }
 
 function buildCourseCtaKeyboard() {
-  return Markup.inlineKeyboard([[Markup.button.callback("📞 Vreau sa aflu despre curs", "menu:wants_course")]]);
+  return Markup.inlineKeyboard([[Markup.button.callback(UI_LABELS.wantsCourseInfo, "menu:wants_course")]]);
 }
 
 function getUnlockUpdate(dayNumber: UnlockDay): Record<string, boolean> {
@@ -195,10 +196,10 @@ async function sendLessonBody(params: {
       assetKey: buildMediaAssetKey("lesson", params.mediaUrl),
       localFilePath: localVideoPath,
       sourceFileName: params.mediaUrl,
-      uploadNoticeText: "Pregatesc lectia video. Prima incarcare poate dura cateva secunde.",
-      missingFileText: `${caption}\n\nVideo-ul pentru aceasta lectie trebuie copiat in folderul video/ pe server.`,
+      uploadNoticeText: "Pregătesc lecția video. Prima încărcare poate dura câteva secunde.",
+      missingFileText: `${caption}\n\nVideo-ul pentru această lecție trebuie copiat în folderul video/ de pe server.`,
       uploadFailedText:
-        "Nu am putut livra video-ul acestei lectii in configuratia curenta. Pentru fisierele mari, activeaza Local Bot API Server si incearca din nou.",
+        "Nu am putut livra video-ul acestei lecții în configurația curentă. Pentru fișierele mari, activează Local Bot API Server și încearcă din nou.",
       options: {
         caption,
         parse_mode: "Markdown",
@@ -218,7 +219,7 @@ async function sendLessonBody(params: {
 
   await telegram.sendMessage(
     params.chatId,
-    `${caption}\n\nVideo-ul pentru aceasta lectie trebuie copiat in folderul video/ pe server.`,
+    `${caption}\n\nVideo-ul pentru această lecție trebuie copiat în folderul video/ de pe server.`,
     {
       parse_mode: "Markdown",
       reply_markup: buildDeliveredLessonKeyboard(params.dayNumber).reply_markup,
@@ -230,7 +231,7 @@ async function sendCourseFollowUp(chatId: string): Promise<void> {
   const telegram = getTelegramClient();
   await telegram.sendMessage(
     chatId,
-    "Felicitari! Ai terminat cele 3 lectii gratuite.\n\nVrei sa vezi ce program ti se potriveste?",
+    "Felicitări! Ai terminat cele 3 lecții gratuite.\n\nVrei să vezi ce program ți se potrivește?",
     {
       reply_markup: buildCourseCtaKeyboard().reply_markup,
     },
@@ -342,17 +343,17 @@ export async function sendReminder(userId: number, kind: "follow_up" | "inactive
   }
 
   const reminderMap = {
-    follow_up: "Cum ti s-au parut primele lectii? Daca vrei continuarea potrivita, apasa pe Vreau la curs.",
-    inactive: "Ai deja urmatoarea lectie disponibila. Deschide botul si continua in cateva minute.",
-    long_reminder: "Daca vrei sa revii la engleza intr-un ritm clar si sustenabil, iti reactivam imediat traseul potrivit.",
+    follow_up: "Cum ți s-au părut primele lecții? Dacă vrei continuarea potrivită, apasă pe Vreau la curs.",
+    inactive: "Ai deja următoarea lecție disponibilă. Deschide botul și continuă în câteva minute.",
+    long_reminder: "Dacă vrei să revii la engleză într-un ritm clar și sustenabil, îți reactivăm imediat traseul potrivit.",
   };
 
   const telegram = getTelegramClient();
   await telegram.sendMessage(user.telegramId.toString(), reminderMap[kind], {
     reply_markup: Markup.inlineKeyboard([
-      [Markup.button.callback("📞 Vreau la curs", "menu:wants_course")],
-      [Markup.button.callback("📚 Lectiile tale", "menu:lessons")],
-      [Markup.button.callback("⬅️ Meniul principal", "menu:menu")],
+      [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
+      [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
+      [Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")],
     ]).reply_markup,
   });
 
@@ -369,24 +370,24 @@ async function sendLessonOneQuiz(chatId: string): Promise<void> {
   const telegram = getTelegramClient();
   await telegram.sendMessage(
     chatId,
-    "📝 Tema 1 - Present Simple\n\nRaspunde la intrebarile de mai jos direct in Telegram.",
+    "📝 Tema 1 - Present Simple\n\nRăspunde la întrebările de mai jos direct în Telegram.",
   );
 
   for (const item of LESSON_ONE_QUIZ) {
     await telegram.sendQuiz(chatId, item.question, [...item.options], {
       correct_option_id: item.correctOptionIndex,
       is_anonymous: false,
-      explanation: "Verifica regula de Present Simple si continua testul.",
+      explanation: "Verifică regula de Present Simple și continuă testul.",
     });
   }
 
   await telegram.sendMessage(
     chatId,
-    "Perfect. Ai terminat testul pentru Lectia 1. In meniul Lectiile tale vezi cand se deschide urmatoarea lectie.",
+    "Perfect. Ai terminat testul pentru Lecția 1. În meniul Lecțiile tale vezi când se deschide următoarea lecție.",
     {
       reply_markup: Markup.inlineKeyboard([
-        [Markup.button.callback("📚 Lectiile tale", "menu:lessons")],
-        [Markup.button.callback("📞 Vreau la curs", "menu:wants_course")],
+        [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
+        [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
       ]).reply_markup,
     },
   );
@@ -398,7 +399,7 @@ export async function syncLessonUnlockState(userId: number): Promise<User> {
   });
 
   if (!user) {
-    throw new Error(`User ${userId} nu exista.`);
+    throw new Error(`User ${userId} nu există.`);
   }
 
   const now = new Date();
@@ -430,11 +431,11 @@ export async function getLessonsMenu(
   if (!hasStartedFreeLessons(user)) {
     return {
       text: [
-        "*Lectiile tale*",
+        "*Lecțiile tale*",
         "",
-        "Nu ai activat inca seria gratuita de 3 zile.",
+        "Nu ai activat încă seria gratuită de 3 zile.",
         "",
-        "Apasa pe butonul de mai jos si iti deschidem imediat Lectia 1.",
+        "Apasă pe butonul de mai jos și îți deschidem imediat Lecția 1.",
       ].join("\n"),
       replyMarkup: buildLessonsMenuKeyboard(user).reply_markup,
     };
@@ -450,7 +451,7 @@ export async function getLockedLessonMessage(userId: number, dayNumber: LessonDa
   const user = await syncLessonUnlockState(userId);
 
   if (!hasStartedFreeLessons(user)) {
-    return "Nu ai activat inca seria gratuita. Apasa pe «Porneste 3 zile gratuite» din meniu.";
+    return "Nu ai activat încă seria gratuită. Apasă pe «Pornește 3 zile gratuite» din meniu.";
   }
 
   if (isLessonUnlocked(user, dayNumber)) {
@@ -459,9 +460,9 @@ export async function getLockedLessonMessage(userId: number, dayNumber: LessonDa
 
   const unlockTime = getLessonUnlockTime(user, dayNumber);
   return [
-    "🔒 Aceasta lectie nu este inca disponibila.",
+    "🔒 Această lecție nu este încă disponibilă.",
     "",
-    "Se va debloca in:",
+    "Se va debloca în:",
     "",
     `⏳ ${formatRemainingTime(unlockTime) ?? "00h 00m"}`,
   ].join("\n");
@@ -484,7 +485,7 @@ export async function unlockLesson(userId: number, dayNumber: UnlockDay): Promis
   const telegram = getTelegramClient();
   await telegram.sendMessage(
     user.telegramId.toString(),
-    `🎓 Lectia ${dayNumber} este acum disponibila!\n\nContinua seria ta gratuita de engleza.`,
+    `🎓 Lecția ${dayNumber} este acum disponibilă!\n\nContinuă seria ta gratuită de engleză.`,
     {
       reply_markup: buildUnlockNotificationKeyboard(dayNumber).reply_markup,
     },
@@ -514,7 +515,7 @@ export async function deliverLesson(userId: number, dayNumber: LessonDay): Promi
   const user = await syncLessonUnlockState(userId);
 
   if (!isLessonUnlocked(user, dayNumber)) {
-    throw new Error(`Lectia ${dayNumber} nu este inca deblocata pentru userul ${userId}.`);
+    throw new Error(`Lecția ${dayNumber} nu este încă deblocată pentru userul ${userId}.`);
   }
 
   const campaign = await prisma.campaign.findUnique({
@@ -522,7 +523,7 @@ export async function deliverLesson(userId: number, dayNumber: LessonDay): Promi
   });
 
   if (!campaign) {
-    throw new Error("Campania free-lessons nu exista.");
+    throw new Error("Campania free-lessons nu există.");
   }
 
   const lesson = await prisma.lesson.findUnique({
@@ -535,7 +536,7 @@ export async function deliverLesson(userId: number, dayNumber: LessonDay): Promi
   });
 
   if (!lesson) {
-    throw new Error(`Lectia pentru ziua ${dayNumber} nu exista.`);
+    throw new Error(`Lecția pentru ziua ${dayNumber} nu există.`);
   }
 
   await sendLessonBody({
@@ -590,14 +591,14 @@ export async function handleLessonQuiz(
   if (!progress?.videoSentAt) {
     return {
       status: "missing",
-      message: "Deschide mai intai lectia video si apoi revino la test.",
+      message: "Deschide mai întâi lecția video și apoi revino la test.",
     };
   }
 
   if (progress.quizAvailableAt && progress.quizAvailableAt > new Date()) {
     return {
       status: "locked",
-      message: `Mai asteapta putin si apoi incepe testul.\n\n⏳ ${formatRemainingTime(progress.quizAvailableAt) ?? "00h 00m"}`,
+      message: `Mai așteaptă puțin și apoi începe testul.\n\n⏳ ${formatRemainingTime(progress.quizAvailableAt) ?? "00h 00m"}`,
     };
   }
 
@@ -608,14 +609,14 @@ export async function handleLessonQuiz(
   if (!user) {
     return {
       status: "missing",
-      message: "Nu am putut gasi utilizatorul pentru acest test.",
+      message: "Nu am putut găsi utilizatorul pentru acest test.",
     };
   }
 
   if (dayNumber !== 1) {
     return {
       status: "coming_soon",
-      message: "Testul pentru aceasta lectie vine imediat ce adaugam continutul final.",
+      message: "Testul pentru această lecție vine imediat ce adăugăm conținutul final.",
     };
   }
 
@@ -667,15 +668,15 @@ export async function sendLessonNudge(userId: number, dayNumber: UnlockDay, afte
 
   const message =
     afterHours === 12
-      ? `Lectia ${dayNumber} este deja disponibila si te asteapta. Dureaza doar cateva minute.`
-      : `Lectia ${dayNumber} este inca disponibila. Deschide-o acum ca sa continui seria gratuita fara pauza.`;
+      ? `Lecția ${dayNumber} este deja disponibilă și te așteaptă. Durează doar câteva minute.`
+      : `Lecția ${dayNumber} este încă disponibilă. Deschide-o acum ca să continui seria gratuită fără pauză.`;
 
   const telegram = getTelegramClient();
   await telegram.sendMessage(user.telegramId.toString(), message, {
     reply_markup: Markup.inlineKeyboard([
-      [Markup.button.callback(`▶️ Deschide lectia ${dayNumber}`, `lesson:open:${dayNumber}`)],
-      [Markup.button.callback("📚 Lectiile tale", "menu:lessons")],
-      [Markup.button.callback("📞 Vreau la curs", "menu:wants_course")],
+      [Markup.button.callback(`▶️ Deschide lecția ${dayNumber}`, `lesson:open:${dayNumber}`)],
+      [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
+      [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
     ]).reply_markup,
   });
 

@@ -61,8 +61,8 @@ export async function finalizeLeadAndStartCampaign(params: {
 
   await params.ctx.reply(
     targetAction
-      ? "Perfect. Datele tale au fost salvate in CRM. Iti deschid acum serviciul pe care l-ai ales."
-      : "Perfect. Datele tale au fost salvate in CRM. Meniul tau este acum activ.",
+      ? "Perfect. Datele tale au fost salvate în CRM. Îți deschid acum serviciul pe care l-ai ales."
+      : "Perfect. Datele tale au fost salvate în CRM. Meniul tău este acum activ.",
     {
       reply_markup: getMainMenuKeyboard().reply_markup,
     },
@@ -89,7 +89,7 @@ export async function handleFreeLessonEntry(ctx: Context, user: BotUser): Promis
 
   if (currentUser?.leadFormCompleted) {
     await ctx.reply(
-      `Ai deja acces la seria gratuita. Deschide sectiunea Lectiile tale ca sa vezi ce este disponibil acum.`,
+      "Ai deja acces la seria gratuită. Deschide secțiunea Lecțiile tale ca să vezi ce este disponibil acum.",
       {
         reply_markup: getMainMenuKeyboard().reply_markup,
       },
@@ -98,6 +98,6 @@ export async function handleFreeLessonEntry(ctx: Context, user: BotUser): Promis
   }
 
   await ctx.reply(
-    "Pornim cu un onboarding scurt. Incepem simplu: cum te numesti?",
+    "Pornim cu un onboarding scurt. Începem simplu: cum te numești?",
   );
 }

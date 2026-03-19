@@ -24,6 +24,11 @@ type SendVideoAssetParams = {
 
 type SendVideoAssetStatus = "cached" | "uploaded" | "missing" | "failed";
 
+type InvalidateMediaAssetCacheParams = {
+  assetKeys?: string[];
+  sourceFileNames?: string[];
+};
+
 function getTelegramErrorDescription(error: unknown): string | null {
   if (!error || typeof error !== "object") {
     return null;
@@ -61,6 +66,38 @@ export function buildMediaAssetKey(scope: string, fileName: string): string {
   return `${scope}:${fileName}`;
 }
 
+export async function invalidateMediaAssetCache(params: InvalidateMediaAssetCacheParams) {
+  const assetKeys = params.assetKeys?.filter(Boolean) ?? [];
+  const sourceFileNames = params.sourceFileNames?.filter(Boolean) ?? [];
+
+  if (assetKeys.length === 0 && sourceFileNames.length === 0) {
+    return { count: 0 };
+  }
+
+  const orConditions: Array<Record<string, unknown>> = [];
+  if (assetKeys.length > 0) {
+    orConditions.push({
+      assetKey: {
+        in: assetKeys,
+      },
+    });
+  }
+
+  if (sourceFileNames.length > 0) {
+    orConditions.push({
+      sourceFileName: {
+        in: sourceFileNames,
+      },
+    });
+  }
+
+  return prisma.telegramMediaAsset.deleteMany({
+    where: {
+      OR: orConditions,
+    },
+  });
+}
+
 export async function sendVideoAsset(params: SendVideoAssetParams): Promise<SendVideoAssetStatus> {
   const telegram = getTelegramClient();
   const cachedAsset = await prisma.telegramMediaAsset.findUnique({
@@ -72,7 +109,7 @@ export async function sendVideoAsset(params: SendVideoAssetParams): Promise<Send
       await telegram.sendVideo(params.chatId, cachedAsset.telegramFileId, params.options);
       return "cached";
     } catch (error) {
-      logger.warn({ err: error, assetKey: params.assetKey }, "Trimiterea prin telegram_file_id a esuat, reiau din fisier.");
+      logger.warn({ err: error, assetKey: params.assetKey }, "Trimiterea prin telegram_file_id a eșuat, reiau din fișier.");
     }
   }
 
@@ -94,7 +131,7 @@ export async function sendVideoAsset(params: SendVideoAssetParams): Promise<Send
   try {
     message = await telegram.sendVideo(params.chatId, Input.fromLocalFile(params.localFilePath), params.options);
   } catch (error) {
-    logger.error({ err: error, assetKey: params.assetKey }, "Upload-ul video din fisier local a esuat.");
+    logger.error({ err: error, assetKey: params.assetKey }, "Upload-ul video din fișier local a eșuat.");
 
     if (params.uploadFailedText) {
       const description = getTelegramErrorDescription(error);

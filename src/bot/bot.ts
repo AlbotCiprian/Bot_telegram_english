@@ -1,4 +1,5 @@
 import { Context, Telegraf } from "telegraf";
+import { SHARED_COPY } from "../content/copy.js";
 import { prisma } from "../db/client.js";
 import { STATIC_PAGES } from "../content/staticContent.js";
 import { logUserEvent } from "../services/eventService.js";
@@ -127,7 +128,7 @@ async function handleMenuAction(
     });
 
     if (!currentUser?.leadFormCompleted) {
-      await ctx.reply("Inainte de flow-ul comercial, am nevoie de datele de contact de baza.");
+      await ctx.reply(SHARED_COPY.commercialContactRequired);
       await startLeadCapture(ctx, user, "wants_course");
       return;
     }
@@ -216,7 +217,7 @@ export function createBot(): Telegraf<Context> {
     }
     await resetUserForTesting(user.id);
     await ctx.reply(
-      "Starea ta locala a fost resetata. Acum poti da din nou /start ca sa testezi onboarding-ul de la zero.",
+      "Starea ta locală a fost resetată. Acum poți da din nou /start ca să testezi onboarding-ul de la zero.",
     );
   });
 
@@ -264,7 +265,7 @@ export function createBot(): Telegraf<Context> {
 
     const user = await getOrCreateUser(ctx.from);
     if (!user.leadFormCompleted) {
-      await ctx.reply("Mai intai activeaza accesul din meniul de start.", {
+      await ctx.reply(SHARED_COPY.startMenuActivationRequired, {
         reply_markup: getPublicMenuKeyboard().reply_markup,
       });
       return;
@@ -290,7 +291,7 @@ export function createBot(): Telegraf<Context> {
 
     const user = await getOrCreateUser(ctx.from);
     if (!user.leadFormCompleted) {
-      await ctx.reply("Mai intai activeaza accesul din meniul de start.", {
+      await ctx.reply(SHARED_COPY.startMenuActivationRequired, {
         reply_markup: getPublicMenuKeyboard().reply_markup,
       });
       return;
@@ -356,13 +357,13 @@ export function createBot(): Telegraf<Context> {
 
     if (!session?.flowType) {
       if (!user.leadFormCompleted) {
-        await ctx.reply("Alege un serviciu din meniul de mai jos ca sa pornim onboardingul rapid.", {
+        await ctx.reply(SHARED_COPY.onboardingMenuPrompt, {
           reply_markup: getPublicMenuKeyboard().reply_markup,
         });
         return;
       }
 
-      await ctx.reply("Foloseste meniul principal pentru a continua.", {
+      await ctx.reply(SHARED_COPY.useMainMenuPrompt, {
         reply_markup: getMainMenuKeyboard({ showLessons: showLessonsInMenu(user) }).reply_markup,
       });
       return;

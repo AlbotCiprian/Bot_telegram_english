@@ -146,7 +146,7 @@ export async function createLeadInKommo(userId: number, firstRequestedService?: 
   });
 
   if (!user) {
-    throw new Error(`User ${userId} nu exista.`);
+    throw new Error(`User ${userId} nu există.`);
   }
 
   if (user.kommoLeadId) {
@@ -242,14 +242,14 @@ export async function createLeadInKommo(userId: number, firstRequestedService?: 
               entity_id: leadId,
               note_type: "common",
               params: {
-                text: `Primul serviciu ales in bot: ${leadIntent.label}`,
+                text: `Primul serviciu ales în bot: ${leadIntent.label}`,
               },
             },
           ],
           { headers: getKommoHeaders() },
         );
       } catch (noteError) {
-        logger.warn({ err: noteError, userId, leadId }, "Nu am putut salva nota interna Kommo pentru intentia initiala.");
+        logger.warn({ err: noteError, userId, leadId }, "Nu am putut salva nota internă Kommo pentru intenția inițială.");
       }
     }
 
@@ -272,7 +272,7 @@ export async function createLeadInKommo(userId: number, firstRequestedService?: 
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
-    logger.error({ err: error }, "Kommo create lead esuat.");
+    logger.error({ err: error }, "Kommo create lead eșuat.");
     await prisma.crmSyncLog.create({
       data: {
         userId,
@@ -303,7 +303,7 @@ export async function requestConsultationInKommo(
   });
 
   if (!user) {
-    throw new Error(`User ${userId} nu exista.`);
+    throw new Error(`User ${userId} nu există.`);
   }
 
   if (!user.kommoLeadId) {
@@ -316,7 +316,7 @@ export async function requestConsultationInKommo(
   });
 
   if (!refreshedUser?.kommoLeadId) {
-    throw new Error("Lead-ul Kommo nu a putut fi creat inainte de request_consultation.");
+    throw new Error("Lead-ul Kommo nu a putut fi creat înainte de request_consultation.");
   }
 
   const patchPayload = [
@@ -336,11 +336,11 @@ export async function requestConsultationInKommo(
       note_type: "common",
       params: {
         text: [
-          "Cerere noua din botul Telegram:",
+          "Cerere nouă din botul Telegram:",
           `Tip cerere: ${serviceLabel}`,
           `Prioritate: ${params.priority === "urgent_contact" ? "Urgent contact" : "Consultation Requested"}`,
           `Motiv: ${params.reason?.trim() || "nespecificat"}`,
-          `Mesaj: ${params.note?.trim() || "fara mesaj suplimentar"}`,
+          `Mesaj: ${params.note?.trim() || "fără mesaj suplimentar"}`,
           `Telefon: ${refreshedUser.phone ?? "nesetat"}`,
           `Telegram: ${refreshedUser.username ? `@${refreshedUser.username}` : refreshedUser.telegramId.toString()}`,
         ].join("\n"),
@@ -391,7 +391,7 @@ export async function requestConsultationInKommo(
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
-    logger.error({ err: error, userId, requestedService: params.requestedService }, "Kommo request consultation esuat.");
+    logger.error({ err: error, userId, requestedService: params.requestedService }, "Kommo request consultation eșuat.");
     await prisma.crmSyncLog.create({
       data: {
         userId,
@@ -427,7 +427,7 @@ export async function requestMarathonInterestInKommo(
   });
 
   if (!user) {
-    throw new Error(`User ${userId} nu exista.`);
+    throw new Error(`User ${userId} nu există.`);
   }
 
   if (!user.kommoLeadId) {
@@ -440,7 +440,7 @@ export async function requestMarathonInterestInKommo(
   });
 
   if (!refreshedUser?.kommoLeadId) {
-    throw new Error("Lead-ul Kommo nu a putut fi creat inainte de request_marathon_interest.");
+    throw new Error("Lead-ul Kommo nu a putut fi creat înainte de request_marathon_interest.");
   }
 
   const stageId = resolveConfiguredStageId(config.KOMMO_STAGE_MARATON_ID, config.KOMMO_STAGE_NEW_ID);
@@ -462,11 +462,11 @@ export async function requestMarathonInterestInKommo(
       note_type: "common",
       params: {
         text: [
-          "Cerere noua din botul Telegram:",
-          "Tip cerere: Maraton Engleza",
+          "Cerere nouă din botul Telegram:",
+          "Tip cerere: Maraton de engleză",
           `Pachet: ${params.packageLabel}`,
-          `Data start: ${params.cohortLabel}`,
-          `Pret: ${params.priceLabel}`,
+          `Data de start: ${params.cohortLabel}`,
+          `Preț: ${params.priceLabel}`,
           `Telefon: ${refreshedUser.phone ?? "nesetat"}`,
           `Telegram: ${refreshedUser.username ? `@${refreshedUser.username}` : refreshedUser.telegramId.toString()}`,
         ].join("\n"),
@@ -517,7 +517,7 @@ export async function requestMarathonInterestInKommo(
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
-    logger.error({ err: error, userId, packageKey: params.packageKey }, "Kommo request marathon interest esuat.");
+    logger.error({ err: error, userId, packageKey: params.packageKey }, "Kommo request marathon interest eșuat.");
     await prisma.crmSyncLog.create({
       data: {
         userId,
@@ -545,7 +545,7 @@ export async function qualifyLeadInKommo(userId: number): Promise<void> {
   });
 
   if (!user) {
-    throw new Error(`User ${userId} nu exista.`);
+    throw new Error(`User ${userId} nu există.`);
   }
 
   if (!user.kommoLeadId) {
@@ -558,7 +558,7 @@ export async function qualifyLeadInKommo(userId: number): Promise<void> {
   });
 
   if (!refreshedUser?.kommoLeadId) {
-    throw new Error("Lead-ul Kommo nu a putut fi creat inainte de calificare.");
+    throw new Error("Lead-ul Kommo nu a putut fi creat înainte de calificare.");
   }
 
   const wantsConsultation = Boolean(refreshedUser.profile?.consultationWanted);
@@ -625,7 +625,7 @@ export async function qualifyLeadInKommo(userId: number): Promise<void> {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
-    logger.error({ err: error }, "Kommo qualify lead esuat.");
+    logger.error({ err: error }, "Kommo qualify lead eșuat.");
     await prisma.crmSyncLog.create({
       data: {
         userId,
