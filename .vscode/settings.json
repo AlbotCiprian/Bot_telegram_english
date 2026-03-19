@@ -6,7 +6,7 @@
   "markdown-pdf.highlightStyle": "github.css",
   "markdown-pdf.displayHeaderFooter": true,
   "markdown-pdf.headerTemplate": "<div></div>",
-  "markdown-pdf.footerTemplate": "<div style=\"font-size:8px; width:100%; text-align:center; color:#6b7280; padding:0 24px;\"><span class=\"title\"></span> | <span class=\"pageNumber\"></span>/<span class=\"totalPages\"></span></div>",
+  "markdown-pdf.footerTemplate": "<div style=\"font-size:8px; width:100%; text-align:center; color:#1d4ed8; padding:0 24px;\"><span class=\"title\"></span> | <span class=\"pageNumber\"></span>/<span class=\"totalPages\"></span></div>",
   "markdown-pdf.margin.top": "20mm",
   "markdown-pdf.margin.bottom": "18mm",
   "markdown-pdf.margin.left": "14mm",
