@@ -1,4 +1,4 @@
-import { Context, Telegraf } from "telegraf";
+import { Context, Markup, Telegraf } from "telegraf";
 import { TelegramError } from "telegraf";
 import { closeResetResources, wipeBotState } from "./services/resetService.js";
 import { config, isConfigured } from "./utils/config.js";
@@ -48,14 +48,55 @@ function hasTextMessage(ctx: Context): ctx is Context & { message: { text: strin
   return "message" in ctx && typeof (ctx.message as { text?: unknown })?.text === "string";
 }
 
-async function safeReply(ctx: Context, text: string): Promise<void> {
+function getOpsMenuKeyboard() {
+  return Markup.keyboard([
+    ["ℹ️ Help", "/status"],
+    ["/health", "/queues"],
+    ["/jobs", "/logs_bot"],
+    ["/logs_worker", "/daily_now"],
+    ["/restart_express"],
+  ]).resize();
+}
+
+function buildOpsAuthMessage(): string {
+  return [
+    "*Autentificare reusita*",
+    "",
+    "Foloseste butoanele de mai jos.",
+    "Pentru lista scurta de comenzi: `/help`",
+  ].join("\n");
+}
+
+function buildOpsHelpMessage(): string {
+  return [
+    "*Ops Bot*",
+    "",
+    "`/status` status complet",
+    "`/health` verdict rapid",
+    "`/queues` backlog joburi",
+    "`/jobs` ultimele joburi",
+    "`/logs_bot` log bot",
+    "`/logs_worker` log worker",
+    "`/restart_express` restart bot + worker",
+    "`/daily_now` raport acum",
+  ].join("\n");
+}
+
+async function safeReply(
+  ctx: Context,
+  text: string,
+  options?: { withMenu?: boolean },
+): Promise<void> {
   try {
     await ctx.reply(text, {
       parse_mode: "Markdown",
+      reply_markup: options?.withMenu ? getOpsMenuKeyboard().reply_markup : undefined,
     });
   } catch (error) {
     if (error instanceof TelegramError && error.response?.error_code === 400) {
-      await ctx.reply(text);
+      await ctx.reply(text, {
+        reply_markup: options?.withMenu ? getOpsMenuKeyboard().reply_markup : undefined,
+      });
       return;
     }
 
@@ -63,8 +104,14 @@ async function safeReply(ctx: Context, text: string): Promise<void> {
   }
 }
 
-async function safePlainReply(ctx: Context, text: string): Promise<void> {
-  await ctx.reply(text);
+async function safePlainReply(
+  ctx: Context,
+  text: string,
+  options?: { withMenu?: boolean },
+): Promise<void> {
+  await ctx.reply(text, {
+    reply_markup: options?.withMenu ? getOpsMenuKeyboard().reply_markup : undefined,
+  });
 }
 
 async function safeAlertMessage(bot: Telegraf<Context>, chatId: string, text: string): Promise<void> {
@@ -145,23 +192,7 @@ async function bootstrapOpsBot(): Promise<void> {
     if (text === monitorPassword) {
       state.authenticated = true;
       state.failedAttempts = 0;
-      await safeReply(
-        ctx,
-        [
-          "*Autentificare reusita*",
-          "",
-          "Comenzi disponibile:",
-          "/status",
-          "/health",
-          "/queues",
-          "/jobs",
-          "/logs_bot",
-          "/logs_worker",
-          "/restart_express",
-          "/daily_now",
-          "/reset_state CONFIRM",
-        ].join("\n"),
-      );
+      await safeReply(ctx, buildOpsAuthMessage(), { withMenu: true });
       return;
     }
 
@@ -183,64 +214,56 @@ async function bootstrapOpsBot(): Promise<void> {
       return;
     }
 
-    await safeReply(
-      ctx,
-      [
-        "*Ops Bot*",
-        "",
-        "Comenzi disponibile:",
-        "/status",
-        "/health",
-        "/queues",
-        "/jobs",
-        "/logs_bot",
-        "/logs_worker",
-        "/restart_express",
-        "/daily_now",
-        "/reset_state CONFIRM",
-      ].join("\n"),
-    );
+    await safeReply(ctx, buildOpsAuthMessage(), { withMenu: true });
+  });
+
+  bot.command("help", async (ctx) => {
+    await safeReply(ctx, buildOpsHelpMessage(), { withMenu: true });
+  });
+
+  bot.hears("ℹ️ Help", async (ctx) => {
+    await safeReply(ctx, buildOpsHelpMessage(), { withMenu: true });
   });
 
   bot.command("status", async (ctx) => {
     const status = await getOpsStatus();
-    await safeReply(ctx, formatOpsStatus(status));
+    await safeReply(ctx, formatOpsStatus(status), { withMenu: true });
   });
 
   bot.command("health", async (ctx) => {
     const status = await getOpsStatus();
-    await safeReply(ctx, formatHealthStatus(status));
+    await safeReply(ctx, formatHealthStatus(status), { withMenu: true });
   });
 
   bot.command("queues", async (ctx) => {
     const status = await getOpsStatus();
-    await safeReply(ctx, formatQueuesStatus(status));
+    await safeReply(ctx, formatQueuesStatus(status), { withMenu: true });
   });
 
   bot.command("jobs", async (ctx) => {
     const status = await getOpsStatus();
-    await safePlainReply(ctx, formatJobsStatus(status));
+    await safePlainReply(ctx, formatJobsStatus(status), { withMenu: true });
   });
 
   bot.command("logs_bot", async (ctx) => {
     const logs = await getBotLogTail();
-    await safePlainReply(ctx, trimForTelegram(logs));
+    await safePlainReply(ctx, trimForTelegram(logs), { withMenu: true });
   });
 
   bot.command("logs_worker", async (ctx) => {
     const logs = await getWorkerLogTail();
-    await safePlainReply(ctx, trimForTelegram(logs));
+    await safePlainReply(ctx, trimForTelegram(logs), { withMenu: true });
   });
 
   bot.command("restart_express", async (ctx) => {
-    await ctx.reply("Restart bot + worker in curs...");
+    await safePlainReply(ctx, "Restart bot + worker in curs...", { withMenu: true });
     await restartExpressRuntime();
-    await ctx.reply("Restart trimis catre containerele Express.");
+    await safePlainReply(ctx, "Restart trimis catre containerele Express.", { withMenu: true });
   });
 
   bot.command("daily_now", async (ctx) => {
     const status = await getOpsStatus();
-    await safeReply(ctx, formatOpsStatus(status));
+    await safeReply(ctx, formatOpsStatus(status), { withMenu: true });
   });
 
   bot.command("reset_state", async (ctx) => {
@@ -249,18 +272,18 @@ async function bootstrapOpsBot(): Promise<void> {
       : "";
 
     if (!config.monitorDangerousCommands) {
-      await ctx.reply("Comenzile destructive sunt dezactivate pentru acest mediu.");
+      await safePlainReply(ctx, "Comenzile destructive sunt dezactivate pentru acest mediu.", { withMenu: true });
       return;
     }
 
     if (!text.includes("CONFIRM")) {
-      await ctx.reply("Pentru reset complet foloseste exact comanda: /reset_state CONFIRM");
+      await safePlainReply(ctx, "Pentru reset complet foloseste exact comanda: /reset_state CONFIRM", { withMenu: true });
       return;
     }
 
-    await ctx.reply("Reset complet in curs. Sterg utilizatorii, sesiunile si queue-urile...");
+    await safePlainReply(ctx, "Reset complet in curs. Sterg utilizatorii, sesiunile si queue-urile...", { withMenu: true });
     await wipeBotState();
-    await ctx.reply("Reset complet finalizat.");
+    await safePlainReply(ctx, "Reset complet finalizat.", { withMenu: true });
   });
 
   const maybeSendMonitoringReport = async () => {
