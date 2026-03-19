@@ -1,546 +1,793 @@
-# Express English Academy Bot Audit
+# Express English Academy Telegram Bot
 
-> Document principal pentru audit, handoff si export PDF.
-> Structura este impartita in doua module mari:
-> 1. modul tehnic / development / operations
-> 2. modul owner / business / functionalitati
-
-## Snapshot
-
-**Produs:** Express English Academy Telegram Bot  
-**Canal principal:** Telegram  
-**CRM:** Kommo  
-**Runtime:** local-first, Docker based, cu medii separate pentru local si VPS production  
-**Componente majore:** `bot`, `worker`, `ops-bot`, `postgres`, `redis`, `telegram-bot-api`
+> Deep audit report based on the current codebase, scripts, Compose stack and project documentation.
+> This document is written as an audit, not as a build guide.
 
 ---
 
-## Modul 1. Technical / Dev / Ops
+## 1. Executive Summary
 
-### 1.1 Scop tehnic
+This system is a production-oriented Telegram sales and delivery platform for Express English Academy, not a simple content bot.
 
-Proiectul este un bot Telegram construit pentru:
+At its current state, the product already covers the full commercial loop for Telegram:
 
-- onboarding rapid al lead-urilor
-- livrare automata a seriei gratuite de 3 lectii
-- integrare operationala cu Kommo CRM
-- livrare video nativa prin Local Bot API Server
-- monitoring separat printr-un `ops-bot`
-- administrare usoara pe VPS prin Docker Compose
+- lead capture
+- onboarding
+- free lesson delivery
+- qualification
+- CRM routing
+- operator escalation
+- marathon interest collection
+- operational monitoring
 
-### 1.2 Stack tehnic
+From an engineering perspective, the project is in the **late MVP / early production** stage:
 
-| Zona | Tehnologie |
+- core business flows are implemented
+- CRM integration is real and functional
+- operational monitoring exists
+- local and VPS deployment patterns exist
+- the system has test scripts and smoke checks
+
+From a product perspective, the system already creates business value in three ways:
+
+1. it captures and structures demand directly in Telegram
+2. it nurtures leads through a free 3-lesson campaign
+3. it routes commercial intent into Kommo with different priorities
+
+Final evaluation:
+
+- **Business value:** high
+- **Engineering maturity:** medium
+- **Operational maturity:** medium
+- **Scalability readiness:** medium
+- **Main constraint:** configuration discipline and analytics depth, not missing core functionality
+
+The product is functional and commercially useful today. The biggest gains now will come from reducing friction, tightening analytics, and hardening operational controls around CRM stages, monitoring, and configuration consistency.
+
+---
+
+## 2. System Architecture
+
+### 2.1 Runtime topology
+
+The production topology is composed of six active components:
+
+| Component | Role |
 |---|---|
-| Runtime backend | Node.js + TypeScript |
-| HTTP/API intern | Fastify |
-| Telegram bot | Telegraf |
-| ORM / DB access | Prisma |
-| Database | PostgreSQL + `pgvector` |
-| Queue / background jobs | Redis + BullMQ |
-| AI / knowledge answers | Groq, optional OpenRouter / DeepSeek |
-| Containerizare | Docker Compose |
-| Monitoring operare | `ops-bot` dedicat |
-| Video delivery mare | `telegram-bot-api` local in acelasi compose |
+| `bot` | Main Telegram bot runtime, menu handling, flows, HTTP status endpoints |
+| `worker` | Background execution for campaigns and CRM queue processing |
+| `ops-bot` | Separate Telegram operations bot for health, logs, restart and alerts |
+| `postgres` | Primary system-of-record for users, sessions, progress, logs and media cache |
+| `redis` | Queue backend for BullMQ |
+| `telegram-bot-api` | Local Bot API runtime used for large media delivery |
 
-### 1.3 Arhitectura runtime
+### 2.2 Code structure
 
-#### `bot`
+The codebase is split cleanly by responsibility:
 
-Responsabilitati:
-
-- porneste botul Telegram in polling mode
-- ruleaza meniurile si flow-urile conversationale
-- gestioneaza onboarding, servicii, maraton, consultatii
-- expune endpointurile HTTP:
-  - `/health`
-  - `/admin/stats`
-  - `/admin/jobs`
-
-#### `worker`
-
-Responsabilitati:
-
-- proceseaza queue-ul de campanii
-- proceseaza queue-ul CRM
-- executa:
-  - unlock automat lectii
-  - remindere
-  - sync CRM
-
-#### `ops-bot`
-
-Responsabilitati:
-
-- monitoring operational separat de botul principal
-- autentificare cu parola
-- comenzi de status / health / queues / jobs / logs / restart
-- daily report la ora configurata
-- alerte automate la incidente
-
-#### `postgres`
-
-Contine:
-
-- users
-- profiles
-- sessions
-- campaign state
-- lesson progress
-- scheduled jobs tracking
-- CRM sync logs
-- media cache (`telegram_file_id`)
-- event logs
-- document chunks / embeddings
-
-#### `redis`
-
-Contine:
-
-- queue-uri BullMQ
-- starea de executie pentru joburi
-
-#### `telegram-bot-api`
-
-Rol:
-
-- permite upload si redare pentru fisiere video mari
-- elimina limitarile practice ale cloud Bot API pentru anumite fisiere locale
-- este critic pentru livrarea lectiilor video in productie
-
-### 1.4 Structura de cod
-
-| Zona | Rol |
+| Folder | Responsibility |
 |---|---|
-| `src/bot/` | meniu, router, handlers Telegram |
-| `src/content/` | continut static si configurat din env |
-| `src/services/` | servicii CRM, media, lectii, sesiuni, queue, user |
-| `src/jobs/` | procesatori de joburi worker |
-| `src/routes/` | health, stats, jobs |
-| `src/ops/` | logic de monitoring si Docker status |
-| `src/scripts/` | audit, smoke tests, verify scripts, reset |
-| `src/db/prisma/` | schema, seed, migrari |
+| `src/bot/` | Telegram router, menu, handlers |
+| `src/content/` | Static copy and Marathon content/config builders |
+| `src/services/` | CRM, media, lessons, sessions, queue, users, AI |
+| `src/jobs/` | Worker processors |
+| `src/routes/` | `/health`, `/admin/stats`, `/admin/jobs`, webhook placeholder |
+| `src/ops/` | Monitoring aggregation and Docker inspection |
+| `src/scripts/` | Audit, verify, reset and smoke tooling |
+| `src/db/prisma/` | Schema, seed and migrations |
 
-### 1.5 Model de date principal
+### 2.3 Interaction model
 
-| Model | Rol |
-|---|---|
-| `User` | identitatea Telegram si starea principala a leadului |
-| `UserProfile` | date business/comerciale si preferinte |
-| `BotSession` | flow conversational in lucru |
-| `Campaign` | campanii precum seria gratuita |
-| `Lesson` | lectiile seed-uite |
-| `UserCampaign` | progres pe campanie |
-| `LessonProgress` | video, quiz, open state |
-| `ScheduledJob` | tracking operational al joburilor |
-| `CrmSyncLog` | istoric requesturi CRM |
-| `TelegramMediaAsset` | cache local `file_id` Telegram |
-| `Document` | chunks + embedding pentru AI |
-| `UserEvent` | audit intern de interactiuni |
+The architecture is event-driven at the business layer:
 
-### 1.6 Flow-uri tehnice principale
+- Telegram updates are processed synchronously by `bot`
+- stateful flows are stored in `BotSession`
+- background actions are deferred to BullMQ
+- CRM synchronization is executed by `worker`
+- monitoring reads both HTTP status and queue/database state
 
-#### A. Onboarding lead
+### 2.4 Architectural strengths
 
-1. user intra pe `/start`
-2. daca nu este onboarded, se cere:
-   - nume
-   - telefon
-   - accept
-3. se salveaza in DB
-4. se creeaza lead in Kommo
-5. se deschide flow-ul cerut initial
+- clear separation between user-facing runtime and worker runtime
+- clean operational split with a dedicated `ops-bot`
+- local-first media strategy with `telegram_file_id` caching
+- real persistence for flows and delivery state
+- environment-based behavior for local vs production
 
-#### B. Seria gratuita de 3 lectii
+### 2.5 Architectural weaknesses
 
-1. activarea seteaza:
-   - `lesson1Unlocked=true`
-   - unlock time pentru lectia 2 si 3
-2. worker-ul trimite unlock-uri la 24h si 48h
-3. se trimit remindere daca userul nu revine
-4. la final, flow-ul comercial este deschis din buton
+- configuration remains heavily env-driven and manual
+- no secret manager or external configuration service
+- admin HTTP routes are not application-authenticated
+- webhook mode is stubbed; polling mode is the only real runtime mode
+- asset management is manual and depends on file discipline in `video/`
 
-#### C. Livrare video
+---
 
-1. botul cauta fisierul local in `video/`
-2. la prima livrare incearca upload prin Local Bot API
-3. salveaza `telegram_file_id`
-4. la urmatoarele livrari refoloseste `file_id`
-5. daca fisierul lipseste sau upload-ul esueaza, trimite fallback clar
+## 3. Technical Modules Analysis
 
-#### D. Consultatii CRM
+### 3.1 Core Telegram Router
 
-Sunt doua fluxuri principale:
+**Purpose**
 
-- `Contact operator` -> prioritate `urgent_contact`
-- `Consultatie cariera` -> prioritate `consultation`
+`src/bot/bot.ts` is the central runtime coordinator.
 
-Fluxul actual este optimizat:
+**How it works**
 
-- daca telefonul exista, userul selecteaza motivul si cererea merge direct in CRM
-- daca telefonul lipseste, se cere doar telefonul si apoi cererea merge direct
+- creates the Telegraf bot
+- loads user context on each update
+- routes commands, callback actions, text input and contact messages
+- resumes unfinished sessions from database state
+- dispatches into specialized handlers
 
-#### E. Maraton Engleza
+**Strengths**
 
-Flow nou, compact:
+- session-aware routing is solid
+- menu actions are centralized
+- unfinished flows are resumed rather than discarded
+- user context caching in `ctx.state` avoids duplicate user reads inside one update
 
-1. user apasa `🚀 Maraton Engleza`
-2. alege pachetul
-3. vede datele disponibile pentru acel pachet
-4. alege data
-5. vede oferta exacta si apasa contact
-6. cererea ajunge in CRM pe stage dedicat atunci cand `KOMMO_STAGE_MARATON_ID` este configurat
+**Weaknesses**
 
-#### F. Monitoring
+- the file is becoming the orchestration hub for many flows and will grow further
+- routing logic is still string-driven, so future expansion will increase maintenance cost
 
-`ops-bot` poate:
+**Scalability**
 
-- autentifica doar userii permisi
-- cere parola
-- bloca dupa 3 incercari
-- oferi status operational
-- trimite daily report
-- semnala incidente si recovery
+- acceptable for current product scope
+- should be refactored toward stronger action registries if product lines expand further
 
-### 1.7 Integrarea cu Kommo
+### 3.2 Onboarding / Lead Capture Module
 
-Pipeline folosit:
+**Purpose**
 
-- `Telegram Bot Leads`
+Captures minimum viable contact information before opening core flows.
 
-Stage-uri automatizate de cod:
+**How it works**
+
+- lives mostly in `src/bot/handlers/leadHandler.ts`
+- collects:
+  - first name
+  - phone
+  - consent
+- marks onboarding as completed
+- triggers lead creation and free lesson campaign handoff
+
+**Strengths**
+
+- short flow
+- strong business gating
+- preserves first requested service so the bot can return the user to the original intent
+
+**Weaknesses**
+
+- onboarding is mandatory for most useful actions, which improves capture but adds friction
+- consent is effectively binary and tied to progress; not ideal if legal/compliance scope grows
+
+**Scalability**
+
+- good enough for a single-offer business
+- will need versioned form schema if lead data requirements evolve
+
+### 3.3 Free Lessons Campaign Module
+
+**Purpose**
+
+Implements the 3-day free lesson funnel.
+
+**How it works**
+
+- lesson unlock state is stored per user
+- lesson 1 is activated immediately
+- lesson 2 and 3 unlock on timed schedule
+- worker sends unlocks and nudges
+- lesson progress is tracked in `LessonProgress`
+
+**Strengths**
+
+- real persistence, not in-memory timers
+- clean separation between activation and delivery
+- unlock/nudge logic is explicit and inspectable
+
+**Weaknesses**
+
+- the business timeline is fixed in code/env, not campaign-configurable per cohort
+- lesson quiz support is still partial: lesson 1 has real quiz, lessons 2 and 3 are placeholders
+
+**Scalability**
+
+- works well for one compact campaign
+- not yet a generalized campaign engine for multiple complex funnels
+
+### 3.4 Lesson Delivery + Media Cache Module
+
+**Purpose**
+
+Deliver video lessons and service videos efficiently in Telegram.
+
+**How it works**
+
+- resolves files from local `video/`
+- uploads via Local Bot API
+- persists Telegram `file_id` in `TelegramMediaAsset`
+- reuses `file_id` on later sends
+
+**Strengths**
+
+- this is one of the strongest parts of the system
+- solves a real Telegram media pain point
+- avoids repeated heavy uploads
+
+**Weaknesses**
+
+- relies on manual file presence and naming discipline
+- no transcoding or validation pipeline for assets
+- no checksum-based operator tooling for missing/wrong media
+
+**Scalability**
+
+- strong for current use case
+- would benefit from an asset manifest and validation tool if content volume increases
+
+### 3.5 Consultation Flow Module
+
+**Purpose**
+
+Handle fast commercial conversion for operator contact and career consultation.
+
+**How it works**
+
+- implemented in `consultationHandler.ts`
+- if phone exists:
+  - user selects reason
+  - CRM request is created immediately
+- if phone is missing:
+  - bot asks only for phone
+  - then completes request
+
+**Strengths**
+
+- intentionally low-friction
+- clean split between urgent and non-urgent intent
+- schedules CRM work asynchronously
+
+**Weaknesses**
+
+- note structure is informative but still text-based, not normalized for reporting
+- no SLA timer or auto-reassignment mechanism exists at app level
+
+**Scalability**
+
+- solid for current sales motion
+- should eventually produce more structured CRM metadata for analytics
+
+### 3.6 Marathon Flow Module
+
+**Purpose**
+
+Turn Marathon interest into a compact, conversion-oriented selection flow.
+
+**How it works**
+
+- implemented in `marathonHandler.ts` and `marathonContent.ts`
+- flow is:
+  - package selection
+  - date selection
+  - exact offer screen
+  - contact
+- phone is requested only if missing
+- CRM action is `request_marathon_interest`
+
+**Strengths**
+
+- much better than a long static information dump
+- package/date/price logic is configurable via env
+- flow is compact and button-driven
+
+**Weaknesses**
+
+- stage routing is operationally incomplete until `KOMMO_STAGE_MARATON_ID` is configured
+- old and new marathon env keys coexist, creating configuration drift risk
+- the static long marathon body still exists in `staticContent.ts`, even though the live flow is now separate
+
+**Scalability**
+
+- good for a few cohorts and packages
+- should eventually move from env strings to a structured offer model if commercial complexity grows
+
+### 3.7 CRM Sync Module
+
+**Purpose**
+
+Translate bot intent into Kommo lead creation and stage movement.
+
+**How it works**
+
+- `crmService.ts` owns lead creation, qualification and consultation updates
+- worker consumes CRM jobs from queue
+- all actions are logged in `crm_sync_logs`
+
+**Strengths**
+
+- asynchronous CRM sync protects UX from CRM latency
+- success/failure is auditable
+- stage mapping is explicit
+
+**Weaknesses**
+
+- depends heavily on exact stage IDs and env correctness
+- fallback behavior can hide incomplete business setup
+- note payloads are free text, not analytics-first
+
+**Scalability**
+
+- good for the current number of stages and flows
+- would benefit from a stage registry + validation script at deploy time
+
+### 3.8 AI Assistant Module
+
+**Purpose**
+
+Answer informational questions about courses and offers based on internal knowledge.
+
+**How it works**
+
+- `aiService.ts` retrieves relevant documents from vector search
+- enriches context with curated static pages for pricing and school overview
+- calls Groq/OpenRouter/DeepSeek depending on config
+- falls back to safe answers if context is weak or AI is unavailable
+
+**Strengths**
+
+- restrained prompt policy reduces hallucination risk
+- fallback path exists
+- sources are shown to the user
+
+**Weaknesses**
+
+- AI is not yet integrated into the commercial funnel as a conversion surface
+- quality depends on crawl/embed freshness
+- pricing knowledge partly comes from static pages, not a single source of truth
+
+**Scalability**
+
+- technically extendable
+- commercially underused today
+
+### 3.9 Monitoring / Ops Module
+
+**Purpose**
+
+Provide operational visibility without logging into the server for every check.
+
+**How it works**
+
+- separate Telegram bot in `src/opsBot.ts`
+- authenticates by allowed user ID + password
+- reads health endpoints, job stats, queue stats and Docker container state
+- sends daily report and incident/recovery alerts
+
+**Strengths**
+
+- strong operational idea for a small system
+- daily report is valuable for owner visibility
+- restart action covers the most common intervention case
+
+**Weaknesses**
+
+- auth state is in-memory only
+- no audit trail for ops commands
+- no persistent incident history or escalation policy
+
+**Scalability**
+
+- strong for a founder-led operation
+- limited for multi-operator or compliance-sensitive ops
+
+---
+
+## 4. Business Logic & Functional Flows
+
+### 4.1 Lead Capture Flow
+
+**Actual logic**
+
+1. user enters bot
+2. selects service
+3. onboarding is triggered if lead is incomplete
+4. name, phone and consent are collected
+5. lead is created in CRM
+6. bot returns user to original requested flow
+
+**Assessment**
+
+- conversion quality is high because intent is preserved
+- friction is medium because information access is gated behind contact capture
+
+**Commercial impact**
+
+- good for lead ownership
+- weaker for users who want to inspect before committing a phone number
+
+### 4.2 Qualification Flow
+
+**Actual logic**
+
+1. user enters `Vreau la curs`
+2. bot collects:
+   - level
+   - goal
+   - available time
+   - desire to be contacted
+3. CRM lead is qualified and moved/noted
+
+**Assessment**
+
+- qualification is useful and commercially meaningful
+- it creates better downstream context for sales
+
+**Friction**
+
+- acceptable
+- could still be shortened for high-intent users
+
+### 4.3 Conversion Flow: Contact Operator
+
+**Actual logic**
+
+1. user opens operator flow
+2. selects reason
+3. if phone missing, sends phone
+4. lead is moved into `Consultation Requested Urgent`
+
+**Assessment**
+
+- very strong conversion pattern
+- low friction
+- high operational clarity
+
+**Commercial quality**
+
+- high
+- this is one of the most monetization-ready parts of the system
+
+### 4.4 Conversion Flow: Career Consultation
+
+**Actual logic**
+
+1. user opens career consultation
+2. selects reason
+3. if needed, sends phone
+4. lead is moved into `Consultation Requested`
+
+**Assessment**
+
+- clean parallel flow to operator contact
+- good split between urgent and consultative intent
+
+**Commercial quality**
+
+- high
+- proper separation of urgency helps prioritization
+
+### 4.5 Nurture Flow: 3 Free Lessons
+
+**Actual logic**
+
+- progressive unlock
+- reminder logic
+- eventual CTA back into paid offer
+
+**Assessment**
+
+- strategically correct
+- combines value delivery with sales intent
+
+**Main gap**
+
+- campaign analytics are still shallow compared to the importance of this funnel
+
+### 4.6 Marathon Flow
+
+**Actual logic**
+
+- package -> date -> contact
+- no forced long text
+- lead intent is specific and commercially structured
+
+**Assessment**
+
+- good redesign
+- stronger than previous single-message informational approach
+
+**Main gap**
+
+- stage setup in Kommo must be finished for the flow to be fully production-consistent
+
+---
+
+## 5. UX / Interaction Audit
+
+### 5.1 What works well
+
+- main menu is compact and readable
+- free lessons CTA is correctly prioritized
+- major actions are button-driven
+- marathon flow is now substantially cleaner than a static wall of text
+- consultation flows are low-friction
+
+### 5.2 Confusion points
+
+- the system mixes reply keyboard and inline keyboard patterns frequently
+- onboarding still blocks access to a large part of informational value
+- AI flow is isolated and not surfaced as a strong assistant option in the main business journey
+- user can move between multiple flows, which is handled technically, but the experience still feels operational rather than polished in some branches
+
+### 5.3 Unnecessary steps or weak UX spots
+
+- mandatory lead capture before service detail access can reduce discovery depth
+- some confirmations are functional but not persuasive
+- there is no strong progress framing around course qualification
+
+### 5.4 UX conclusion
+
+The Telegram UX is already functional and business-valid, but it is still optimized more for operational correctness than for maximum conversational smoothness.
+
+---
+
+## 6. CRM & Monetization Logic
+
+### 6.1 Lead creation
+
+Leads are created through `createLeadInKommo()` using:
+
+- Telegram identity
+- name
+- phone/email if present
+- selected source
+- lesson state
+- basic profile fields
+
+This is a solid baseline.
+
+### 6.2 Stage usage
+
+Current code actively uses:
 
 - `New Telegram Lead`
 - `Warm Lead`
 - `Consultation Requested Urgent`
 - `Consultation Requested`
-- `Maraton Interested` (cand exista si este setat in env)
+- `Maraton Interested` when configured
 
-Detalii importante:
+This is commercially coherent.
 
-- lead nou se creeaza la onboarding complet nou
-- daca exista deja lead/link Kommo, sistemul actualizeaza lead-ul existent
-- fiecare operatie este logata in `crm_sync_logs`
+### 6.3 What is strong
 
-### 1.8 Integrarea AI
+- lead creation is real, not nominal
+- stage movement reflects actual user intent
+- CRM logs provide a recovery path for debugging
 
-Proiectul include infrastructura pentru raspuns AI:
+### 6.4 Missed automation opportunities
 
-- crawler website
-- embedding pipeline
-- document store in Postgres (`pgvector`)
+- no automatic SLA metric from stage entry to operator response
+- no business dashboard built on top of `crm_sync_logs`
+- no automatic “stale urgent lead” detection inside CRM-facing logic
+- no structured tags for marathon package/date beyond note text
 
-Scripturi:
+### 6.5 Monetization evaluation
 
-- `npm run crawl`
-- `npm run embed`
+The bot already monetizes through:
 
-Observatie:
+- course interest
+- urgent operator contact
+- career consultation
+- marathon interest
 
-- AI-ul este infrastructura secundara fata de flow-ul comercial principal
-- poate fi extins ulterior pentru FAQ sau suport contextual
+This is a strong commercial base. The next revenue gains will come from analytics and operator workflow quality, not from inventing new buttons.
 
-### 1.9 Monitoring si administrare
+---
 
-Endpointuri HTTP:
+## 7. DevOps & Infrastructure
+
+### 7.1 Current operating model
+
+The project uses:
+
+- local Docker Compose for development
+- separate production Compose for VPS
+- `Dockerfile.prod` for production image builds
+- manual `.env.vps` provisioning
+- manual media file management
+
+### 7.2 Strengths
+
+- environment split is clear
+- production ports are bound to `127.0.0.1` where relevant
+- Local Bot API is properly co-located with the app stack
+- operational scripts exist for reset, verify, audit and smoke
+
+### 7.3 Risks
+
+- deployment is still manual and operator-dependent
+- there is no CI/CD gate or deployment pipeline
+- secret handling is file-based only
+- asset deployment is manual and can drift from code deploy
+- Docker image copies `video/` while production also mounts host `./video`, which creates redundant artifact strategy
+
+### 7.4 Reliability assessment
+
+Reliability is acceptable for a founder-operated VPS deployment. It is not yet hardened to “hands-off production” standards.
+
+---
+
+## 8. Monitoring & Observability
+
+### 8.1 What exists
 
 - `/health`
 - `/admin/stats`
 - `/admin/jobs`
+- `ops-bot`
+- queue status
+- Docker container inspection
+- log tail access
+- daily report
+- incident and recovery alerts
 
-Comenzi `ops-bot`:
+### 8.2 What is good
 
-- `/status`
-- `/health`
-- `/queues`
-- `/jobs`
-- `/logs_bot`
-- `/logs_worker`
-- `/restart_express`
-- `/daily_now`
-- `/reset_state CONFIRM` daca mediul permite comenzi destructive
+- monitoring is not just logs; it includes business counters and queue state
+- the separate ops bot is a real operational advantage for a small team
 
-Metrici urmarite:
+### 8.3 What is missing
 
-- users
-- formsCompleted
-- lessonsSent
-- crmSuccess
-- crmFailed
-- urgentRequests
-- consultRequests
-- marathonRequests
-- mediaCache
-- queue backlog
+- no long-term metrics storage
+- no historical incident timeline
+- no alert severity levels beyond simple incident/recovery
+- no correlation between business KPI drop and technical symptoms
 
-### 1.10 Environment si configurare
+### 8.4 Monitoring conclusion
 
-#### Local
-
-Fisiere / componente:
-
-- `.env.local`
-- `docker-compose.yml`
-- `npm run dev`
-- `npm run worker`
-- `npm run ops-bot`
-
-#### Production / VPS
-
-Fisiere / componente:
-
-- `.env.vps`
-- `docker-compose.prod.yml`
-- `Dockerfile.prod`
-
-Setari cheie production:
-
-- `NODE_ENV=production`
-- `LESSON_DELAY_MODE=prod`
-- `TELEGRAM_USE_LOCAL_API=true`
-- `TELEGRAM_API_ROOT=http://telegram-bot-api:8081`
-- `WELCOME_IMAGE_PATH=/app/video/Image_welcome.JPG`
-
-### 1.11 Calitate, audit si testare
-
-Scripturi importante:
-
-- `npm run build`
-- `npm run test:e2e-local`
-- `npm run audit:local`
-- `npm run smoke:crm`
-- `npm run verify:telegram`
-- `npm run verify:kommo`
-- `npm run reset:bot-state`
-
-Ce valideaza ele:
-
-- compilare TypeScript
-- invarianti locali
-- configurare assets si env
-- health endpoints
-- integrare CRM pentru create/qualify/consult flows
-- mapping stage-uri Kommo
-
-### 1.12 Puncte deja implementate
-
-- main menu compact, 2 coloane
-- onboarding complet
-- seria gratuita cu unlock si remindere
-- livrare video prin Local Bot API
-- cache `telegram_file_id`
-- CRM urgent / consultation
-- maraton pe flow scurt cu pachet + data
-- welcome image din fisier local
-- monitoring bot cu daily report si alerte
-- deploy VPS prin compose separat
-
-### 1.13 Limitari / observatii curente
-
-- `KOMMO_STAGE_MARATON_ID` trebuie setat dupa ce stage-ul `Maraton Interested` apare si in API-ul Kommo
-- quiz complet pentru lectiile 2 si 3 nu este finalizat; lectia 1 are quiz real
-- succesul maratonului in CRM depinde de configurarea finala a stage-ului dedicat
+For the current scale, observability is above average. For scaling, it needs persistence and operational history.
 
 ---
 
-## Modul 2. Owner / Business / Operational View
+## 9. Data & Analytics
 
-### 2.1 Scop business
+### 9.1 What is collected
 
-Botul este construit ca sistem de:
+The system already stores valuable business and operational data:
 
-- captare lead-uri din Telegram
-- calificare rapida
-- livrare de valoare prin lectii gratuite
-- conversie catre cursuri, consultatii si maraton
-- vizibilitate operationala printr-un bot separat de monitoring
+- user identity and contact info
+- onboarding completion
+- lesson unlock and open state
+- quiz state
+- campaign state
+- CRM sync outcomes
+- user events
+- queue execution state
+- media cache
 
-### 2.2 Ce vede utilizatorul in meniu
+### 9.2 What is not tracked well enough
 
-Meniul principal actual:
+- funnel drop-off between each onboarding step
+- conversion by entry point
+- operator response time
+- time to CRM contact after urgent request
+- win/loss attribution back to bot flow
+- package/date popularity for marathon
 
-- `🎓 3 zile gratuite`
-- `🚀 Maraton Engleza`
-- `📚 Lectiile tale`
-- `🗣 Webinar: fara frica`
-- `🎬 Metoda noastra`
-- `💼 Programe si preturi`
-- `⚡ Contact operator`
-- `🔮 Consultatie cariera`
+### 9.3 Data conclusion
 
-### 2.3 Flow principal pentru utilizator nou
+The system captures enough raw data to become analytically strong, but it does not yet convert that data into business intelligence.
 
-1. user intra in bot
-2. vede cardul de welcome
-3. alege un serviciu
-4. daca nu este onboarded, trece prin onboarding scurt
-5. dupa onboarding, botul il readuce exact in flow-ul ales
+---
 
-Avantaj business:
+## 10. Security
 
-- nu se pierde intentia initiala
-- onboardingul nu este lung
-- lead-ul intra imediat in sistemul comercial
+### 10.1 Positive controls
 
-### 2.4 Seria gratuita de 3 lectii
+- ops bot is restricted by allowed user IDs and password
+- production service exposure is mostly loopback-bound
+- dangerous ops reset is env-gated
 
-Ce face:
+### 10.2 Risks
 
-- ofera valoare imediata
-- introduce userul in experienta reala
-- creste sansele de conversie prin progres
+- secrets are stored in plain env files
+- no rotation workflow is built into the product
+- admin routes are not application-authenticated
+- ops auth state is memory-only
+- no command audit log for operations bot
 
-Comportament:
+### 10.3 Security conclusion
 
-- lectia 1 este disponibila imediat
-- lectia 2 se deblocheaza dupa 24h
-- lectia 3 se deblocheaza dupa 48h
-- daca userul nu revine, primeste remindere
+Security is reasonable for a controlled VPS and single-owner operating model, but not for a larger or compliance-sensitive environment.
 
-Rol business:
+---
 
-- lead magnet
-- calificare soft
-- educare si crestere a increderii
+## 11. Risks & Weak Points
 
-### 2.5 Maraton Engleza
+### 11.1 Technical risks
 
-Flow nou, mai comercial si mai clar:
+- env precedence in `config.ts` is non-standard: `.env` overrides `.env.local` if both exist
+- marathon CRM stage is still operationally incomplete until fully configured
+- manual asset handling remains a deployment risk
+- limited automated test depth for full Telegram conversation flows
 
-1. user intra pe `🚀 Maraton Engleza`
-2. alege un pachet:
-   - Basic
-   - Silver
-   - Gold
-   - Premium
-   - VIP
-3. vede doar detaliile pachetului ales
-4. vede datele disponibile
-5. alege data si vede pretul exact
-6. apasa contact si cererea merge in CRM
+### 11.2 Business risks
 
-Avantaj business:
+- lead capture gating may reduce top-of-funnel exploration
+- marathon stage mismatch can silently dilute reporting quality
+- lesson 2 and 3 quiz depth is not yet at the same maturity as lesson 1
 
-- nu mai este nevoie de mesaj lung si obositor
-- userul compara rapid pachet + data + pret
-- conversia se face prin butoane, nu prin instructiuni manuale
+### 11.3 UX risks
 
-### 2.6 Contact operator
+- mixed keyboard paradigms can feel inconsistent
+- some flows optimize data capture more than user confidence
+- informational discovery still depends too much on entering structured flows
 
-Flow actual:
+---
 
-- daca userul are telefonul salvat:
-  - alege motivul
-  - leadul merge direct in CRM
-- daca telefonul lipseste:
-  - trimite telefonul
-  - apoi leadul merge direct in CRM
+## 12. Strategic Recommendations
 
-Rezultat CRM:
+### Short-term
 
-- stage `Consultation Requested Urgent`
+- finalize `KOMMO_STAGE_MARATON_ID` and verify it through `verify:kommo`
+- add protection to `/admin/*` endpoints beyond loopback binding
+- normalize configuration strategy and document env precedence clearly
+- add a small analytics view for:
+  - onboarding completion rate
+  - free lesson progression
+  - urgent vs consultation requests
+  - marathon request count by package/date
 
-Rol business:
+### Mid-term
 
-- contact rapid
-- prioritizare pe leadurile calde
-- mai putina frictiune conversationala
+- convert CRM note-heavy payloads into more structured analytics-friendly fields or tags
+- add end-to-end scripted tests for Telegram flows, not just invariants and smoke checks
+- add media asset validation script before deploy
+- consolidate marathon config to one canonical env format and remove legacy duplication
 
-### 2.7 Consultatie cariera
+### Long-term
 
-Flow actual:
+- introduce CI/CD with deployment gates
+- move secrets to a safer management model
+- add persistent observability beyond Telegram alerts
+- turn the bot into a generalized campaign platform rather than a single-funnel implementation
 
-- identic ca structura cu `Contact operator`
-- motivul se selecteaza rapid
-- fara camp liber inutil
+---
 
-Rezultat CRM:
+## 13. Final Owner Summary
 
-- stage `Consultation Requested`
+What works:
 
-Rol business:
+- the bot captures leads correctly
+- the 3-lesson funnel is real and automated
+- urgent and consultative requests are separated properly
+- the marathon flow is now commercially much stronger
+- the team has real monitoring, not blind production
 
-- flux comercial separat
-- intentie mai clara
-- tratament diferit fata de contactul urgent
+What must be improved:
 
-### 2.8 Webinar, metoda, programe
+- marathon CRM stage must be finalized in Kommo
+- analytics must become a first-class layer
+- configuration and deployment discipline should be tightened
+- lesson 2 and 3 assessment depth should match lesson 1 quality
 
-Aceste zone sunt de:
+Where money is gained:
 
-- incredere
-- educare
-- pozitionare
-- pregatire pentru conversie
+- immediate lead capture
+- low-friction operator handoff
+- structured consultation routing
+- clearer marathon conversion path
 
-Rolul lor:
+Where money is still lost:
 
-- `Webinar: fara frica` - scoate blocajul emotional
-- `Metoda noastra` - explica felul de lucru
-- `Programe si preturi` - ancoreaza oferta comerciala
+- users who leave before completing gated onboarding
+- lack of precise funnel analytics
+- missing business-level follow-up metrics after CRM handoff
 
-### 2.9 CRM si pipeline business
+Final owner verdict:
 
-Pipeline folosit:
-
-- `Telegram Bot Leads`
-
-Utilizare recomandata:
-
-- `New Telegram Lead` - lead nou intrat
-- `Warm Lead` - lead calificat
-- `Consultation Requested Urgent` - contact operator urgent
-- `Consultation Requested` - consultatie cariera
-- `Maraton Interested` - interes pe maraton
-- `Enrolled` - manual/comercial, dupa vanzare
-- `Lost / No Response` - manual/comercial, dupa follow-up
-
-### 2.10 Monitoring pentru owner / operare
-
-Exista un bot separat de status care ofera:
-
-- daily report la ora 09:00
-- status rapid al sistemului
-- containere pornite / oprite
-- metrice de activitate
-- alerte in caz de incident
-- posibilitate de restart controlat
-
-Rol business:
-
-- reduce riscul de a afla prea tarziu ca botul a cazut
-- ofera control fara login direct in server pentru fiecare verificare
-
-### 2.11 Ce este deja implementat
-
-- welcome image
-- onboarding scurt
-- meniu principal reorganizat
-- seria gratuita cu unlock-uri
-- CRM sync
-- flow operator urgent
-- flow consultatie cariera
-- maraton cu selectie de pachet si data
-- monitoring bot
-- deploy pe VPS prin compose
-
-### 2.12 Ce ar fi bine sa urmeze
-
-Prioritati business recomandate:
-
-1. finalizarea stage-ului `Maraton Interested` in Kommo
-2. quiz final pentru lectiile 2 si 3
-3. rafinarea textelor comerciale pe confirmari si remindere
-4. dashboard business simplu pentru conversii din CRM logs
-
-### 2.13 Rezumat pentru owner
-
-Pe scurt, proiectul nu mai este doar un bot de meniu. In forma actuala, el functioneaza ca un mini-sistem comercial Telegram:
-
-- capteaza leaduri
-- livreaza continut gratuit
-- califica interesul
-- directioneaza intentia catre CRM
-- monitorizeaza operational functionarea
-
-Acest lucru inseamna ca botul poate fi folosit atat pentru marketing si vanzare, cat si pentru control operational zilnic.
+This is already a valuable sales system, not an experiment. The next stage is not “build more core bot features”. The next stage is to improve clarity, analytics, and operational rigor so the existing flows convert better and are easier to manage at scale.
