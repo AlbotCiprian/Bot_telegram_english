@@ -1,6 +1,7 @@
 import { createBot } from "./bot/bot.js";
 import { buildApp } from "./app.js";
 import { prisma } from "./db/client.js";
+import { closeRedisClient } from "./services/redis.js";
 import { logger } from "./utils/logger.js";
 import { config, isConfigured } from "./utils/config.js";
 
@@ -21,6 +22,7 @@ async function bootstrap(): Promise<void> {
       logger.info("Oprire controlata...");
       bot.stop();
       await app.close();
+      await closeRedisClient();
       await prisma.$disconnect();
       process.exit(0);
     };
@@ -46,6 +48,7 @@ async function bootstrap(): Promise<void> {
       .catch(async (error) => {
         logger.error({ err: error }, "Pornirea botului Telegram a esuat.");
         await app.close();
+        await closeRedisClient();
         await prisma.$disconnect();
         process.exit(1);
       });
@@ -58,6 +61,7 @@ async function bootstrap(): Promise<void> {
 
 bootstrap().catch(async (error) => {
   logger.error({ err: error }, "Bootstrapping esuat.");
+  await closeRedisClient();
   await prisma.$disconnect();
   process.exit(1);
 });

@@ -5,6 +5,7 @@ import { isValidEmail, isValidPhone, normalizePhone } from "../utils/validators.
 import { MAIN_MENU, isMarathonVisible } from "../content/staticContent.js";
 import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
 import { getMainMenuKeyboard, resolveMenuActionFromLabel } from "../bot/menu.js";
+import { getLessonStreamAsset } from "../services/streamingAssets.js";
 import {
   buildMarathonLandingMessage,
   buildMarathonOfferMessage,
@@ -34,11 +35,11 @@ describe("local runtime invariants", () => {
     );
 
     expect(rows).toEqual([
-      ["\uD83C\uDF93 3 zile gratuite"],
-      ["\uD83D\uDE80 Maraton de engleză", "\uD83D\uDCDA Lecțiile tale"],
-      ["\uD83D\uDDE3\uFE0F Webinar: fără frică", "\uD83C\uDFA5 Metoda noastră"],
-      ["\uD83D\uDCBC Programe și prețuri", "\u26A1 Contact operator"],
-      ["\uD83D\uDD2E Consultație în carieră"],
+      ["🎓 3 zile gratuite"],
+      ["🚀 Maraton de engleză", "📚 Lecțiile tale"],
+      ["🗣️ Webinar: fără frică", "🎥 Metoda noastră"],
+      ["💼 Programe și prețuri", "⚡ Contact operator"],
+      ["🔮 Consultație în carieră"],
     ]);
   });
 
@@ -97,9 +98,18 @@ describe("local runtime invariants", () => {
   });
 
   it("maps reply keyboard labels back to menu actions", () => {
-    expect(resolveMenuActionFromLabel("\uD83C\uDF93 3 zile gratuite")).toBe("free_lessons");
-    expect(resolveMenuActionFromLabel("\uD83D\uDCDA Lecțiile tale")).toBe("lessons");
-    expect(resolveMenuActionFromLabel("\u26A1 Contact operator")).toBe("operator");
+    expect(resolveMenuActionFromLabel("🎓 3 zile gratuite")).toBe("free_lessons");
+    expect(resolveMenuActionFromLabel("📚 Lecțiile tale")).toBe("lessons");
+    expect(resolveMenuActionFromLabel("⚡ Contact operator")).toBe("operator");
+  });
+
+  it("defines the internal stream manifest for all lesson days", () => {
+    expect(getLessonStreamAsset(1)).toMatchObject({
+      streamKey: "lesson-1",
+      posterFileName: "lesson-1.jpg",
+    });
+    expect(getLessonStreamAsset(2).renditions.map((item) => item.height)).toEqual([480, 720]);
+    expect(getLessonStreamAsset(3).sourceFileName).toBe("lesson-3-v2-landscape.mp4");
   });
 
   it("builds the marathon package catalog from the configured defaults", () => {

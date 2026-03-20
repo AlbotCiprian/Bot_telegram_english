@@ -5,6 +5,7 @@ import { logger } from "./utils/logger.js";
 import { processLessonJob } from "./jobs/lessonScheduler.js";
 import { processReminderJob } from "./jobs/reminderScheduler.js";
 import { CampaignJobPayload, CrmJobPayload } from "./services/schedulerService.js";
+import { config } from "./utils/config.js";
 
 async function bootstrapWorker(): Promise<void> {
   const campaignWorker = new Worker<CampaignJobPayload>(
@@ -17,7 +18,7 @@ async function bootstrapWorker(): Promise<void> {
     },
     {
       connection: redisConnection,
-      concurrency: 4,
+      concurrency: config.CAMPAIGN_WORKER_CONCURRENCY,
     },
   );
 
@@ -37,7 +38,7 @@ async function bootstrapWorker(): Promise<void> {
     },
     {
       connection: redisConnection,
-      concurrency: 2,
+      concurrency: config.CRM_WORKER_CONCURRENCY,
     },
   );
 

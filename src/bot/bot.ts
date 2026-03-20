@@ -5,6 +5,7 @@ import { STATIC_PAGES } from "../content/staticContent.js";
 import { logUserEvent } from "../services/eventService.js";
 import { clearSession, getSession } from "../services/sessionService.js";
 import { getOrCreateUser } from "../services/userService.js";
+import { debounceRedisAction } from "../services/redis.js";
 import { config } from "../utils/config.js";
 import { logger } from "../utils/logger.js";
 import { buildStaticPageMessage, getBackToMenuKeyboard, getMainMenuKeyboard, getPublicMenuKeyboard, getStartFreeLessonsKeyboard, resolveMenuActionFromLabel } from "./menu.js";
@@ -66,6 +67,11 @@ async function getContextUser(ctx: Context) {
   const user = await getOrCreateUser(ctx.from);
   (ctx.state as { botUser?: Awaited<ReturnType<typeof getOrCreateUser>> }).botUser = user;
   return user;
+}
+
+async function isDebouncedAction(userId: number, actionKey: string): Promise<boolean> {
+  const accepted = await debounceRedisAction(`bot:action:${userId}:${actionKey}`, config.BOT_ACTION_DEBOUNCE_MS);
+  return !accepted;
 }
 
 async function handleMenuAction(
@@ -222,48 +228,65 @@ export function createBot(): Telegraf<Context> {
   });
 
   bot.action(/^menu:(.+)$/, async (ctx) => {
-    await ctx.answerCbQuery();
-
     const user = await getContextUser(ctx);
     if (!user) {
       return;
     }
     const action = ctx.match[1];
+    if (await isDebouncedAction(user.id, `menu:${action}`)) {
+      await ctx.answerCbQuery("Se procesează deja. Încearcă imediat din nou.");
+      return;
+    }
+
+    await ctx.answerCbQuery();
     const session = await getSession(user.id);
     await handleMenuAction(ctx, user, action, session);
   });
 
   bot.action(/^marathon:(.+)$/, async (ctx) => {
-    await ctx.answerCbQuery();
-
     const user = await getContextUser(ctx);
     if (!user) {
       return;
     }
 
+    if (await isDebouncedAction(user.id, `marathon:${ctx.match[1]}`)) {
+      await ctx.answerCbQuery("Cererea este deja în procesare.");
+      return;
+    }
+
+    await ctx.answerCbQuery();
     await handleMarathonCallback(ctx, user, ctx.match[1]);
   });
 
   bot.action(/^consent:(privacy|marketing):(yes|no)$/, async (ctx) => {
-    await ctx.answerCbQuery();
-
     if (!ctx.from) {
       return;
     }
 
     const user = await getOrCreateUser(ctx.from);
+    if (await isDebouncedAction(user.id, `consent:${ctx.match[1]}:${ctx.match[2]}`)) {
+      await ctx.answerCbQuery("Preferința este deja în curs de actualizare.");
+      return;
+    }
+
+    await ctx.answerCbQuery();
     const [, type, rawValue] = ctx.match;
     await handleConsentCallback(ctx, user, type as "privacy" | "marketing", rawValue === "yes");
   });
 
   bot.action(/^lesson:open:(1|2|3)$/, async (ctx) => {
-    await ctx.answerCbQuery();
-
     if (!ctx.from) {
       return;
     }
 
     const user = await getOrCreateUser(ctx.from);
+    const dayNumber = Number(ctx.match[1]) as 1 | 2 | 3;
+    if (await isDebouncedAction(user.id, `lesson:open:${dayNumber}`)) {
+      await ctx.answerCbQuery("Lecția se pregătește deja.");
+      return;
+    }
+
+    await ctx.answerCbQuery();
     if (!user.leadFormCompleted) {
       await ctx.reply(SHARED_COPY.startMenuActivationRequired, {
         reply_markup: getPublicMenuKeyboard().reply_markup,
@@ -271,7 +294,6 @@ export function createBot(): Telegraf<Context> {
       return;
     }
 
-    const dayNumber = Number(ctx.match[1]) as 1 | 2 | 3;
     const lockedMessage = await getLockedLessonMessage(user.id, dayNumber);
 
     if (lockedMessage) {
@@ -283,13 +305,18 @@ export function createBot(): Telegraf<Context> {
   });
 
   bot.action(/^lesson:quiz:(1|2|3)$/, async (ctx) => {
-    await ctx.answerCbQuery();
-
     if (!ctx.from) {
       return;
     }
 
     const user = await getOrCreateUser(ctx.from);
+    const dayNumber = Number(ctx.match[1]) as 1 | 2 | 3;
+    if (await isDebouncedAction(user.id, `lesson:quiz:${dayNumber}`)) {
+      await ctx.answerCbQuery("Testul este deja în procesare.");
+      return;
+    }
+
+    await ctx.answerCbQuery();
     if (!user.leadFormCompleted) {
       await ctx.reply(SHARED_COPY.startMenuActivationRequired, {
         reply_markup: getPublicMenuKeyboard().reply_markup,
@@ -297,7 +324,6 @@ export function createBot(): Telegraf<Context> {
       return;
     }
 
-    const dayNumber = Number(ctx.match[1]) as 1 | 2 | 3;
     const result = await handleLessonQuiz(user.id, dayNumber);
 
     if (result.message) {

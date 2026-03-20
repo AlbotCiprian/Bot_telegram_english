@@ -1,15 +1,18 @@
 import { User } from "@prisma/client";
 import { Markup } from "telegraf";
 import { UI_LABELS } from "../content/copy.js";
-import { prisma } from "../db/client.js";
 import { LESSON_ONE_QUIZ } from "../content/staticContent.js";
-import { logUserEvent } from "./eventService.js";
-import { getTelegramClient } from "./telegram.js";
-import { scheduleCampaignJob } from "./schedulerService.js";
+import { prisma } from "../db/client.js";
+import { config } from "../utils/config.js";
 import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
+import { logUserEvent } from "./eventService.js";
 import { buildMediaAssetKey, sendVideoAsset } from "./mediaAssetService.js";
+import { scheduleCampaignJob } from "./schedulerService.js";
+import { buildLessonWatchAccess } from "./streamingService.js";
+import { isLessonStreamReady } from "./streamingAssets.js";
+import { getTelegramClient } from "./telegram.js";
 
-type LessonDay = 1 | 2 | 3;
+export type LessonDay = 1 | 2 | 3;
 type UnlockDay = 2 | 3;
 
 type LessonAvailability = {
@@ -66,6 +69,10 @@ function hasStartedFreeLessons(user: User): boolean {
   return user.lesson1Unlocked || user.lesson2Unlocked || user.lesson3Unlocked || user.currentLessonDay > 0;
 }
 
+function shouldUseInternalLessonStream(dayNumber: LessonDay): boolean {
+  return config.streamingEnabled && config.LESSON_DELIVERY_MODE === "internal_stream" && isLessonStreamReady(dayNumber);
+}
+
 function getLessonAvailability(user: User): LessonAvailability[] {
   return ([1, 2, 3] as const).map((dayNumber) => {
     const unlocked = isLessonUnlocked(user, dayNumber);
@@ -114,10 +121,7 @@ function buildLessonsMenuKeyboard(user: User) {
   const rows = ([1, 2, 3] as const).map((dayNumber) => {
     const unlocked = isLessonUnlocked(user, dayNumber);
     return [
-      Markup.button.callback(
-        unlocked ? `▶️ Lecția ${dayNumber}` : `🔒 Lecția ${dayNumber}`,
-        `lesson:open:${dayNumber}`,
-      ),
+      Markup.button.callback(unlocked ? `▶️ Lecția ${dayNumber}` : `🔒 Lecția ${dayNumber}`, `lesson:open:${dayNumber}`),
     ];
   });
 
@@ -135,6 +139,16 @@ function buildUnlockNotificationKeyboard(dayNumber: UnlockDay) {
 
 function buildDeliveredLessonKeyboard(dayNumber: LessonDay) {
   return Markup.inlineKeyboard([
+    [Markup.button.callback(UI_LABELS.testYourself, `lesson:quiz:${dayNumber}`)],
+    [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
+    [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
+  ]);
+}
+
+function buildStreamLessonKeyboard(dayNumber: LessonDay, watchUrl: string) {
+  return Markup.inlineKeyboard([
+    [Markup.button.webApp(UI_LABELS.streamLesson, watchUrl)],
+    [Markup.button.url(UI_LABELS.openLessonInBrowser, watchUrl)],
     [Markup.button.callback(UI_LABELS.testYourself, `lesson:quiz:${dayNumber}`)],
     [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
     [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
@@ -172,14 +186,20 @@ async function ensureLessonProgress(userId: number, dayNumber: LessonDay) {
     data: {
       userId,
       dayNumber,
-      videoSentAt: now,
-      quizAvailableAt: new Date(now.getTime() + QUIZ_UNLOCK_DELAY_MS),
       openedAt: now,
+      streamSessionCreatedAt:
+        config.streamingEnabled && config.LESSON_DELIVERY_MODE === "internal_stream" ? now : null,
+      videoSentAt:
+        config.streamingEnabled && config.LESSON_DELIVERY_MODE === "internal_stream" ? null : now,
+      quizAvailableAt:
+        config.streamingEnabled && config.LESSON_DELIVERY_MODE === "internal_stream"
+          ? null
+          : new Date(now.getTime() + QUIZ_UNLOCK_DELAY_MS),
     },
   });
 }
 
-async function sendLessonBody(params: {
+async function sendLessonTelegramVideo(params: {
   chatId: string;
   dayNumber: LessonDay;
   title: string;
@@ -209,11 +229,11 @@ async function sendLessonBody(params: {
     });
 
     if (status !== "missing" && status !== "failed") {
-      return;
+      return "video";
     }
 
     if (status === "failed") {
-      return;
+      return "failed";
     }
   }
 
@@ -225,6 +245,32 @@ async function sendLessonBody(params: {
       reply_markup: buildDeliveredLessonKeyboard(params.dayNumber).reply_markup,
     },
   );
+
+  return "missing";
+}
+
+async function sendLessonStreamAccess(params: {
+  userId: number;
+  chatId: string;
+  dayNumber: LessonDay;
+  title: string;
+  messageText: string;
+}) {
+  const telegram = getTelegramClient();
+  const access = buildLessonWatchAccess(params.userId, params.dayNumber);
+  const text = [
+    `*${params.title}*`,
+    "",
+    params.messageText,
+    "",
+    "Deschide lecția în playerul intern pentru încărcare mai rapidă pe mobil și desktop.",
+    "Testul se deblochează după minimum 60 de secunde de playback valid.",
+  ].join("\n");
+
+  await telegram.sendMessage(params.chatId, text, {
+    parse_mode: "Markdown",
+    reply_markup: buildStreamLessonKeyboard(params.dayNumber, access.watchUrl).reply_markup,
+  });
 }
 
 async function sendCourseFollowUp(chatId: string): Promise<void> {
@@ -238,13 +284,14 @@ async function sendCourseFollowUp(chatId: string): Promise<void> {
   );
 }
 
-async function markLessonCompletion(userId: number, dayNumber: LessonDay, lessonKey: string) {
+async function markLessonCompletion(userId: number, dayNumber: LessonDay, lessonKey: string, deliveryMode: string) {
   await logUserEvent({
     userId,
     eventType: "lesson_delivered",
     metadata: {
       dayNumber,
       lessonKey,
+      deliveryMode,
     },
   });
 }
@@ -264,6 +311,7 @@ export async function getTotalMediaCacheStats() {
 }
 
 export async function markLessonOpened(userId: number, dayNumber: LessonDay): Promise<void> {
+  const now = new Date();
   await prisma.lessonProgress.upsert({
     where: {
       userId_dayNumber: {
@@ -272,14 +320,22 @@ export async function markLessonOpened(userId: number, dayNumber: LessonDay): Pr
       },
     },
     update: {
-      openedAt: new Date(),
+      openedAt: now,
+      streamSessionCreatedAt:
+        config.streamingEnabled && config.LESSON_DELIVERY_MODE === "internal_stream" ? now : undefined,
     },
     create: {
       userId,
       dayNumber,
-      openedAt: new Date(),
-      videoSentAt: new Date(),
-      quizAvailableAt: new Date(Date.now() + QUIZ_UNLOCK_DELAY_MS),
+      openedAt: now,
+      streamSessionCreatedAt:
+        config.streamingEnabled && config.LESSON_DELIVERY_MODE === "internal_stream" ? now : null,
+      videoSentAt:
+        config.streamingEnabled && config.LESSON_DELIVERY_MODE === "internal_stream" ? null : now,
+      quizAvailableAt:
+        config.streamingEnabled && config.LESSON_DELIVERY_MODE === "internal_stream"
+          ? null
+          : new Date(now.getTime() + QUIZ_UNLOCK_DELAY_MS),
     },
   });
 }
@@ -315,7 +371,7 @@ export async function sendLessonMedia(
   messageText: string,
   mediaUrl: string | null,
 ) {
-  await sendLessonBody({
+  await sendLessonTelegramVideo({
     chatId,
     dayNumber,
     title,
@@ -539,13 +595,47 @@ export async function deliverLesson(userId: number, dayNumber: LessonDay): Promi
     throw new Error(`Lecția pentru ziua ${dayNumber} nu există.`);
   }
 
-  await sendLessonBody({
-    chatId: user.telegramId.toString(),
-    dayNumber,
-    title: lesson.title,
-    messageText: lesson.messageText,
-    mediaUrl: lesson.mediaUrl,
-  });
+  await ensureLessonProgress(userId, dayNumber);
+
+  let deliveryMode = "telegram_video";
+
+  if (shouldUseInternalLessonStream(dayNumber)) {
+    await sendLessonStreamAccess({
+      userId,
+      chatId: user.telegramId.toString(),
+      dayNumber,
+      title: lesson.title,
+      messageText: lesson.messageText,
+    });
+    await markLessonOpened(userId, dayNumber);
+    deliveryMode = "internal_stream";
+  } else if (config.lessonTelegramFallback || config.LESSON_DELIVERY_MODE !== "internal_stream") {
+    const telegramResult = await sendLessonTelegramVideo({
+      chatId: user.telegramId.toString(),
+      dayNumber,
+      title: lesson.title,
+      messageText: lesson.messageText,
+      mediaUrl: lesson.mediaUrl,
+    });
+    if (telegramResult === "video") {
+      await markLessonVideoSent(userId, dayNumber);
+      deliveryMode = "telegram_video";
+    } else {
+      await markLessonOpened(userId, dayNumber);
+      deliveryMode = telegramResult === "missing" ? "telegram_missing" : "telegram_failed";
+    }
+  } else {
+    const telegram = getTelegramClient();
+    await telegram.sendMessage(
+      user.telegramId.toString(),
+      "Lecția este deblocată, dar stream-ul intern nu este pregătit încă pe server. Revino în câteva minute.",
+      {
+        reply_markup: buildDeliveredLessonKeyboard(dayNumber).reply_markup,
+      },
+    );
+    await markLessonOpened(userId, dayNumber);
+    deliveryMode = "stream_not_ready";
+  }
 
   const lastOpenedLesson = Math.max(user.currentLessonDay, dayNumber);
   await prisma.user.update({
@@ -567,8 +657,7 @@ export async function deliverLesson(userId: number, dayNumber: LessonDay): Promi
     },
   });
 
-  await markLessonVideoSent(userId, dayNumber);
-  await markLessonCompletion(userId, dayNumber, lesson.key);
+  await markLessonCompletion(userId, dayNumber, lesson.key, deliveryMode);
 
   if (dayNumber === 3) {
     await sendCourseFollowUp(user.telegramId.toString());
@@ -588,11 +677,28 @@ export async function handleLessonQuiz(
     },
   });
 
-  if (!progress?.videoSentAt) {
+  if (!progress) {
     return {
       status: "missing",
-      message: "Deschide mai întâi lecția video și apoi revino la test.",
+      message: "Deschide mai întâi lecția și apoi revino la test.",
     };
+  }
+
+  if (!progress.quizAvailableAt) {
+    if (progress.streamStartedAt || progress.streamSessionCreatedAt) {
+      return {
+        status: "locked",
+        message:
+          "Testul se deblochează după minimum 60 de secunde de playback valid în playerul intern. Revino imediat după ce urmărești puțin din lecție.",
+      };
+    }
+
+    if (!progress.videoSentAt) {
+      return {
+        status: "missing",
+        message: "Deschide mai întâi lecția și apoi revino la test.",
+      };
+    }
   }
 
   if (progress.quizAvailableAt && progress.quizAvailableAt > new Date()) {

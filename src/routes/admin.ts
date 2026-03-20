@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/client.js";
+import { getStreamStats } from "../services/streamingService.js";
 
 export const adminRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get("/health", async () => ({
@@ -74,5 +75,9 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
     return {
       jobs,
     };
+  });
+
+  fastify.get("/admin/stream/stats", async () => {
+    return getStreamStats();
   });
 };

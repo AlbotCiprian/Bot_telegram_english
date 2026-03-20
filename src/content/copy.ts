@@ -17,6 +17,8 @@ export const UI_LABELS = {
   wantsCourse: "📞 Vreau la curs",
   wantsCourseInfo: "📞 Vreau să aflu despre curs",
   openLesson: "▶️ Deschide lecția",
+  openLessonInBrowser: "🌐 Deschide în browser",
+  streamLesson: "🎬 Vezi lecția",
   testYourself: "📝 Testează-te",
   viewServices: "🌐 Vezi serviciile",
   contactForPackage: "📩 Contactează pentru acest pachet",

@@ -1,8 +1,10 @@
 import { Input } from "telegraf";
 import { ForceReply, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove } from "telegraf/types";
 import { prisma } from "../db/client.js";
-import { getTelegramClient } from "./telegram.js";
+import { config } from "../utils/config.js";
 import { logger } from "../utils/logger.js";
+import { releaseRedisLock, tryAcquireRedisLock } from "./redis.js";
+import { getTelegramClient } from "./telegram.js";
 
 type VideoSendOptions = {
   caption: string;
@@ -60,6 +62,24 @@ function extractTelegramFileId(message: unknown): { fileId?: string; uniqueId?: 
   }
 
   return {};
+}
+
+async function waitForCachedAsset(assetKey: string, timeoutMs: number) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const cachedAsset = await prisma.telegramMediaAsset.findUnique({
+      where: { assetKey },
+    });
+
+    if (cachedAsset?.telegramFileId) {
+      return cachedAsset;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+
+  return null;
 }
 
 export function buildMediaAssetKey(scope: string, fileName: string): string {
@@ -123,8 +143,24 @@ export async function sendVideoAsset(params: SendVideoAssetParams): Promise<Send
     return "missing";
   }
 
+  const lockKey = `media:upload:${params.assetKey}`;
+  const lockToken = await tryAcquireRedisLock(lockKey, config.MEDIA_UPLOAD_LOCK_TTL_SEC * 1000);
+
+  if (!lockToken) {
+    const awaitedAsset = await waitForCachedAsset(params.assetKey, Math.min(config.MEDIA_UPLOAD_LOCK_TTL_SEC * 1000, 120_000));
+    if (awaitedAsset?.telegramFileId) {
+      await telegram.sendVideo(params.chatId, awaitedAsset.telegramFileId, params.options);
+      return "cached";
+    }
+  }
+
   if (params.uploadNoticeText) {
     await telegram.sendMessage(params.chatId, params.uploadNoticeText);
+  }
+
+  let uploadToken = lockToken;
+  if (!uploadToken) {
+    uploadToken = await tryAcquireRedisLock(lockKey, config.MEDIA_UPLOAD_LOCK_TTL_SEC * 1000);
   }
 
   let message: Awaited<ReturnType<typeof telegram.sendVideo>>;
@@ -143,6 +179,10 @@ export async function sendVideoAsset(params: SendVideoAssetParams): Promise<Send
           reply_markup: params.options.reply_markup,
         },
       );
+    }
+
+    if (uploadToken) {
+      await releaseRedisLock(lockKey, uploadToken);
     }
 
     return "failed";
@@ -165,6 +205,10 @@ export async function sendVideoAsset(params: SendVideoAssetParams): Promise<Send
         sourceFileName: params.sourceFileName ?? null,
       },
     });
+  }
+
+  if (uploadToken) {
+    await releaseRedisLock(lockKey, uploadToken);
   }
 
   return "uploaded";
