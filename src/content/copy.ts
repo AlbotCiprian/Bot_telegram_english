@@ -6,7 +6,6 @@ export const UI_LABELS = {
   website: "🌐 Website",
   operator: "💬 Discută cu echipa noastră",
   careerAstrology: "🔮 Consultație astrologică în carieră",
-  lessons: "📚 Lecțiile tale",
   askAi: "🤖 Întreabă AI-ul",
   backToMenu: "⬅️ Meniul principal",
   acceptPrivacy: "✔ Accept",

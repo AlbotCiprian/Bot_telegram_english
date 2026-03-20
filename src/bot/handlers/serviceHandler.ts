@@ -1,3 +1,4 @@
+import path from "node:path";
 import { Context, Markup } from "telegraf";
 import { UI_LABELS } from "../../content/copy.js";
 import { prisma } from "../../db/client.js";
@@ -6,7 +7,6 @@ import { logUserEvent } from "../../services/eventService.js";
 import { deliverLesson, getLessonsMenu } from "../../services/lessonService.js";
 import { scheduleFreeLessonCampaign } from "../../services/schedulerService.js";
 import { buildMediaAssetKey, sendVideoAsset } from "../../services/mediaAssetService.js";
-import { getServiceStreamAvailability, resolveServiceWatchUrl } from "../../services/streamingService.js";
 import { BotUser } from "../../types/bot.js";
 import { config } from "../../utils/config.js";
 import { resolveExistingMediaFile } from "../../utils/mediaAssets.js";
@@ -42,10 +42,6 @@ function buildActionButtons(params: {
     buttons.push(Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course"));
   }
 
-  if (params.showLessons) {
-    buttons.push(Markup.button.callback(UI_LABELS.lessons, "menu:lessons"));
-  }
-
   buttons.push(Markup.button.callback(UI_LABELS.backToMenu, "menu:menu"));
   return Markup.inlineKeyboard(buttons, { columns: 1 });
 }
@@ -62,7 +58,6 @@ async function replyWithSharedVideo(
     primaryCallback?: string;
     fallbackMode?: "button" | "preview";
     includeCourseCta?: boolean;
-    showLessonsButtons?: boolean;
   },
 ): Promise<void> {
   const localVideoPath = params.fileName ? resolveExistingMediaFile(params.fileName) : null;
@@ -81,7 +76,7 @@ async function replyWithSharedVideo(
         parse_mode: "Markdown",
         supports_streaming: true,
         reply_markup: buildActionButtons({
-          showLessons: params.showLessonsButtons ?? params.showLessons,
+          showLessons: params.showLessons,
           primaryCallback: params.primaryCallback,
           primaryLabel: params.fallbackLabel,
           includeCourseCta: params.includeCourseCta,
@@ -101,7 +96,7 @@ async function replyWithSharedVideo(
         is_disabled: false,
       },
       reply_markup: buildActionButtons({
-        showLessons: params.showLessonsButtons ?? params.showLessons,
+        showLessons: params.showLessons,
         primaryCallback: params.primaryCallback,
         primaryLabel: params.fallbackLabel,
         includeCourseCta: params.includeCourseCta,
@@ -113,12 +108,68 @@ async function replyWithSharedVideo(
   await ctx.reply(caption, {
     parse_mode: "Markdown",
     reply_markup: buildActionButtons({
-      showLessons: params.showLessonsButtons ?? params.showLessons,
+      showLessons: params.showLessons,
       primaryCallback: params.primaryCallback,
       primaryUrl: params.fallbackUrl,
       primaryLabel: params.fallbackLabel,
       includeCourseCta: params.includeCourseCta,
     }).reply_markup,
+  });
+}
+
+function resolveAstrologyVideoAsset() {
+  const optimizedPath = path.resolve(config.STREAM_MP4_ROOT, "career-astrology.mp4");
+  const optimizedVideoPath = resolveExistingMediaFile(optimizedPath);
+
+  if (optimizedVideoPath) {
+    return {
+      assetKey: buildMediaAssetKey("service", "career-astrology.mp4"),
+      sourceFileName: "career-astrology.mp4",
+      localFilePath: optimizedVideoPath,
+    };
+  }
+
+  return {
+    assetKey: buildMediaAssetKey("service", SERVICE_VIDEO_FILES.astrologyConsultation),
+    sourceFileName: SERVICE_VIDEO_FILES.astrologyConsultation,
+    localFilePath: resolveExistingMediaFile(SERVICE_VIDEO_FILES.astrologyConsultation),
+  };
+}
+
+async function replyWithAstrologyVideo(ctx: Context, params: { title: string; body: string }) {
+  const caption = `*${params.title}*\n\n${params.body}`;
+  const videoAsset = resolveAstrologyVideoAsset();
+
+  if (ctx.chat?.id) {
+    const result = await sendVideoAsset({
+      chatId: ctx.chat.id.toString(),
+      assetKey: videoAsset.assetKey,
+      localFilePath: videoAsset.localFilePath,
+      sourceFileName: videoAsset.sourceFileName,
+      uploadNoticeText: "Pregătesc video-ul. Prima încărcare poate dura câteva secunde.",
+      missingFileText: `${caption}\n\nVideo-ul pentru această secțiune nu este disponibil încă pe server.`,
+      options: {
+        caption,
+        parse_mode: "Markdown",
+        supports_streaming: true,
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback(UI_LABELS.wantsAstrologyConsultation, "menu:astrology_request")],
+          [Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")],
+        ]).reply_markup,
+      },
+    });
+
+    if (result !== "missing") {
+      return;
+    }
+  }
+
+  await ctx.reply(caption, {
+    parse_mode: "Markdown",
+    reply_markup: Markup.inlineKeyboard([
+      [Markup.button.callback(UI_LABELS.wantsAstrologyConsultation, "menu:astrology_request")],
+      [Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")],
+    ]).reply_markup,
   });
 }
 
@@ -221,30 +272,10 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       }).reply_markup,
     });
   } else if (action === "career_astrology") {
-    const streamAvailability = getServiceStreamAvailability("career-astrology");
-    if (config.streamingEnabled && streamAvailability.ready) {
-      await ctx.reply(`*${STATIC_PAGES.astrology.title}*\n\n${STATIC_PAGES.astrology.body}`, {
-        parse_mode: "Markdown",
-        reply_markup: Markup.inlineKeyboard(
-          [
-            [Markup.button.url("🎬 Urmărește video-ul", resolveServiceWatchUrl(user.id, "career-astrology"))],
-            [Markup.button.callback(UI_LABELS.wantsAstrologyConsultation, "menu:astrology_request")],
-            [Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")],
-          ],
-        ).reply_markup,
-      });
-    } else {
-      await replyWithSharedVideo(ctx, {
-        title: STATIC_PAGES.astrology.title,
-        body: STATIC_PAGES.astrology.body,
-        showLessons,
-        showLessonsButtons: false,
-        fileName: SERVICE_VIDEO_FILES.astrologyConsultation,
-        includeCourseCta: false,
-        fallbackLabel: UI_LABELS.wantsAstrologyConsultation,
-        primaryCallback: "menu:astrology_request",
-      });
-    }
+    await replyWithAstrologyVideo(ctx, {
+      title: STATIC_PAGES.astrology.title,
+      body: STATIC_PAGES.astrology.body,
+    });
   }
 
   await logUserEvent({

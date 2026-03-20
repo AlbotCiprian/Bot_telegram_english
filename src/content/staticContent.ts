@@ -237,7 +237,7 @@ export const STATIC_PAGES = {
   welcome: {
     title: "Salut și bine ai venit la Express English Academy!",
     body: [
-      "Eu sunt Victoria Coșovan, fondatoarea academiei și profesoara ta.",
+      "Eu sunt Victoria Cosovan, fondatoarea academiei și profesoara ta.",
       "",
       "Aici am pregătit pentru tine:",
       "- 3 lecții gratuite de engleză",
@@ -319,7 +319,6 @@ export const LESSON_SEED_CONTENT = [
     mediaType: "video_file",
     mediaUrl: "lesson-1-v2-landscape.mp4",
     cta: [
-      { label: UI_LABELS.lessons, action: "lessons" },
       { label: UI_LABELS.wantsCourse, action: "wants_course" },
     ],
   },
@@ -331,7 +330,6 @@ export const LESSON_SEED_CONTENT = [
     mediaType: "video_file",
     mediaUrl: "lesson-2-v2-landscape.mp4",
     cta: [
-      { label: UI_LABELS.lessons, action: "lessons" },
       { label: UI_LABELS.wantsCourse, action: "wants_course" },
     ],
   },
@@ -343,7 +341,6 @@ export const LESSON_SEED_CONTENT = [
     mediaType: "video_file",
     mediaUrl: "lesson-3-v2-landscape.mp4",
     cta: [
-      { label: UI_LABELS.lessons, action: "lessons" },
       { label: UI_LABELS.wantsCourse, action: "wants_course" },
     ],
   },

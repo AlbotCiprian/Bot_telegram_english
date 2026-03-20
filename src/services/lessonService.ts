@@ -136,7 +136,7 @@ function buildLessonsMenuKeyboard(user: User) {
 function buildUnlockNotificationKeyboard(dayNumber: UnlockDay) {
   return Markup.inlineKeyboard([
     [Markup.button.callback(UI_LABELS.openLesson, `lesson:open:${dayNumber}`)],
-    [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
+    [Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")],
   ]);
 }
 
@@ -147,8 +147,8 @@ function buildDeliveredLessonKeyboard(dayNumber: LessonDay) {
     rows.push([Markup.button.callback(UI_LABELS.testYourself, `lesson:quiz:${dayNumber}`)]);
   }
 
-  rows.push([Markup.button.callback(UI_LABELS.lessons, "menu:lessons")]);
   rows.push([Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")]);
+  rows.push([Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")]);
 
   return Markup.inlineKeyboard(rows);
 }
@@ -167,14 +167,17 @@ function buildStreamLessonKeyboard(dayNumber: LessonDay, watchUrl: string) {
     rows.push([Markup.button.url(UI_LABELS.testYourself, buildLessonQuizUrl(watchUrl))]);
   }
 
-  rows.push([Markup.button.callback(UI_LABELS.lessons, "menu:lessons")]);
   rows.push([Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")]);
+  rows.push([Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")]);
 
   return Markup.inlineKeyboard(rows);
 }
 
 function buildCourseCtaKeyboard() {
-  return Markup.inlineKeyboard([[Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")]]);
+  return Markup.inlineKeyboard([
+    [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
+    [Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")],
+  ]);
 }
 
 function getUnlockUpdate(dayNumber: UnlockDay): Record<string, boolean> {
@@ -432,7 +435,6 @@ export async function sendReminder(userId: number, kind: "follow_up" | "inactive
   await telegram.sendMessage(user.telegramId.toString(), reminderMap[kind], {
     reply_markup: Markup.inlineKeyboard([
       [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
-      [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
       [Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")],
     ]).reply_markup,
   });
@@ -713,8 +715,8 @@ export async function handleLessonQuiz(
     {
       reply_markup: Markup.inlineKeyboard([
         [Markup.button.url(UI_LABELS.testYourself, quizUrl)],
-        [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
         [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
+        [Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")],
       ]).reply_markup,
     },
   );
@@ -761,8 +763,8 @@ export async function sendLessonNudge(userId: number, dayNumber: UnlockDay, afte
   await telegram.sendMessage(user.telegramId.toString(), message, {
     reply_markup: Markup.inlineKeyboard([
       [Markup.button.callback(`▶️ Deschide lecția ${dayNumber}`, `lesson:open:${dayNumber}`)],
-      [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
       [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
+      [Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")],
     ]).reply_markup,
   });
 
