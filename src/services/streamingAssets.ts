@@ -76,6 +76,10 @@ export function getStreamPublicBaseUrl(): string {
   return stripTrailingSlash(config.STREAM_PUBLIC_BASE_URL);
 }
 
+export function supportsTelegramWebAppStreaming(): boolean {
+  return getStreamPublicBaseUrl().startsWith("https://");
+}
+
 export function getStreamManifestPath(asset: LessonStreamAsset): string {
   return path.resolve(config.STREAM_HLS_ROOT, asset.streamKey, "master.m3u8");
 }

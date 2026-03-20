@@ -9,7 +9,7 @@ import { logUserEvent } from "./eventService.js";
 import { buildMediaAssetKey, sendVideoAsset } from "./mediaAssetService.js";
 import { scheduleCampaignJob } from "./schedulerService.js";
 import { buildLessonWatchAccess } from "./streamingService.js";
-import { isLessonStreamReady } from "./streamingAssets.js";
+import { isLessonStreamReady, supportsTelegramWebAppStreaming } from "./streamingAssets.js";
 import { getTelegramClient } from "./telegram.js";
 
 export type LessonDay = 1 | 2 | 3;
@@ -146,13 +146,18 @@ function buildDeliveredLessonKeyboard(dayNumber: LessonDay) {
 }
 
 function buildStreamLessonKeyboard(dayNumber: LessonDay, watchUrl: string) {
-  return Markup.inlineKeyboard([
-    [Markup.button.webApp(UI_LABELS.streamLesson, watchUrl)],
-    [Markup.button.url(UI_LABELS.openLessonInBrowser, watchUrl)],
-    [Markup.button.callback(UI_LABELS.testYourself, `lesson:quiz:${dayNumber}`)],
-    [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
-    [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
-  ]);
+  const rows = [];
+
+  if (supportsTelegramWebAppStreaming()) {
+    rows.push([Markup.button.webApp(UI_LABELS.streamLesson, watchUrl)]);
+  }
+
+  rows.push([Markup.button.url(UI_LABELS.openLessonInBrowser, watchUrl)]);
+  rows.push([Markup.button.callback(UI_LABELS.testYourself, `lesson:quiz:${dayNumber}`)]);
+  rows.push([Markup.button.callback(UI_LABELS.lessons, "menu:lessons")]);
+  rows.push([Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")]);
+
+  return Markup.inlineKeyboard(rows);
 }
 
 function buildCourseCtaKeyboard() {
