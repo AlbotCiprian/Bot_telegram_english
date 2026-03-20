@@ -4,6 +4,7 @@ import { LESSON_SEED_CONTENT } from "../content/staticContent.js";
 import { config } from "../utils/config.js";
 
 export type LessonDay = 1 | 2 | 3;
+export type ServiceStreamKey = "career-astrology";
 
 export type StreamRendition = {
   height: 480 | 720;
@@ -23,6 +24,18 @@ export type LessonStreamAsset = {
   posterFileName: string;
   deliveryMode: "internal_stream";
   renditions: StreamRendition[];
+};
+
+export type ServiceStreamAsset = {
+  serviceKey: ServiceStreamKey;
+  publicEntryKey: "career_astrology";
+  title: string;
+  sourceFileName: string;
+  streamKey: string;
+  outputFileName: string;
+  posterFileName: string;
+  deliveryMode: "internal_stream";
+  aspectRatio: "portrait";
 };
 
 const DEFAULT_RENDITIONS: StreamRendition[] = [
@@ -54,6 +67,20 @@ const LESSON_STREAM_ASSETS: LessonStreamAsset[] = LESSON_SEED_CONTENT.map((lesso
   deliveryMode: "internal_stream",
   renditions: DEFAULT_RENDITIONS,
 }));
+
+const SERVICE_STREAM_ASSETS: ServiceStreamAsset[] = [
+  {
+    serviceKey: "career-astrology",
+    publicEntryKey: "career_astrology",
+    title: "Consultație astrologică în carieră",
+    sourceFileName: "Video_consultatie_astrologica.MOV",
+    streamKey: "career-astrology",
+    outputFileName: "career-astrology.mp4",
+    posterFileName: "career-astrology.jpg",
+    deliveryMode: "internal_stream",
+    aspectRatio: "portrait",
+  },
+];
 
 function stripTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
@@ -94,6 +121,52 @@ export function getStreamRenditionPlaylistPath(asset: LessonStreamAsset, playlis
 
 export function getStreamSegmentPath(asset: LessonStreamAsset, segmentFileName: string): string {
   return path.resolve(config.STREAM_HLS_ROOT, asset.streamKey, segmentFileName);
+}
+
+export function listServiceStreamAssets(): ServiceStreamAsset[] {
+  return SERVICE_STREAM_ASSETS;
+}
+
+export function getServiceStreamAsset(serviceKey: ServiceStreamKey): ServiceStreamAsset {
+  const asset = SERVICE_STREAM_ASSETS.find((item) => item.serviceKey === serviceKey);
+  if (!asset) {
+    throw new Error(`Nu există asset de streaming pentru serviciul ${serviceKey}.`);
+  }
+
+  return asset;
+}
+
+export function getServiceStreamVideoPath(asset: ServiceStreamAsset): string {
+  return path.resolve(config.STREAM_MP4_ROOT, asset.outputFileName);
+}
+
+export function getServiceStreamPosterPath(asset: ServiceStreamAsset): string {
+  return path.resolve(config.STREAM_POSTER_ROOT, asset.posterFileName);
+}
+
+export function getAbsoluteServiceWatchUrl(serviceKey: ServiceStreamKey, token: string): string {
+  return `${getStreamPublicBaseUrl()}/watch/service/${serviceKey}?token=${encodeURIComponent(token)}`;
+}
+
+export function isServiceStreamReady(serviceKey: ServiceStreamKey): boolean {
+  const asset = getServiceStreamAsset(serviceKey);
+  return fs.existsSync(getServiceStreamVideoPath(asset)) && fs.existsSync(getServiceStreamPosterPath(asset));
+}
+
+export function getServiceStreamAssetSummary(serviceKey: ServiceStreamKey) {
+  const asset = getServiceStreamAsset(serviceKey);
+  return {
+    serviceKey: asset.serviceKey,
+    publicEntryKey: asset.publicEntryKey,
+    title: asset.title,
+    sourceFileName: asset.sourceFileName,
+    streamKey: asset.streamKey,
+    outputFileName: asset.outputFileName,
+    deliveryMode: asset.deliveryMode,
+    videoPath: getServiceStreamVideoPath(asset),
+    posterPath: getServiceStreamPosterPath(asset),
+    ready: isServiceStreamReady(serviceKey),
+  };
 }
 
 export function getAbsoluteWatchUrl(dayNumber: LessonDay, token: string): string {

@@ -1,21 +1,37 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { getLessonStreamAsset, listLessonStreamAssets, type LessonDay } from "../services/streamingAssets.js";
+import {
+  getLessonStreamAsset,
+  getServiceStreamAsset,
+  listLessonStreamAssets,
+  listServiceStreamAssets,
+  type LessonDay,
+  type ServiceStreamKey,
+} from "../services/streamingAssets.js";
 import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
 
 const STREAM_ROOT = path.resolve(process.cwd(), "stream");
 const HLS_ROOT = path.resolve(STREAM_ROOT, "hls");
+const MP4_ROOT = path.resolve(STREAM_ROOT, "mp4");
 const POSTER_ROOT = path.resolve(STREAM_ROOT, "posters");
 const MANIFEST_PATH = path.resolve(STREAM_ROOT, "manifest.json");
 
-function getSelectedDaysFromArgs(): LessonDay[] {
-  const providedDays = process.argv
-    .slice(2)
+function getSelectedTargets() {
+  const rawArgs = process.argv.slice(2);
+  const hasExplicitArgs = rawArgs.length > 0;
+
+  const lessonDays = rawArgs
     .map((value) => Number(value))
     .filter((value): value is LessonDay => value === 1 || value === 2 || value === 3);
 
-  return providedDays.length > 0 ? providedDays : listLessonStreamAssets().map((asset) => asset.dayNumber);
+  const serviceKeys = rawArgs
+    .filter((value): value is ServiceStreamKey => value === "career-astrology");
+
+  return {
+    lessonDays: hasExplicitArgs ? lessonDays : listLessonStreamAssets().map((asset) => asset.dayNumber),
+    serviceKeys: hasExplicitArgs ? serviceKeys : listServiceStreamAssets().map((asset) => asset.serviceKey),
+  };
 }
 
 async function ensureDirectory(dirPath: string) {
@@ -43,10 +59,7 @@ async function runFfmpeg(args: string[]) {
 
 function buildMasterPlaylist(dayNumber: LessonDay) {
   const asset = getLessonStreamAsset(dayNumber);
-  const lines = [
-    "#EXTM3U",
-    "#EXT-X-VERSION:3",
-  ];
+  const lines = ["#EXTM3U", "#EXT-X-VERSION:3"];
 
   for (const rendition of asset.renditions) {
     const width = rendition.height === 480 ? 854 : 1280;
@@ -60,7 +73,7 @@ function buildMasterPlaylist(dayNumber: LessonDay) {
 }
 
 async function buildPoster(inputPath: string, outputPath: string) {
-  await runFfmpeg(["-y", "-ss", "00:00:02", "-i", inputPath, "-frames:v", "1", "-q:v", "2", outputPath]);
+  await runFfmpeg(["-y", "-ss", "00:00:02", "-i", inputPath, "-frames:v", "1", "-q:v", "2", "-update", "1", outputPath]);
 }
 
 async function buildRendition(params: {
@@ -119,6 +132,44 @@ async function buildRendition(params: {
   ]);
 }
 
+async function buildOptimizedMp4(params: {
+  inputPath: string;
+  outputPath: string;
+}) {
+  await runFfmpeg([
+    "-y",
+    "-i",
+    params.inputPath,
+    "-vf",
+    "scale=720:-2",
+    "-c:v",
+    "libx264",
+    "-preset",
+    "medium",
+    "-profile:v",
+    "high",
+    "-pix_fmt",
+    "yuv420p",
+    "-movflags",
+    "+faststart",
+    "-crf",
+    "21",
+    "-maxrate",
+    "2000k",
+    "-bufsize",
+    "4000k",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
+    "-ac",
+    "2",
+    "-ar",
+    "48000",
+    params.outputPath,
+  ]);
+}
+
 async function buildLessonStream(dayNumber: LessonDay) {
   const asset = getLessonStreamAsset(dayNumber);
   const inputPath = resolveExistingMediaFile(asset.sourceFileName);
@@ -146,6 +197,7 @@ async function buildLessonStream(dayNumber: LessonDay) {
   await buildPoster(inputPath, path.join(POSTER_ROOT, asset.posterFileName));
 
   return {
+    kind: "lesson",
     dayNumber,
     lessonKey: asset.lessonKey,
     sourceFileName: asset.sourceFileName,
@@ -155,14 +207,51 @@ async function buildLessonStream(dayNumber: LessonDay) {
   };
 }
 
+async function buildServiceStream(serviceKey: ServiceStreamKey) {
+  const asset = getServiceStreamAsset(serviceKey);
+  const inputPath = resolveExistingMediaFile(asset.sourceFileName);
+
+  if (!inputPath) {
+    throw new Error(`Nu am găsit sursa video pentru serviciul ${serviceKey}: ${asset.sourceFileName}`);
+  }
+
+  await ensureDirectory(MP4_ROOT);
+  await ensureDirectory(POSTER_ROOT);
+
+  const outputPath = path.resolve(MP4_ROOT, asset.outputFileName);
+  const posterPath = path.resolve(POSTER_ROOT, asset.posterFileName);
+
+  await buildOptimizedMp4({
+    inputPath,
+    outputPath,
+  });
+  await buildPoster(inputPath, posterPath);
+
+  return {
+    kind: "service",
+    serviceKey: asset.serviceKey,
+    publicEntryKey: asset.publicEntryKey,
+    title: asset.title,
+    sourceFileName: asset.sourceFileName,
+    outputFileName: asset.outputFileName,
+    streamKey: asset.streamKey,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
 async function main() {
-  const selectedDays = getSelectedDaysFromArgs();
+  const selected = getSelectedTargets();
   await ensureDirectory(HLS_ROOT);
+  await ensureDirectory(MP4_ROOT);
   await ensureDirectory(POSTER_ROOT);
 
   const manifest = [];
-  for (const dayNumber of selectedDays) {
+  for (const dayNumber of selected.lessonDays) {
     manifest.push(await buildLessonStream(dayNumber));
+  }
+
+  for (const serviceKey of selected.serviceKeys) {
+    manifest.push(await buildServiceStream(serviceKey));
   }
 
   await fs.writeFile(
@@ -178,7 +267,9 @@ async function main() {
     "utf8",
   );
 
-  console.log(`Stream assets generate cu succes pentru lecțiile: ${selectedDays.join(", ")}`);
+  console.log(
+    `Stream assets generate cu succes pentru lecțiile: ${selected.lessonDays.join(", ")} și serviciile: ${selected.serviceKeys.join(", ")}`,
+  );
 }
 
 main().catch((error) => {

@@ -20,7 +20,7 @@ async function configureTelegramProfile(bot: ReturnType<typeof createBot>): Prom
       },
     }),
     bot.telegram.setMyDescription(
-      "3 lecții gratuite de engleză, player intern optimizat pentru mobil și desktop, plus acces rapid la programe și operator.",
+      "3 lecții gratuite de engleză, explicații clare, player optimizat pentru mobil și acces rapid la resursele academiei.",
     ),
     bot.telegram.setMyShortDescription("Trimite /start dacă nu vezi butonul START."),
   ];

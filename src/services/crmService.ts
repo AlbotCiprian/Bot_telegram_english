@@ -158,7 +158,7 @@ export async function createLeadInKommo(userId: number, firstRequestedService?: 
   const leadIntent = resolveLeadIntent(firstRequestedService);
   const leadNameSuffix =
     leadIntent?.key === "free_lessons"
-      ? "a cerut 3 zile gratuite"
+      ? "a cerut 3 lecții gratuite"
       : leadIntent
         ? `interes: ${leadIntent.label}`
         : "lead nou din bot";
@@ -289,13 +289,18 @@ export async function createLeadInKommo(userId: number, firstRequestedService?: 
 export async function requestConsultationInKommo(
   userId: number,
   params: {
-    requestedService: "operator" | "career_astrology";
+    requestedService: "operator" | "career_astrology" | "course_contact";
     priority: "urgent_contact" | "consultation";
     reason?: string | null;
     note?: string | null;
   },
 ): Promise<void> {
-  const serviceLabel = PUBLIC_ENTRY_LABELS[params.requestedService] ?? params.requestedService;
+  const serviceLabel =
+    params.requestedService === "career_astrology"
+      ? PUBLIC_ENTRY_LABELS.career_astrology
+      : params.requestedService === "course_contact"
+        ? "Interes pentru curs"
+        : "Contact rapid";
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -326,6 +331,8 @@ export async function requestConsultationInKommo(
       status_id:
         params.priority === "urgent_contact"
           ? resolveConfiguredStageId(config.KOMMO_STAGE_URGENT_ID, config.KOMMO_STAGE_CONSULT_ID)
+          : params.requestedService === "career_astrology"
+            ? resolveConfiguredStageId(config.KOMMO_STAGE_ASTROLOGY_ID, config.KOMMO_STAGE_CONSULT_ID)
           : parseOptionalId(config.KOMMO_STAGE_CONSULT_ID),
     },
   ];
@@ -338,7 +345,13 @@ export async function requestConsultationInKommo(
         text: [
           "Cerere nouă din botul Telegram:",
           `Tip cerere: ${serviceLabel}`,
-          `Prioritate: ${params.priority === "urgent_contact" ? "Urgent contact" : "Consultation Requested"}`,
+          `Prioritate: ${
+            params.requestedService === "career_astrology"
+              ? "Consultation Requested Astrology"
+              : params.priority === "urgent_contact"
+                ? "Urgent contact"
+                : "Consultation Requested"
+          }`,
           `Motiv: ${params.reason?.trim() || "nespecificat"}`,
           `Mesaj: ${params.note?.trim() || "fără mesaj suplimentar"}`,
           `Telefon: ${refreshedUser.phone ?? "nesetat"}`,

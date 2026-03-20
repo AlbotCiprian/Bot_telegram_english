@@ -6,12 +6,11 @@ import { logUserEvent } from "../../services/eventService.js";
 import { deliverLesson, getLessonsMenu } from "../../services/lessonService.js";
 import { scheduleFreeLessonCampaign } from "../../services/schedulerService.js";
 import { buildMediaAssetKey, sendVideoAsset } from "../../services/mediaAssetService.js";
+import { getServiceStreamAvailability, resolveServiceWatchUrl } from "../../services/streamingService.js";
 import { BotUser } from "../../types/bot.js";
 import { config } from "../../utils/config.js";
 import { resolveExistingMediaFile } from "../../utils/mediaAssets.js";
 import { getMainMenuKeyboard } from "../menu.js";
-import { startConsultationRequestFlow } from "./consultationHandler.js";
-import { startMarathonFlow } from "./marathonHandler.js";
 
 type InlineActionButton = ReturnType<typeof Markup.button.url> | ReturnType<typeof Markup.button.callback>;
 
@@ -30,7 +29,6 @@ function buildActionButtons(params: {
   primaryLabel?: string;
   primaryCallback?: string;
   includeCourseCta?: boolean;
-  operatorShortcut?: boolean;
 }) {
   const buttons: InlineActionButton[] = [];
 
@@ -42,10 +40,6 @@ function buildActionButtons(params: {
 
   if (params.includeCourseCta !== false) {
     buttons.push(Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course"));
-  }
-
-  if (params.operatorShortcut) {
-    buttons.push(Markup.button.callback(UI_LABELS.operator, "menu:operator"));
   }
 
   if (params.showLessons) {
@@ -65,9 +59,10 @@ async function replyWithSharedVideo(
     fileName: string;
     fallbackUrl?: string;
     fallbackLabel?: string;
+    primaryCallback?: string;
     fallbackMode?: "button" | "preview";
     includeCourseCta?: boolean;
-    operatorShortcut?: boolean;
+    showLessonsButtons?: boolean;
   },
 ): Promise<void> {
   const localVideoPath = params.fileName ? resolveExistingMediaFile(params.fileName) : null;
@@ -86,9 +81,10 @@ async function replyWithSharedVideo(
         parse_mode: "Markdown",
         supports_streaming: true,
         reply_markup: buildActionButtons({
-          showLessons: params.showLessons,
+          showLessons: params.showLessonsButtons ?? params.showLessons,
+          primaryCallback: params.primaryCallback,
+          primaryLabel: params.fallbackLabel,
           includeCourseCta: params.includeCourseCta,
-          operatorShortcut: params.operatorShortcut,
         }).reply_markup,
       },
     });
@@ -105,9 +101,10 @@ async function replyWithSharedVideo(
         is_disabled: false,
       },
       reply_markup: buildActionButtons({
-        showLessons: params.showLessons,
+        showLessons: params.showLessonsButtons ?? params.showLessons,
+        primaryCallback: params.primaryCallback,
+        primaryLabel: params.fallbackLabel,
         includeCourseCta: params.includeCourseCta,
-        operatorShortcut: params.operatorShortcut,
       }).reply_markup,
     });
     return;
@@ -116,11 +113,11 @@ async function replyWithSharedVideo(
   await ctx.reply(caption, {
     parse_mode: "Markdown",
     reply_markup: buildActionButtons({
-      showLessons: params.showLessons,
+      showLessons: params.showLessonsButtons ?? params.showLessons,
+      primaryCallback: params.primaryCallback,
       primaryUrl: params.fallbackUrl,
       primaryLabel: params.fallbackLabel,
       includeCourseCta: params.includeCourseCta,
-      operatorShortcut: params.operatorShortcut,
     }).reply_markup,
   });
 }
@@ -159,7 +156,7 @@ export async function startFreeLessonsForUser(ctx: Context, userId: number): Pro
   });
 
   await ctx.reply(
-    "Perfect. Ți-am activat seria gratuită. Lecția 1 este disponibilă acum, iar lecțiile 2 și 3 se deblochează automat, câte una pe zi.",
+    "Perfect. Ți-am activat cele 3 lecții gratuite.\n\nÎn fiecare zi vei primi câte o lecție nouă, ca să construiești pas cu pas o bază sigură în engleză.",
     {
       reply_markup: getMainMenuKeyboard({ showLessons: true }).reply_markup,
     },
@@ -184,11 +181,19 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
     await startFreeLessonsForUser(ctx, user.id);
   } else if (action === "marathon") {
     if (!isMarathonVisible()) {
-      await ctx.reply("Maratonul de engleză nu este activ în această perioadă. Revino în intervalul configurat.");
+      await ctx.reply("Maratonul de engleză nu este activ în această perioadă. Revino puțin mai târziu.");
       return;
     }
 
-    await startMarathonFlow(ctx, user);
+    await ctx.reply(`*${STATIC_PAGES.marathon.title}*\n\n${STATIC_PAGES.marathon.body}`, {
+      parse_mode: "Markdown",
+      reply_markup: buildActionButtons({
+        showLessons,
+        primaryUrl: `${BRANDING.websiteUrl}#marathon`,
+        primaryLabel: "🚀 Vezi maratonul",
+        includeCourseCta: false,
+      }).reply_markup,
+    });
   } else if (action === "fear_speaking") {
     await replyWithSharedVideo(ctx, {
       title: STATIC_PAGES.fear_speaking.title,
@@ -205,25 +210,41 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       showLessons,
       fileName: SERVICE_VIDEO_FILES.teachingMethod,
     });
-  } else if (action === "services") {
-    await ctx.reply(buildStaticPageMessage("programs"), {
+  } else if (action === "website") {
+    await ctx.reply(buildStaticPageMessage("website"), {
       parse_mode: "Markdown",
       reply_markup: buildActionButtons({
         showLessons,
         primaryUrl: BRANDING.websiteUrl,
         primaryLabel: UI_LABELS.viewServices,
+        includeCourseCta: false,
       }).reply_markup,
     });
-  } else if (action === "operator") {
-    await startConsultationRequestFlow(ctx, user, {
-      requestedService: "operator",
-      priority: "urgent_contact",
-    });
   } else if (action === "career_astrology") {
-    await startConsultationRequestFlow(ctx, user, {
-      requestedService: "career_astrology",
-      priority: "consultation",
-    });
+    const streamAvailability = getServiceStreamAvailability("career-astrology");
+    if (config.streamingEnabled && streamAvailability.ready) {
+      await ctx.reply(`*${STATIC_PAGES.astrology.title}*\n\n${STATIC_PAGES.astrology.body}`, {
+        parse_mode: "Markdown",
+        reply_markup: Markup.inlineKeyboard(
+          [
+            [Markup.button.url("🎬 Urmărește video-ul", resolveServiceWatchUrl(user.id, "career-astrology"))],
+            [Markup.button.callback(UI_LABELS.wantsAstrologyConsultation, "menu:astrology_request")],
+            [Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")],
+          ],
+        ).reply_markup,
+      });
+    } else {
+      await replyWithSharedVideo(ctx, {
+        title: STATIC_PAGES.astrology.title,
+        body: STATIC_PAGES.astrology.body,
+        showLessons,
+        showLessonsButtons: false,
+        fileName: SERVICE_VIDEO_FILES.astrologyConsultation,
+        includeCourseCta: false,
+        fallbackLabel: UI_LABELS.wantsAstrologyConsultation,
+        primaryCallback: "menu:astrology_request",
+      });
+    }
   }
 
   await logUserEvent({

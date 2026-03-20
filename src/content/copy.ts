@@ -1,11 +1,11 @@
 export const UI_LABELS = {
-  freeLessons: "🎓 3 zile gratuite",
+  freeLessons: "🎓 3 lecții gratuite",
   marathon: "🚀 Maraton de engleză",
-  fearSpeaking: "🗣️ Webinar: fără frică",
+  fearSpeaking: "🗣️ Cum scapi de frica de a vorbi",
   teachingMethod: "🎥 Metoda noastră",
-  services: "💼 Programe și prețuri",
-  operator: "⚡ Contact operator",
-  careerAstrology: "🔮 Consultație în carieră",
+  website: "🌐 Website",
+  operator: "💬 Discută cu echipa noastră",
+  careerAstrology: "🔮 Consultație astrologică în carieră",
   lessons: "📚 Lecțiile tale",
   askAi: "🤖 Întreabă AI-ul",
   backToMenu: "⬅️ Meniul principal",
@@ -20,20 +20,21 @@ export const UI_LABELS = {
   openLessonInBrowser: "🌐 Deschide separat",
   streamLesson: "🎬 Începe lecția",
   testYourself: "📝 Test după lecție",
-  viewServices: "🌐 Vezi serviciile",
+  viewServices: "🌐 Deschide website-ul",
   contactForPackage: "📩 Contactează pentru acest pachet",
+  wantsAstrologyConsultation: "🔮 Vreau o consultație",
   opsHelp: "ℹ️ Ajutor",
 } as const;
 
 export const SHARED_COPY = {
   chooseHowToContinue: "Alege cum vrei să continuăm:",
   continueFromWhereLeftOff: "Continuăm exact de unde ai rămas.",
-  phoneFormatPrompt: "Scrie numărul tău în formatul +373XXXXXXXX.",
+  phoneFormatPrompt: "Te rog să scrii numărul tău în formatul +373XXXXXXXX.",
   invalidPhonePrompt:
-    "Numărul nu pare valid. Încearcă formatul +373XXXXXXXX sau folosește butonul dedicat.",
-  onboardingMenuPrompt: "Alege un serviciu din meniul de mai jos ca să pornim onboardingul rapid.",
+    "Numărul nu pare valid. Te rog să încerci formatul +373XXXXXXXX sau să folosești butonul dedicat.",
+  onboardingMenuPrompt: "Alege din meniu opțiunea dorită și începem.",
   useMainMenuPrompt: "Folosește meniul principal pentru a continua.",
   startMenuActivationRequired: "Mai întâi activează accesul din meniul de start.",
   commercialContactRequired: "Înainte de flow-ul comercial, am nevoie de datele de contact de bază.",
-  acceptPrivacyRequired: "Pentru a continua cu seria gratuită, apasă butonul ✔ Accept.",
+  acceptPrivacyRequired: "Pentru a continua, apasă butonul ✔ Accept.",
 } as const;

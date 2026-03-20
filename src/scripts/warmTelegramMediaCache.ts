@@ -27,6 +27,12 @@ async function main() {
       title: STATIC_PAGES.fear_speaking.title,
       body: STATIC_PAGES.fear_speaking.body,
     },
+    {
+      scope: "service",
+      fileName: SERVICE_VIDEO_FILES.astrologyConsultation,
+      title: STATIC_PAGES.astrology.title,
+      body: STATIC_PAGES.astrology.body,
+    },
   ];
 
   for (const asset of assets) {

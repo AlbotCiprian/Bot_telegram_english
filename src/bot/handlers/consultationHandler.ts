@@ -12,7 +12,7 @@ import { ConsultationRequestStep, SessionPayload } from "../../types/session.js"
 import { normalizePhone, normalizeWhitespace, isValidPhone } from "../../utils/validators.js";
 import { getMainMenuKeyboard, getPhoneRequestKeyboard, getReasonChoiceKeyboard } from "../menu.js";
 
-export type ConsultationRequestType = "operator" | "career_astrology";
+export type ConsultationRequestType = "operator" | "career_astrology" | "course_contact";
 export type ConsultationPriority = "urgent_contact" | "consultation";
 
 const CONSULTATION_REASON_OPTIONS: Record<ConsultationRequestType, string[]> = {
@@ -23,15 +23,29 @@ const CONSULTATION_REASON_OPTIONS: Record<ConsultationRequestType, string[]> = {
     "Altă întrebare",
   ],
   career_astrology: [
-    "Vreau consultația de carieră",
+    "Vreau consultația astrologică în carieră",
     "Vreau detalii despre pachete",
     "Vreau să fiu sunat",
+    "Altă întrebare",
+  ],
+  course_contact: [
+    "Vreau să aflu ce curs mi se potrivește",
+    "Vreau prețurile",
+    "Vreau să fiu contactat în scurt timp",
     "Altă întrebare",
   ],
 };
 
 function getServiceTitle(service: ConsultationRequestType): string {
-  return PUBLIC_ENTRY_LABELS[service] ?? service;
+  if (service === "career_astrology") {
+    return PUBLIC_ENTRY_LABELS.career_astrology;
+  }
+
+  if (service === "course_contact") {
+    return "cursul potrivit pentru tine";
+  }
+
+  return "solicitarea ta";
 }
 
 async function replyConsultationStepPrompt(
@@ -40,7 +54,12 @@ async function replyConsultationStepPrompt(
   step: ConsultationRequestStep,
 ): Promise<void> {
   if (step === "phone") {
-    await ctx.reply(`Te rog să trimiți numărul de telefon pentru ${getServiceTitle(service)}.`, {
+    const prompt =
+      service === "course_contact"
+        ? "Te rog să-mi trimiți numărul tău de telefon ca să te putem contacta în legătură cu cursul potrivit pentru tine."
+        : `Te rog să-mi trimiți numărul de telefon pentru ${getServiceTitle(service)}.`;
+
+    await ctx.reply(prompt, {
       reply_markup: getPhoneRequestKeyboard().reply_markup,
     });
     return;
@@ -54,9 +73,11 @@ async function replyConsultationStepPrompt(
 function parsePayload(payload: SessionPayload) {
   return {
     requestedService:
-      payload.requestedService === "operator" || payload.requestedService === "career_astrology"
+      payload.requestedService === "operator" ||
+      payload.requestedService === "career_astrology" ||
+      payload.requestedService === "course_contact"
         ? payload.requestedService
-        : "operator",
+        : "course_contact",
     priority: payload.priority === "urgent_contact" ? "urgent_contact" : "consultation",
     presetReason: typeof payload.presetReason === "string" ? payload.presetReason : null,
     reason: typeof payload.reason === "string" ? payload.reason : null,
@@ -106,7 +127,9 @@ async function finalizeConsultationRequest(
   });
 
   await ctx.reply(
-    params.priority === "urgent_contact"
+    params.requestedService === "course_contact"
+      ? "Îți mulțumim! Un coleg din echipa noastră te va contacta în scurt timp."
+      : params.priority === "urgent_contact"
       ? "Procesăm cererea ta cu prioritate. În curând vei fi contactat. Îți mulțumim!"
       : "Procesăm cererea ta. În curând vei fi contactat. Îți mulțumim!",
     {
@@ -167,6 +190,14 @@ export async function resumeConsultationRequest(
   const parsed = parsePayload(payload);
   await ctx.reply(SHARED_COPY.continueFromWhereLeftOff);
   await replyConsultationStepPrompt(ctx, parsed.requestedService, step);
+}
+
+export async function startCourseContactFlow(ctx: Context, user: BotUser): Promise<void> {
+  await startConsultationRequestFlow(ctx, user, {
+    requestedService: "course_contact",
+    priority: "urgent_contact",
+    presetReason: "Interes pentru curs",
+  });
 }
 
 export async function handleConsultationContactInput(

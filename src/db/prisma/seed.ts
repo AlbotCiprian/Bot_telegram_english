@@ -9,13 +9,13 @@ async function main(): Promise<void> {
   const campaign = await prisma.campaign.upsert({
     where: { key: "free-lessons" },
     update: {
-      name: "Express English Academy - 3 zile gratuite",
+      name: "Express English Academy - 3 lecții gratuite",
       type: "drip",
       isActive: true,
     },
     create: {
       key: "free-lessons",
-      name: "Express English Academy - 3 zile gratuite",
+      name: "Express English Academy - 3 lecții gratuite",
       type: "drip",
       isActive: true,
     },

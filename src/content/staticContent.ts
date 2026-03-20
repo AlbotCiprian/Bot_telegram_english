@@ -15,6 +15,7 @@ export const SERVICE_VIDEO_FILES = {
   fearSpeaking: "webinar-fear-v2-vertical.mp4",
   teachingMethod: "method-v2-vertical.mp4",
   aboutAcademy: "academy-v2-vertical.mp4",
+  astrologyConsultation: "Video_consultatie_astrologica.MOV",
 } as const;
 
 export const LEAD_LEVEL_OPTIONS = ["Începător", "Elementar", "Intermediar", "Nu știu"] as const;
@@ -194,8 +195,7 @@ export const PUBLIC_ENTRY_LABELS = {
   marathon: UI_LABELS.marathon,
   fear_speaking: UI_LABELS.fearSpeaking,
   teaching_method: UI_LABELS.teachingMethod,
-  services: UI_LABELS.services,
-  operator: UI_LABELS.operator,
+  website: UI_LABELS.website,
   career_astrology: UI_LABELS.careerAstrology,
 } as const;
 
@@ -220,12 +220,8 @@ export const PUBLIC_ENTRY_MENU = [
     label: PUBLIC_ENTRY_LABELS.teaching_method,
   },
   {
-    key: "services",
-    label: PUBLIC_ENTRY_LABELS.services,
-  },
-  {
-    key: "operator",
-    label: PUBLIC_ENTRY_LABELS.operator,
+    key: "website",
+    label: PUBLIC_ENTRY_LABELS.website,
   },
   {
     key: "career_astrology",
@@ -233,64 +229,66 @@ export const PUBLIC_ENTRY_MENU = [
   },
 ] as const;
 
-export type MainMenuKey = "lessons" | PublicEntryKey | "ask_ai";
+export type MainMenuKey = PublicEntryKey;
 
-export const MAIN_MENU = [
-  {
-    key: "lessons",
-    label: UI_LABELS.lessons,
-  },
-  ...PUBLIC_ENTRY_MENU,
-  {
-    key: "ask_ai",
-    label: UI_LABELS.askAi,
-  },
-] as const;
+export const MAIN_MENU = [...PUBLIC_ENTRY_MENU] as const;
 
 export const STATIC_PAGES = {
   welcome: {
-    title: "Bună, bine ai venit la Express English Academy",
-    body:
-      "Alege între 3 lecții gratuite sau Maratonul de engleză și pornim rapid, cu un onboarding scurt și clar.",
+    title: "Salut și bine ai venit la Express English Academy!",
+    body: [
+      "Eu sunt Victoria Coșovan, fondatoarea academiei și profesoara ta.",
+      "",
+      "Aici am pregătit pentru tine:",
+      "- 3 lecții gratuite de engleză",
+      "- cursuri Express English",
+      "- programe create pentru domenii și profesii diferite",
+      "- și un cadou pregătit special pentru tine",
+      "",
+      "Alege din meniu opțiunea dorită și începem.",
+    ].join("\n"),
   },
   academy: {
     title: "Despre academie",
     body: "Express English Academy este pentru oameni care vor să vorbească engleză clar, aplicat și cu încredere.",
   },
   marathon: {
-    title: 'Maratonul "Vorbește engleză fluent EXPRESS"',
-    body: buildMarathonBody(),
-  },
-  programs: {
-    title: "Programe și prețuri",
+    title: "Maraton de engleză",
     body: [
-      "*Basic - Engleză pentru supraviețuire* - 250 EUR",
-      "*Medium - Engleză pentru putere și curaj* - 350 EUR",
-      "*Advanced - Engleză pentru statut și influență* - 400 EUR",
-      "*Basic + Medium* - 550 EUR în loc de 600 EUR",
+      "Am pregătit pentru tine toate detaliile despre maraton pe website.",
       "",
-      "Deschide site-ul pentru descrierea completă a fiecărui program.",
+      "Apasă pe butonul de mai jos și vezi programul complet, structura și condițiile de participare.",
     ].join("\n"),
   },
   method: {
     title: "Metoda noastră",
-    body: "Video scurt despre cum lucrăm: clar, practic și orientat spre vorbire.",
+    body: [
+      "Mă bucur că ai ajuns până aici.",
+      "",
+      "Dacă simți că ți se potrivește felul în care explic și lucrez cu studenții mei, te invit să înveți engleza alături de mine.",
+      "",
+      "Dacă începi astăzi cursul, beneficiezi de o reducere de 10%.",
+    ].join("\n"),
   },
   fear_speaking: {
-    title: "Webinar: cum scapi de frica de a vorbi",
-    body: "Video despre cum spargi blocajul și începi să vorbești cu mai multă siguranță.",
+    title: "Cum scapi de frica de a vorbi",
+    body: "Un video scurt care te ajută să înțelegi de unde apare blocajul și cum poți începe să vorbești mai sigur și mai natural.",
   },
   website: {
-    title: "Site oficial",
-    body: `Deschide site-ul oficial pentru toate detaliile: ${BRANDING.websiteUrl}`,
+    title: "Website",
+    body: "Pentru toate detaliile despre academie, cursuri și înscriere, deschide website-ul oficial.",
   },
   operator: {
-    title: "Contact operator",
-    body: "Completează formularul scurt și trimitem cererea direct în CRM cu prioritate mare.",
+    title: "Discuție cu echipa noastră",
+    body: "Dacă vrei să discutăm direct, trimite-ne cererea ta și revenim cât mai curând cu răspuns.",
   },
   astrology: {
-    title: "Consultație în carieră",
-    body: "Completează formularul scurt și trimitem cererea în CRM pentru consultația de carieră.",
+    title: "Consultație astrologică în carieră",
+    body: [
+      "Am pregătit pentru tine un video scurt despre consultația astrologică în carieră.",
+      "",
+      "Dacă simți că ți se potrivește, apasă pe butonul de mai jos și trimitem cererea ta mai departe.",
+    ].join("\n"),
   },
   mistakes: {
     title: "TOP 5 greșeli",
@@ -316,8 +314,8 @@ export const LESSON_SEED_CONTENT = [
   {
     dayNumber: 1,
     key: "free-day-1",
-    title: "Lecția 1 - Present Simple",
-    messageText: "Urmărește lecția, iar după minimum un minut poți deschide testul scurt pentru Present Simple.",
+    title: "Lecția 1 · Cum formulezi o propoziție la prezent în engleză",
+    messageText: "Urmărește lecția, iar după minimum un minut se activează testul scurt din aceeași pagină.",
     mediaType: "video_file",
     mediaUrl: "lesson-1-v2-landscape.mp4",
     cta: [
@@ -328,8 +326,8 @@ export const LESSON_SEED_CONTENT = [
   {
     dayNumber: 2,
     key: "free-day-2",
-    title: "Lecția 2 - Daily routine",
-    messageText: "Lecția a doua consolidează răspunsurile de bază și vocabularul de zi cu zi.",
+    title: "Lecția 2 · Hai să vorbim despre rutina ta zilnică",
+    messageText: "În această lecție exersăm cum vorbești despre rutina ta zilnică într-un mod simplu și natural.",
     mediaType: "video_file",
     mediaUrl: "lesson-2-v2-landscape.mp4",
     cta: [
@@ -340,13 +338,13 @@ export const LESSON_SEED_CONTENT = [
   {
     dayNumber: 3,
     key: "free-day-3",
-    title: "Lecția 3 - Next step",
-    messageText: "Ai ajuns la finalul seriei gratuite. Urmărește lecția și pregătește pasul următor.",
+    title: "Lecția 3 · Hai să vorbim la trecut în engleză",
+    messageText: "În această lecție facem pasul următor și începem să vorbim la trecut în engleză.",
     mediaType: "video_file",
     mediaUrl: "lesson-3-v2-landscape.mp4",
     cta: [
+      { label: UI_LABELS.lessons, action: "lessons" },
       { label: UI_LABELS.wantsCourse, action: "wants_course" },
-      { label: UI_LABELS.askAi, action: "ask_ai" },
     ],
   },
 ] as const;

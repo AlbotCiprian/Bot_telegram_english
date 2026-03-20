@@ -17,7 +17,6 @@ import {
   handleLeadContactInput,
   handleLeadTextInput,
   resumeLeadCapture,
-  startCourseInterestFlow,
   startLeadCapture,
 } from "./handlers/leadHandler.js";
 import { handleHelp, handleMenu, handleStart } from "./handlers/startHandler.js";
@@ -29,6 +28,8 @@ import {
   handleConsultationContactInput,
   handleConsultationTextInput,
   resumeConsultationRequest,
+  startConsultationRequestFlow,
+  startCourseContactFlow,
 } from "./handlers/consultationHandler.js";
 import {
   handleMarathonCallback,
@@ -139,7 +140,7 @@ async function handleMenuAction(
       return;
     }
 
-    await startCourseInterestFlow(ctx, user);
+    await startCourseContactFlow(ctx, user);
     return;
   }
 
@@ -148,14 +149,16 @@ async function handleMenuAction(
     return;
   }
 
-  if (action === "website") {
-    await ctx.reply(STATIC_PAGES.website.body, {
-      reply_markup: getBackToMenuKeyboard(showLessonsInMenu(user)).reply_markup,
+  if (action === "astrology_request") {
+    await startConsultationRequestFlow(ctx, user, {
+      requestedService: "career_astrology",
+      priority: "consultation",
+      presetReason: "Interes pentru consultație astrologică în carieră",
     });
     return;
   }
 
-  const staticPageKeys = ["programs", "method", "mistakes", "career", "busy_people"] as const;
+  const staticPageKeys = ["method", "mistakes", "career", "busy_people"] as const;
   if (staticPageKeys.includes(action as (typeof staticPageKeys)[number])) {
     await ctx.reply(buildStaticPageMessage(action as keyof typeof STATIC_PAGES), {
       parse_mode: "Markdown",

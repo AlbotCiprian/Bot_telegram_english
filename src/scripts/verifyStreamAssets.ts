@@ -1,6 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
-import { getLessonStreamAsset, listLessonStreamAssets } from "../services/streamingAssets.js";
+import {
+  getLessonStreamAsset,
+  getServiceStreamAsset,
+  listLessonStreamAssets,
+  listServiceStreamAssets,
+} from "../services/streamingAssets.js";
 
 const STREAM_ROOT = path.resolve(process.cwd(), "stream");
 
@@ -23,6 +28,16 @@ async function main() {
       for (const rendition of getLessonStreamAsset(asset.dayNumber).renditions) {
         assertExists(path.join(lessonDir, rendition.playlistFileName));
       }
+    } catch (error) {
+      errors.push(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  for (const asset of listServiceStreamAssets()) {
+    try {
+      const serviceAsset = getServiceStreamAsset(asset.serviceKey);
+      assertExists(path.resolve(STREAM_ROOT, "mp4", serviceAsset.outputFileName));
+      assertExists(path.resolve(STREAM_ROOT, "posters", serviceAsset.posterFileName));
     } catch (error) {
       errors.push(error instanceof Error ? error.message : String(error));
     }

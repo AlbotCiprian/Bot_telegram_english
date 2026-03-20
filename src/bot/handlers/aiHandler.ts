@@ -22,7 +22,7 @@ export async function startAiQuestionFlow(ctx: Context, user: BotUser): Promise<
   });
 
   await ctx.reply(
-    "🤖 Salut! Sunt colegul AI Express English Academy.\n\nScrie-mi o întrebare despre cursuri, prețuri, niveluri sau program și îți răspund doar pe baza informațiilor disponibile.",
+    "🤖 Salut! Sunt asistentul AI al Express English Academy.\n\nÎmi poți scrie o întrebare despre cursuri, niveluri, prețuri sau program, iar eu îți răspund pe baza informațiilor disponibile.",
   );
 }
 
@@ -32,7 +32,7 @@ export async function handleAiQuestionInput(ctx: Context, user: BotUser, questio
 
   if (!acceptedByCooldown) {
     await ctx.reply(
-      `Așteaptă ${config.AI_USER_COOLDOWN_SEC} secunde înainte de următoarea întrebare, ca să evităm supraîncărcarea AI-ului.`,
+      `Te rog să mai aștepți ${config.AI_USER_COOLDOWN_SEC} secunde înainte de următoarea întrebare, ca să evităm supraîncărcarea sistemului.`,
       {
         reply_markup: getMainMenuKeyboard({ showLessons: showLessonsInMenu(user) }).reply_markup,
       },
@@ -44,7 +44,7 @@ export async function handleAiQuestionInput(ctx: Context, user: BotUser, questio
   if (!acquiredPermit) {
     await deleteRedisKey(cooldownKey);
     await ctx.reply(
-      "AI-ul procesează deja mai multe cereri în paralel. Încearcă din nou în câteva secunde.",
+      "În acest moment AI-ul procesează deja mai multe cereri. Încearcă din nou în câteva secunde.",
       {
         reply_markup: getMainMenuKeyboard({ showLessons: showLessonsInMenu(user) }).reply_markup,
       },

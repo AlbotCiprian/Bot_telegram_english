@@ -15,7 +15,7 @@ export type CrmJobPayload =
   | {
       userId: number;
       action: "request_consultation";
-      requestedService: "operator" | "career_astrology";
+      requestedService: "operator" | "career_astrology" | "course_contact";
       priority: "urgent_contact" | "consultation";
       reason?: string | null;
       note?: string | null;

@@ -14,7 +14,7 @@ function sanitizeAiAnswer(answer: string): string {
     .replace(/\[Context\s*\d+\]\s*/gi, "")
     .replace(/\bContextul\s*\d+\b/gi, "informațiile disponibile")
     .replace(/\bContext\s*\d+\b/gi, "informațiile disponibile")
-    .replace(/informatiile confirmate din\s*\./gi, "informațiile confirmate din secțiunea Programe și prețuri.")
+    .replace(/informatiile confirmate din\s*\./gi, "informațiile confirmate pe website.")
     .trim();
 }
 
@@ -45,8 +45,8 @@ function buildKnowledgeContext(question: string, dynamicContext: string): { cont
   }
 
   if (isPricingQuestion(question)) {
-    parts.push(`[Context suplimentar] ${STATIC_PAGES.programs.title}\n${STATIC_PAGES.programs.body}`);
-    sources.push(`${BRANDING.websiteUrl}#programs`);
+    parts.push(`[Context suplimentar] ${STATIC_PAGES.website.title}\n${STATIC_PAGES.website.body}`);
+    sources.push(BRANDING.websiteUrl);
   }
 
   if (isSchoolOverviewQuestion(question)) {
@@ -91,7 +91,7 @@ export async function answerQuestion(question: string): Promise<AiAnswer> {
   const rawDocuments = await searchRelevantDocuments(question, 8);
   const curatedDocuments = rawDocuments.filter((item) => item.source === "curated_content");
   const otherDocuments = rawDocuments.filter((item) => item.source !== "curated_content");
-  const pricingProgramsUrl = `${BRANDING.websiteUrl}#programs`;
+  const pricingProgramsUrl = BRANDING.websiteUrl;
   const welcomeUrl = `${BRANDING.websiteUrl}#welcome`;
   const documents = [...curatedDocuments, ...otherDocuments]
     .sort((left, right) => {

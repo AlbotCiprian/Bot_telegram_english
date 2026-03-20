@@ -18,14 +18,8 @@ function buildMainMenuRows(options?: { showAi?: boolean }) {
     remainingKeys.push("marathon");
   }
 
-  remainingKeys.push("lessons");
-
   for (const item of PUBLIC_ENTRY_MENU.filter((entry) => entry.key !== "free_lessons" && entry.key !== "marathon")) {
     remainingKeys.push(item.key);
-  }
-
-  if (options?.showAi) {
-    remainingKeys.push("ask_ai");
   }
 
   for (let index = 0; index < remainingKeys.length; index += 2) {
@@ -40,7 +34,7 @@ export function getPublicMenuKeyboard() {
 }
 
 export function getMainMenuKeyboard(options?: { showLessons?: boolean; showAi?: boolean }) {
-  return Markup.keyboard(buildMainMenuRows({ showAi: options?.showAi })).resize();
+  return Markup.keyboard(buildMainMenuRows()).resize();
 }
 
 export function getStartFreeLessonsKeyboard() {
@@ -89,9 +83,9 @@ export function buildHelpMessage(): string {
   return [
     "*Ajutor*",
     "",
-    "Botul te poate ghida prin serviciile principale și prin seria de 3 zile gratuite.",
+    "Botul te poate ghida prin lecțiile gratuite, prin resursele academiei și prin pașii necesari dacă vrei să fii contactat.",
     "",
-    "Dacă ești utilizator nou, primul pas important este onboardingul scurt pentru salvarea lead-ului în CRM.",
+    "Dacă ești utilizator nou, primul pas este onboardingul scurt pentru activarea accesului.",
     "",
     "Comenzi disponibile:",
     "/start",

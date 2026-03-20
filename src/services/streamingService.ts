@@ -5,12 +5,19 @@ import { prisma } from "../db/client.js";
 import { logUserEvent } from "./eventService.js";
 import {
   type LessonDay,
+  type ServiceStreamKey,
   getAbsoluteWatchUrl,
+  getAbsoluteServiceWatchUrl,
   getLessonStreamAsset,
+  getServiceStreamAsset,
   getStreamManifestPath,
   getStreamPosterPath,
+  getServiceStreamPosterPath,
+  getServiceStreamVideoPath,
   isLessonStreamReady,
+  isServiceStreamReady,
   listLessonStreamAssets,
+  listServiceStreamAssets,
 } from "./streamingAssets.js";
 import { config } from "../utils/config.js";
 import { logger } from "../utils/logger.js";
@@ -20,6 +27,14 @@ type LessonWatchTokenPayload = {
   v: 1;
   userId: number;
   dayNumber: LessonDay;
+  exp: number;
+  iat: number;
+};
+
+type ServiceWatchTokenPayload = {
+  v: 1;
+  userId: number;
+  serviceKey: ServiceStreamKey;
   exp: number;
   iat: number;
 };
@@ -51,9 +66,33 @@ type StreamSessionResponse = {
   canUseNativeHls: boolean;
 };
 
+type ServiceStreamSessionRecord = {
+  sessionId: string;
+  userId: number;
+  serviceKey: ServiceStreamKey;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  lastPlaybackSecond: number;
+  platform: string | null;
+  userAgent: string | null;
+};
+
+type ServiceStreamSessionResponse = {
+  sessionId: string;
+  serviceTitle: string;
+  serviceKey: ServiceStreamKey;
+  streamKey: string;
+  videoUrl: string;
+  posterUrl: string;
+};
+
 const STREAM_SESSION_PREFIX = "stream:session:";
 const STREAM_ACTIVE_SESSIONS_KEY = "stream:sessions:active";
 const STREAM_ERROR_COUNTER_KEY = "stream:sessions:error-count";
+const SERVICE_STREAM_SESSION_PREFIX = "service-stream:session:";
+const SERVICE_STREAM_ACTIVE_SESSIONS_KEY = "service-stream:sessions:active";
+const SERVICE_STREAM_ERROR_COUNTER_KEY = "service-stream:sessions:error-count";
 const STREAM_LAST_BUILD_MANIFEST = path.resolve(path.dirname(config.STREAM_HLS_ROOT), "manifest.json");
 
 function base64UrlEncode(value: string): string {
@@ -72,12 +111,24 @@ function buildStreamSessionKey(sessionId: string): string {
   return `${STREAM_SESSION_PREFIX}${sessionId}`;
 }
 
+function buildServiceStreamSessionKey(sessionId: string): string {
+  return `${SERVICE_STREAM_SESSION_PREFIX}${sessionId}`;
+}
+
 function buildStreamMediaUrl(dayNumber: LessonDay, sessionId: string, fileName: string): string {
   return `/api/stream/media/${dayNumber}/${encodeURIComponent(fileName)}?sessionId=${encodeURIComponent(sessionId)}`;
 }
 
 function buildStreamPosterUrl(dayNumber: LessonDay, sessionId: string): string {
   return `/api/stream/poster/${dayNumber}?sessionId=${encodeURIComponent(sessionId)}`;
+}
+
+function buildServiceStreamVideoUrl(serviceKey: ServiceStreamKey, sessionId: string): string {
+  return `/api/stream/service/media/${serviceKey}?sessionId=${encodeURIComponent(sessionId)}`;
+}
+
+function buildServiceStreamPosterUrl(serviceKey: ServiceStreamKey, sessionId: string): string {
+  return `/api/stream/service/poster/${serviceKey}?sessionId=${encodeURIComponent(sessionId)}`;
 }
 
 function getMaximumRenditionHeight(platform: string | null): number {
@@ -165,9 +216,65 @@ export function verifyLessonWatchToken(token: string): LessonWatchTokenPayload |
   }
 }
 
+export function createServiceWatchToken(userId: number, serviceKey: ServiceStreamKey): string {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const payload: ServiceWatchTokenPayload = {
+    v: 1,
+    userId,
+    serviceKey,
+    iat: nowSec,
+    exp: nowSec + config.STREAM_SESSION_TTL_SEC,
+  };
+
+  const payloadSegment = base64UrlEncode(JSON.stringify(payload));
+  const signature = signTokenSegment(payloadSegment);
+  return `${payloadSegment}.${signature}`;
+}
+
+export function verifyServiceWatchToken(token: string): ServiceWatchTokenPayload | null {
+  const [payloadSegment, signature] = token.split(".");
+  if (!payloadSegment || !signature) {
+    return null;
+  }
+
+  const expectedSignature = signTokenSegment(payloadSegment);
+  const signatureBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expectedSignature);
+
+  if (signatureBuffer.length !== expectedBuffer.length || !timingSafeEqual(signatureBuffer, expectedBuffer)) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(base64UrlDecode(payloadSegment)) as ServiceWatchTokenPayload;
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (payload.v !== 1 || payload.exp < nowSec) {
+      return null;
+    }
+
+    if (payload.serviceKey !== "career-astrology") {
+      return null;
+    }
+
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 export function buildLessonWatchAccess(userId: number, dayNumber: LessonDay) {
   const token = createLessonWatchToken(userId, dayNumber);
   const watchUrl = getAbsoluteWatchUrl(dayNumber, token);
+
+  return {
+    token,
+    watchUrl,
+  };
+}
+
+export function buildServiceWatchAccess(userId: number, serviceKey: ServiceStreamKey) {
+  const token = createServiceWatchToken(userId, serviceKey);
+  const watchUrl = getAbsoluteServiceWatchUrl(serviceKey, token);
 
   return {
     token,
@@ -286,6 +393,91 @@ export async function createStreamSession(params: {
     posterUrl: buildStreamPosterUrl(asset.dayNumber, sessionId),
     maxRendition: session.maxRendition,
     canUseNativeHls: Boolean(params.prefersNativeHls),
+  };
+}
+
+export async function getActiveServiceStreamSession(
+  sessionId: string,
+  expectedServiceKey?: ServiceStreamKey,
+): Promise<ServiceStreamSessionRecord> {
+  const session = await getRedisJson<ServiceStreamSessionRecord>(buildServiceStreamSessionKey(sessionId));
+
+  if (!session) {
+    throw new Error("Sesiunea video nu mai este activă.");
+  }
+
+  if (expectedServiceKey && session.serviceKey !== expectedServiceKey) {
+    throw new Error("Sesiunea video nu corespunde serviciului cerut.");
+  }
+
+  return session;
+}
+
+export async function createServiceStreamSession(params: {
+  token: string;
+  platform?: string | null;
+  userAgent?: string | null;
+}): Promise<ServiceStreamSessionResponse> {
+  const payload = verifyServiceWatchToken(params.token);
+  if (!payload) {
+    throw new Error("Token-ul video pentru serviciu este invalid sau expirat.");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: { id: true },
+  });
+
+  if (!user) {
+    throw new Error("Utilizatorul pentru acest video nu a fost găsit.");
+  }
+
+  if (!config.streamingEnabled) {
+    throw new Error("Streaming-ul intern nu este activ în configurația curentă.");
+  }
+
+  if (!isServiceStreamReady(payload.serviceKey)) {
+    throw new Error("Video-ul pentru acest serviciu nu este pregătit încă pe server.");
+  }
+
+  const asset = getServiceStreamAsset(payload.serviceKey);
+  const sessionId = randomUUID();
+  const session: ServiceStreamSessionRecord = {
+    sessionId,
+    userId: payload.userId,
+    serviceKey: payload.serviceKey,
+    createdAt: new Date().toISOString(),
+    startedAt: null,
+    completedAt: null,
+    lastPlaybackSecond: 0,
+    platform: params.platform?.trim() || null,
+    userAgent: params.userAgent?.trim() || null,
+  };
+
+  await setRedisJson(buildServiceStreamSessionKey(sessionId), session, config.STREAM_SESSION_TTL_SEC);
+
+  const redis = getRedisClient();
+  await redis.sadd(SERVICE_STREAM_ACTIVE_SESSIONS_KEY, sessionId);
+  await redis.expire(SERVICE_STREAM_ACTIVE_SESSIONS_KEY, config.STREAM_SESSION_TTL_SEC);
+
+  await logUserEvent({
+    userId: payload.userId,
+    eventType: "service_stream_session_created",
+    metadata: {
+      serviceKey: payload.serviceKey,
+      sessionId,
+      platform: session.platform,
+      userAgent: session.userAgent,
+    },
+  });
+
+  return {
+    sessionId,
+    serviceTitle: asset.title,
+    serviceKey: asset.serviceKey,
+    streamKey: asset.streamKey,
+    videoUrl: buildServiceStreamVideoUrl(asset.serviceKey, sessionId),
+    posterUrl: buildServiceStreamPosterUrl(asset.serviceKey, sessionId),
   };
 }
 
@@ -455,6 +647,70 @@ export async function completeStreamSession(params: {
   });
 }
 
+export async function recordServiceStreamProgress(params: {
+  sessionId: string;
+  currentTimeSec: number;
+}): Promise<void> {
+  const sessionKey = buildServiceStreamSessionKey(params.sessionId);
+  const session = await getRedisJson<ServiceStreamSessionRecord>(sessionKey);
+
+  if (!session) {
+    throw new Error("Sesiunea video nu mai este activă.");
+  }
+
+  const currentTimeSec = Math.max(0, Math.floor(params.currentTimeSec));
+  const shouldLogStarted = !session.startedAt && currentTimeSec > 0;
+
+  if (shouldLogStarted) {
+    session.startedAt = new Date().toISOString();
+  }
+
+  session.lastPlaybackSecond = Math.max(session.lastPlaybackSecond, currentTimeSec);
+  await setRedisJson(sessionKey, session, config.STREAM_SESSION_TTL_SEC);
+
+  if (shouldLogStarted) {
+    await logUserEvent({
+      userId: session.userId,
+      eventType: "service_stream_started",
+      metadata: {
+        serviceKey: session.serviceKey,
+        sessionId: session.sessionId,
+      },
+    });
+  }
+}
+
+export async function completeServiceStreamSession(params: {
+  sessionId: string;
+  currentTimeSec?: number | null;
+}): Promise<void> {
+  const sessionKey = buildServiceStreamSessionKey(params.sessionId);
+  const session = await getRedisJson<ServiceStreamSessionRecord>(sessionKey);
+
+  if (!session) {
+    throw new Error("Sesiunea video nu mai este activă.");
+  }
+
+  const currentTimeSec = Math.max(session.lastPlaybackSecond, Math.floor(params.currentTimeSec ?? session.lastPlaybackSecond));
+  session.completedAt = new Date().toISOString();
+  session.lastPlaybackSecond = currentTimeSec;
+
+  await setRedisJson(sessionKey, session, Math.max(300, Math.floor(config.STREAM_SESSION_TTL_SEC / 4)));
+
+  const redis = getRedisClient();
+  await redis.srem(SERVICE_STREAM_ACTIVE_SESSIONS_KEY, session.sessionId);
+
+  await logUserEvent({
+    userId: session.userId,
+    eventType: "service_stream_completed",
+    metadata: {
+      serviceKey: session.serviceKey,
+      sessionId: session.sessionId,
+      playbackSecond: currentTimeSec,
+    },
+  });
+}
+
 export async function markStreamError(params: {
   token?: string | null;
   sessionId?: string | null;
@@ -475,14 +731,36 @@ export async function markStreamError(params: {
   });
 }
 
+export async function markServiceStreamError(params: {
+  token?: string | null;
+  sessionId?: string | null;
+  message: string;
+}): Promise<void> {
+  const payload = params.token ? verifyServiceWatchToken(params.token) : null;
+  const redis = getRedisClient();
+  await redis.incr(SERVICE_STREAM_ERROR_COUNTER_KEY);
+
+  await logUserEvent({
+    userId: payload?.userId ?? null,
+    eventType: "service_stream_error",
+    metadata: {
+      serviceKey: payload?.serviceKey ?? null,
+      sessionId: params.sessionId ?? null,
+      message: params.message,
+    },
+  });
+}
+
 export async function getStreamStats() {
   const redis = getRedisClient();
-  const [activeSessions, errorCount, sessionsCreated, sessionsStarted, sessionsCompleted] = await Promise.all([
+  const [activeSessions, errorCount, sessionsCreated, sessionsStarted, sessionsCompleted, serviceActiveSessions, serviceErrorCount] = await Promise.all([
     redis.scard(STREAM_ACTIVE_SESSIONS_KEY),
     redis.get(STREAM_ERROR_COUNTER_KEY),
     prisma.userEvent.count({ where: { eventType: "lesson_stream_session_created" } }),
     prisma.userEvent.count({ where: { eventType: "lesson_stream_started" } }),
     prisma.userEvent.count({ where: { eventType: "lesson_stream_completed" } }),
+    redis.scard(SERVICE_STREAM_ACTIVE_SESSIONS_KEY),
+    redis.get(SERVICE_STREAM_ERROR_COUNTER_KEY),
   ]);
 
   const assetSummaries = listLessonStreamAssets().map((asset) => ({
@@ -494,16 +772,29 @@ export async function getStreamStats() {
     ready: fs.existsSync(getStreamManifestPath(asset)) && fs.existsSync(getStreamPosterPath(asset)),
   }));
 
+  const serviceAssetSummaries = listServiceStreamAssets().map((asset) => ({
+    serviceKey: asset.serviceKey,
+    publicEntryKey: asset.publicEntryKey,
+    title: asset.title,
+    streamKey: asset.streamKey,
+    videoPath: getServiceStreamVideoPath(asset),
+    posterPath: getServiceStreamPosterPath(asset),
+    ready: fs.existsSync(getServiceStreamVideoPath(asset)) && fs.existsSync(getServiceStreamPosterPath(asset)),
+  }));
+
   return {
     enabled: config.streamingEnabled,
     deliveryMode: config.LESSON_DELIVERY_MODE,
     activeSessions,
     errorCount: Number(errorCount ?? 0),
+    serviceActiveSessions,
+    serviceErrorCount: Number(serviceErrorCount ?? 0),
     sessionsCreated,
     sessionsStarted,
     sessionsCompleted,
     lastBuildManifest: getManifestBuildMetadata(),
     assets: assetSummaries,
+    serviceAssets: serviceAssetSummaries,
   };
 }
 
@@ -519,5 +810,20 @@ export function getLessonStreamAvailability(dayNumber: LessonDay) {
     manifestPath: getStreamManifestPath(asset),
     posterPath: getStreamPosterPath(asset),
     publicWatchBaseUrl: `${config.STREAM_PUBLIC_BASE_URL.replace(/\/+$/, "")}/watch/lesson/${dayNumber}`,
+  };
+}
+
+export function resolveServiceWatchUrl(userId: number, serviceKey: ServiceStreamKey): string {
+  const access = buildServiceWatchAccess(userId, serviceKey);
+  return access.watchUrl;
+}
+
+export function getServiceStreamAvailability(serviceKey: ServiceStreamKey) {
+  const asset = getServiceStreamAsset(serviceKey);
+  return {
+    ready: isServiceStreamReady(serviceKey),
+    videoPath: getServiceStreamVideoPath(asset),
+    posterPath: getServiceStreamPosterPath(asset),
+    publicWatchBaseUrl: `${config.STREAM_PUBLIC_BASE_URL.replace(/\/+$/, "")}/watch/service/${serviceKey}`,
   };
 }

@@ -89,11 +89,13 @@ async function main(): Promise<void> {
   requireConfig(config.KOMMO_STAGE_WARM_ID, "KOMMO_STAGE_WARM_ID");
   requireConfig(config.KOMMO_STAGE_CONSULT_ID, "KOMMO_STAGE_CONSULT_ID");
   requireConfig(config.KOMMO_STAGE_URGENT_ID, "KOMMO_STAGE_URGENT_ID");
+  requireConfig(config.KOMMO_STAGE_ASTROLOGY_ID, "KOMMO_STAGE_ASTROLOGY_ID");
 
   const expectedNew = parseStageId(config.KOMMO_STAGE_NEW_ID, "KOMMO_STAGE_NEW_ID");
   const expectedWarm = parseStageId(config.KOMMO_STAGE_WARM_ID, "KOMMO_STAGE_WARM_ID");
   const expectedConsult = parseStageId(config.KOMMO_STAGE_CONSULT_ID, "KOMMO_STAGE_CONSULT_ID");
   const expectedUrgent = parseStageId(config.KOMMO_STAGE_URGENT_ID, "KOMMO_STAGE_URGENT_ID");
+  const expectedAstrology = parseStageId(config.KOMMO_STAGE_ASTROLOGY_ID, "KOMMO_STAGE_ASTROLOGY_ID");
   const expectedMarathon = config.KOMMO_STAGE_MARATON_ID.trim()
     ? parseStageId(config.KOMMO_STAGE_MARATON_ID, "KOMMO_STAGE_MARATON_ID")
     : null;
@@ -144,8 +146,8 @@ async function main(): Promise<void> {
     note: "Smoke test local consultation flow",
   });
   const consultStage = await getLeadStatus(consultLead.kommoLeadId);
-  if (consultStage !== expectedConsult) {
-    throw new Error(`Stage consultation invalid. expected=${expectedConsult} actual=${consultStage}`);
+  if (consultStage !== expectedAstrology) {
+    throw new Error(`Stage astrology invalid. expected=${expectedAstrology} actual=${consultStage}`);
   }
 
   let marathonLeadId: string | null = null;
@@ -199,11 +201,12 @@ async function main(): Promise<void> {
           warm: expectedWarm,
           urgent: expectedUrgent,
           consultation: expectedConsult,
+          astrology: expectedAstrology,
           marathon: expectedMarathon,
         },
         resolvedStages: {
           urgent: urgentStage,
-          consultation: consultStage,
+          astrology: consultStage,
           marathon: marathonStage,
         },
         marathonSmoke: expectedMarathon === null ? "skipped_missing_KOMMO_STAGE_MARATON_ID" : "ok",

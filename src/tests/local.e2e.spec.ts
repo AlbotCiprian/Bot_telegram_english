@@ -17,11 +17,12 @@ import {
 
 describe("local runtime invariants", () => {
   it("exposes the full main menu", () => {
-    expect(MAIN_MENU).toHaveLength(9);
-    expect(MAIN_MENU[0]?.key).toBe("lessons");
-    expect(MAIN_MENU[1]?.key).toBe("free_lessons");
+    expect(MAIN_MENU).toHaveLength(6);
+    expect(MAIN_MENU[0]?.key).toBe("free_lessons");
     expect(MAIN_MENU.some((item) => item.key === "marathon")).toBe(true);
-    expect(MAIN_MENU.map((item) => item.key)).not.toContain("about_academy");
+    expect(MAIN_MENU.map((item) => item.key)).not.toContain("lessons");
+    expect(MAIN_MENU.map((item) => item.key)).not.toContain("services");
+    expect(MAIN_MENU.map((item) => item.key)).not.toContain("operator");
   });
 
   it("builds the compact reply keyboard layout for the main menu", () => {
@@ -35,11 +36,10 @@ describe("local runtime invariants", () => {
     );
 
     expect(rows).toEqual([
-      ["🎓 3 zile gratuite"],
-      ["🚀 Maraton de engleză", "📚 Lecțiile tale"],
-      ["🗣️ Webinar: fără frică", "🎥 Metoda noastră"],
-      ["💼 Programe și prețuri", "⚡ Contact operator"],
-      ["🔮 Consultație în carieră"],
+      ["🎓 3 lecții gratuite"],
+      ["🚀 Maraton de engleză", "🗣️ Cum scapi de frica de a vorbi"],
+      ["🎥 Metoda noastră", "🌐 Website"],
+      ["🔮 Consultație astrologică în carieră"],
     ]);
   });
 
@@ -98,9 +98,9 @@ describe("local runtime invariants", () => {
   });
 
   it("maps reply keyboard labels back to menu actions", () => {
-    expect(resolveMenuActionFromLabel("🎓 3 zile gratuite")).toBe("free_lessons");
-    expect(resolveMenuActionFromLabel("📚 Lecțiile tale")).toBe("lessons");
-    expect(resolveMenuActionFromLabel("⚡ Contact operator")).toBe("operator");
+    expect(resolveMenuActionFromLabel("🎓 3 lecții gratuite")).toBe("free_lessons");
+    expect(resolveMenuActionFromLabel("🌐 Website")).toBe("website");
+    expect(resolveMenuActionFromLabel("🔮 Consultație astrologică în carieră")).toBe("career_astrology");
   });
 
   it("defines the internal stream manifest for all lesson days", () => {

@@ -91,7 +91,10 @@ function getLessonAvailability(user: User): LessonAvailability[] {
 
 function buildLessonsMenuText(user: User): string {
   const lessonAvailability = getLessonAvailability(user);
-  const lines = ["*Progresul tău în seria gratuită:*", ""];
+  const lines = [
+    "Perfect. Timp de 3 zile vei primi câte o lecție gratuită de engleză, ca să pui o bază solidă.",
+    "",
+  ];
 
   for (const lesson of lessonAvailability) {
     if (lesson.completed) {
@@ -113,7 +116,7 @@ function buildLessonsMenuText(user: User): string {
 function buildLessonsMenuKeyboard(user: User) {
   if (!hasStartedFreeLessons(user)) {
     return Markup.inlineKeyboard([
-      [Markup.button.callback("🎓 Pornește 3 zile gratuite", "menu:free_lessons")],
+      [Markup.button.callback("🎓 Începe cele 3 lecții gratuite", "menu:free_lessons")],
       [Markup.button.callback(UI_LABELS.backToMenu, "menu:menu")],
     ]);
   }
@@ -171,7 +174,7 @@ function buildStreamLessonKeyboard(dayNumber: LessonDay, watchUrl: string) {
 }
 
 function buildCourseCtaKeyboard() {
-  return Markup.inlineKeyboard([[Markup.button.callback(UI_LABELS.wantsCourseInfo, "menu:wants_course")]]);
+  return Markup.inlineKeyboard([[Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")]]);
 }
 
 function getUnlockUpdate(dayNumber: UnlockDay): Record<string, boolean> {
@@ -278,7 +281,7 @@ async function sendLessonStreamAccess(params: {
     "",
     params.messageText,
     "",
-    "Începe lecția în playerul intern pentru o încărcare mai rapidă pe mobil și desktop.",
+    "Deschide lecția în playerul intern pentru o încărcare mai rapidă pe mobil și desktop.",
     "După minimum 60 de secunde, testul se activează în aceeași pagină.",
   ].join("\n");
 
@@ -292,7 +295,13 @@ async function sendCourseFollowUp(chatId: string): Promise<void> {
   const telegram = getTelegramClient();
   await telegram.sendMessage(
     chatId,
-    "Felicitări! Ai terminat cele 3 lecții gratuite.\n\nVrei să vezi ce program ți se potrivește?",
+    [
+      "Mă bucur că ai ajuns până aici.",
+      "",
+      "Dacă simți că ți se potrivește felul în care lucrăm, te invit să continui alături de mine.",
+      "",
+      "Dacă începi astăzi cursul, beneficiezi de o reducere de 10%.",
+    ].join("\n"),
     {
       reply_markup: buildCourseCtaKeyboard().reply_markup,
     },
@@ -414,9 +423,9 @@ export async function sendReminder(userId: number, kind: "follow_up" | "inactive
   }
 
   const reminderMap = {
-    follow_up: "Cum ți s-au părut primele lecții? Dacă vrei continuarea potrivită, apasă pe Vreau la curs.",
-    inactive: "Ai deja următoarea lecție disponibilă. Deschide botul și continuă în câteva minute.",
-    long_reminder: "Dacă vrei să revii la engleză într-un ritm clar și sustenabil, îți reactivăm imediat traseul potrivit.",
+    follow_up: "Sper că ți-au plăcut primele lecții. Dacă vrei să continui, apasă pe Vreau la curs și te ghidăm mai departe.",
+    inactive: "Ai deja următoarea lecție disponibilă. Când ai câteva minute libere, o poți deschide direct din bot.",
+    long_reminder: "Dacă vrei să continui engleza într-un ritm clar și ușor de urmat, noi te ajutăm cu plăcere mai departe.",
   };
 
   const telegram = getTelegramClient();
@@ -475,11 +484,11 @@ export async function getLessonsMenu(
   if (!hasStartedFreeLessons(user)) {
     return {
       text: [
-        "*Lecțiile tale*",
+        "*3 lecții gratuite*",
         "",
-        "Nu ai activat încă seria gratuită de 3 zile.",
+        "Nu ai activat încă cele 3 lecții gratuite.",
         "",
-        "Apasă pe butonul de mai jos și îți deschidem imediat Lecția 1.",
+        "Apasă pe butonul de mai jos și îți deschidem imediat prima lecție.",
       ].join("\n"),
       replyMarkup: buildLessonsMenuKeyboard(user).reply_markup,
     };
@@ -495,7 +504,7 @@ export async function getLockedLessonMessage(userId: number, dayNumber: LessonDa
   const user = await syncLessonUnlockState(userId);
 
   if (!hasStartedFreeLessons(user)) {
-    return "Nu ai activat încă seria gratuită. Apasă pe «Pornește 3 zile gratuite» din meniu.";
+    return "Nu ai activat încă seria gratuită. Apasă pe «Începe cele 3 lecții gratuite» din meniu.";
   }
 
   if (isLessonUnlocked(user, dayNumber)) {
@@ -529,7 +538,7 @@ export async function unlockLesson(userId: number, dayNumber: UnlockDay): Promis
   const telegram = getTelegramClient();
   await telegram.sendMessage(
     user.telegramId.toString(),
-    `🎓 Lecția ${dayNumber} este acum disponibilă!\n\nContinuă seria ta gratuită de engleză.`,
+    `🎓 Lecția ${dayNumber} este acum disponibilă.\n\nCând ai câteva minute libere, o poți deschide direct din bot.`,
     {
       reply_markup: buildUnlockNotificationKeyboard(dayNumber).reply_markup,
     },
@@ -696,7 +705,7 @@ export async function handleLessonQuiz(
   const unlocked = Boolean(progress.quizAvailableAt && progress.quizAvailableAt <= new Date());
   const promptMessage = unlocked
     ? "Testul pentru Lecția 1 se rezolvă direct în aceeași pagină. Apasă pe buton și mergi la secțiunea de test."
-    : "Testul pentru Lecția 1 se deschide în aceeași pagină. După minimum 60 de secunde de vizionare, secțiunea de test devine activă.";
+    : "Testul pentru Lecția 1 se activează în aceeași pagină după minimum 60 de secunde de vizionare.";
 
   await telegram.sendMessage(
     user.telegramId.toString(),
@@ -745,8 +754,8 @@ export async function sendLessonNudge(userId: number, dayNumber: UnlockDay, afte
 
   const message =
     afterHours === 12
-      ? `Lecția ${dayNumber} este deja disponibilă și te așteaptă. Durează doar câteva minute.`
-      : `Lecția ${dayNumber} este încă disponibilă. Deschide-o acum ca să continui seria gratuită fără pauză.`;
+      ? `Lecția ${dayNumber} te așteaptă. Când ai puțin timp, o poți deschide și continua seria gratuită.`
+      : `Lecția ${dayNumber} este în continuare disponibilă. Dacă vrei să păstrezi ritmul, îți recomand să o deschizi astăzi.`;
 
   const telegram = getTelegramClient();
   await telegram.sendMessage(user.telegramId.toString(), message, {

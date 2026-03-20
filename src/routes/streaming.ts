@@ -1,24 +1,35 @@
 import fs from "node:fs";
-import { FastifyPluginAsync, FastifyReply } from "fastify";
+import { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { getLessonQuizState, submitLessonQuiz } from "../services/lessonQuizService.js";
 import {
   getLessonStreamAsset,
+  getServiceStreamAsset,
   getStreamManifestPath,
   getStreamPosterPath,
   getStreamRenditionPlaylistPath,
   getStreamSegmentPath,
+  getServiceStreamPosterPath,
+  getServiceStreamVideoPath,
   supportsTelegramWebAppStreaming,
   type LessonDay,
+  type ServiceStreamKey,
 } from "../services/streamingAssets.js";
 import { config } from "../utils/config.js";
 import { logger } from "../utils/logger.js";
 import {
   completeStreamSession,
   createStreamSession,
+  createServiceStreamSession,
   getActiveStreamSession,
+  getActiveServiceStreamSession,
   getLessonStreamAvailability,
+  getServiceStreamAvailability,
   markStreamError,
+  markServiceStreamError,
   recordStreamProgress,
+  recordServiceStreamProgress,
+  completeServiceStreamSession,
+  verifyServiceWatchToken,
   verifyLessonWatchToken,
 } from "../services/streamingService.js";
 
@@ -34,6 +45,10 @@ function escapeHtml(value: string): string {
 function parseLessonDay(value: string): LessonDay | null {
   const dayNumber = Number(value);
   return dayNumber === 1 || dayNumber === 2 || dayNumber === 3 ? dayNumber : null;
+}
+
+function parseServiceKey(value: string): ServiceStreamKey | null {
+  return value === "career-astrology" ? value : null;
 }
 
 function buildSessionMediaUrl(dayNumber: LessonDay, sessionId: string, fileName: string): string {
@@ -194,9 +209,132 @@ function buildWatchPage(params: {
 </html>`;
 }
 
-function streamFile(reply: FastifyReply, filePath: string, contentType: string, cacheControl: string) {
+function buildServiceWatchPage(params: {
+  serviceKey: ServiceStreamKey;
+  token: string;
+  title: string;
+  watchBaseUrl: string;
+  streamReady: boolean;
+  showExternalFallback: boolean;
+}) {
+  const bootstrap = JSON.stringify({
+    token: params.token,
+    streamReady: params.streamReady,
+    watchBaseUrl: params.watchBaseUrl,
+    showExternalFallback: params.showExternalFallback,
+    sessionUrl: "/api/stream/service/session",
+    progressUrl: "/api/stream/service/progress",
+    completeUrl: "/api/stream/service/complete",
+    errorUrl: "/api/stream/service/error",
+  });
+
+  return `<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <title>${escapeHtml(params.title)} | Express English Academy</title>
+  <style>
+    :root{color-scheme:dark;--bg:#090910;--card:#13131d;--muted:#b7b0d6;--text:#f6f1ff;--accent:#f0c14e;--line:rgba(255,255,255,.08);--soft:rgba(255,255,255,.05);--warn:rgba(240,193,78,.12);--err:rgba(255,100,100,.12)}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;min-height:100vh;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(240,193,78,.08),transparent 28%),linear-gradient(180deg,#09090d 0%,#12121b 100%)}
+    .shell{width:min(460px,calc(100vw - 18px));margin:0 auto;padding:10px 0 28px}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;overflow:hidden;box-shadow:0 18px 48px rgba(0,0,0,.32)}
+    .header{padding:18px 18px 12px}.eyebrow{margin:0 0 10px;color:var(--accent);font-size:12px;letter-spacing:.16em;text-transform:uppercase}h1{margin:0;font-size:clamp(28px,5vw,38px);line-height:1.08}.subcopy{margin:10px 0 0;color:var(--muted);font-size:15px;line-height:1.55}
+    .player-wrap{padding:0 12px 12px}.player-frame{width:100%;aspect-ratio:9/16;max-height:78vh;background:#000;border-radius:18px;overflow:hidden}video{width:100%;height:100%;display:block;background:#000;object-fit:contain}
+    .status,.hint,.error,.footer{margin:0 18px 14px}.status{color:var(--muted);font-size:15px;line-height:1.55}.hint,.error{display:none;padding:14px 16px;border-radius:18px}.hint{background:var(--warn);border:1px solid rgba(240,193,78,.2);color:#f6df95}.error{background:var(--err);border:1px solid rgba(255,100,100,.2);color:#ffb4b4}
+    .footer{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font-size:14px}.inline-link{color:var(--accent);text-decoration:none}
+    @media (max-width:768px){.shell{width:min(100vw,calc(100vw - 12px));padding-top:8px}.card{border-radius:18px}.header{padding:16px 14px 10px}.player-wrap{padding:0 8px 8px}.status,.hint,.error,.footer{margin-left:14px;margin-right:14px}.footer{flex-direction:column;align-items:flex-start}}
+  </style>
+</head>
+<body>
+  <div class="shell"><div class="card">
+    <div class="header">
+      <p class="eyebrow">Express English Academy</p>
+      <h1>${escapeHtml(params.title)}</h1>
+      <p class="subcopy">Video intern optimizat pentru mobil. Poți urmări prezentarea direct aici, cu încărcare rapidă și acces protejat.</p>
+    </div>
+    <div class="player-wrap"><div class="player-frame"><video id="service-player" controls playsinline preload="metadata"></video></div></div>
+    <div class="status" id="status">Pregătesc playerul și sesiunea video...</div>
+    <div class="hint" id="hint">Dacă vrei o imagine mai mare, rotește telefonul pe orizontală sau deschide fullscreen.</div>
+    <div class="error" id="error"></div>
+    <div class="footer">${params.showExternalFallback ? `<span>Deschidere separată: <a class="inline-link" href="${escapeHtml(params.watchBaseUrl)}" target="_blank" rel="noopener">același player</a></span>` : "<span>Acces protejat prin bot</span>"}</div>
+  </div></div>
+  <script>
+    const bootstrap=${bootstrap};
+    const player=document.getElementById("service-player");
+    const statusNode=document.getElementById("status");
+    const hintNode=document.getElementById("hint");
+    const errorNode=document.getElementById("error");
+    const tg=window.Telegram&&window.Telegram.WebApp?window.Telegram.WebApp:null;
+    const platform=tg&&tg.platform?tg.platform:(((navigator.userAgentData&&navigator.userAgentData.mobile)||/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent))?"mobile-browser":"desktop-browser");
+    const isMobile=/ios|android|mobile/i.test(String(platform));
+    const state={sessionId:null,completeSent:false};
+    if(tg){try{tg.ready();tg.expand()}catch(_){}} if(isMobile){hintNode.style.display="block"}
+    const setStatus=(m)=>statusNode.textContent=m;
+    const setError=(m)=>{errorNode.style.display="block";errorNode.textContent=m;setStatus("Playerul nu a putut fi pornit.")};
+    async function sendJson(url,payload,keepalive=false){
+      const response=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),keepalive});
+      if(!response.ok){const payloadError=await response.json().catch(()=>({}));throw new Error(payloadError.message||"Request eșuat.")}
+      return response.json().catch(()=>({}));
+    }
+    async function reportError(message){try{await sendJson(bootstrap.errorUrl,{token:bootstrap.token,sessionId:state.sessionId,message},true)}catch(_){}}
+    async function pushProgress(force){
+      if(!state.sessionId){return}
+      try{await sendJson(bootstrap.progressUrl,{sessionId:state.sessionId,currentTimeSec:Math.floor(player.currentTime||0)},force)}catch(error){console.warn(error)}
+    }
+    async function completePlayback(){
+      if(!state.sessionId||state.completeSent){return} state.completeSent=true;
+      try{await sendJson(bootstrap.completeUrl,{sessionId:state.sessionId,currentTimeSec:Math.floor(player.currentTime||0)},true);setStatus("Video-ul a fost urmărit. Poți reveni în bot pentru pasul următor.")}catch(error){console.warn(error)}
+    }
+    async function bootstrapPlayer(){
+      if(!bootstrap.streamReady){setError("Video-ul pentru acest serviciu nu este pregătit încă pe server.");return}
+      try{
+        const payload=await sendJson(bootstrap.sessionUrl,{token:bootstrap.token,platform:String(platform),userAgent:navigator.userAgent});
+        state.sessionId=payload.sessionId; player.poster=payload.posterUrl; player.src=payload.videoUrl; setStatus("Playerul este gata. Poți porni video-ul.");
+      }catch(error){const message=error instanceof Error?error.message:"Nu am putut inițializa sesiunea video."; await reportError(message); setError(message)}
+    }
+    player.addEventListener("play",()=>{void pushProgress(true)});
+    player.addEventListener("timeupdate",()=>{void pushProgress(false)});
+    player.addEventListener("ended",()=>{void completePlayback()});
+    player.addEventListener("error",()=>{void reportError("Player media error")});
+    document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){void pushProgress(true)}});
+    window.addEventListener("beforeunload",()=>{void pushProgress(true); if(!state.completeSent&&player.currentTime>0){void completePlayback()}});
+    void bootstrapPlayer();
+  </script>
+</body>
+</html>`;
+}
+
+function streamFile(request: FastifyRequest, reply: FastifyReply, filePath: string, contentType: string, cacheControl: string) {
   const stat = fs.statSync(filePath);
-  reply.header("Content-Type", contentType).header("Content-Length", stat.size).header("Cache-Control", cacheControl).header("X-Content-Type-Options", "nosniff");
+  const rangeHeader = typeof request.headers.range === "string" ? request.headers.range : null;
+
+  reply
+    .header("Content-Type", contentType)
+    .header("Cache-Control", cacheControl)
+    .header("X-Content-Type-Options", "nosniff")
+    .header("Accept-Ranges", "bytes");
+
+  if (rangeHeader) {
+    const match = /^bytes=(\d*)-(\d*)$/i.exec(rangeHeader.trim());
+    if (match) {
+      const start = match[1] ? Number(match[1]) : 0;
+      const end = match[2] ? Number(match[2]) : stat.size - 1;
+      const safeStart = Number.isFinite(start) ? Math.max(0, start) : 0;
+      const safeEnd = Number.isFinite(end) ? Math.min(stat.size - 1, end) : stat.size - 1;
+
+      if (safeStart <= safeEnd) {
+        reply
+          .code(206)
+          .header("Content-Length", safeEnd - safeStart + 1)
+          .header("Content-Range", `bytes ${safeStart}-${safeEnd}/${stat.size}`);
+
+        return reply.send(fs.createReadStream(filePath, { start: safeStart, end: safeEnd }));
+      }
+    }
+  }
+
+  reply.header("Content-Length", stat.size);
   return reply.send(fs.createReadStream(filePath));
 }
 
@@ -268,6 +406,33 @@ export const streamingRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.type("text/html; charset=utf-8").send(html);
   });
 
+  fastify.get<{ Params: { serviceKey: string }; Querystring: { token?: string } }>("/watch/service/:serviceKey", async (request, reply) => {
+    const token = request.query.token?.trim();
+    const serviceKey = parseServiceKey(request.params.serviceKey);
+    if (!serviceKey || !token) {
+      return reply.code(400).type("text/plain; charset=utf-8").send("Link-ul video este invalid.");
+    }
+
+    const payload = verifyServiceWatchToken(token);
+    if (!payload || payload.serviceKey !== serviceKey) {
+      return reply.code(403).type("text/plain; charset=utf-8").send("Accesul la acest video nu este valid.");
+    }
+
+    const asset = getServiceStreamAsset(serviceKey);
+    const publicBaseUrl = config.STREAM_PUBLIC_BASE_URL.replace(/\/+$/, "");
+    const html = buildServiceWatchPage({
+      serviceKey,
+      token,
+      title: asset.title,
+      watchBaseUrl: `${publicBaseUrl}/watch/service/${serviceKey}?token=${encodeURIComponent(token)}`,
+      streamReady: getServiceStreamAvailability(serviceKey).ready,
+      showExternalFallback: supportsTelegramWebAppStreaming(),
+    });
+
+    reply.header("Cache-Control", "private, no-store").header("Pragma", "no-cache").header("Referrer-Policy", "same-origin").header("X-Robots-Tag", "noindex, nofollow, noarchive");
+    return reply.type("text/html; charset=utf-8").send(html);
+  });
+
   fastify.get<{ Params: { day: string }; Querystring: { sessionId?: string } }>("/api/stream/poster/:day", async (request, reply) => {
     const dayNumber = parseLessonDay(request.params.day);
     const sessionId = request.query.sessionId?.trim();
@@ -287,7 +452,29 @@ export const streamingRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.code(404).type("text/plain; charset=utf-8").send("Posterul lipsește.");
     }
 
-    return streamFile(reply, posterPath, "image/jpeg", "private, max-age=300, no-transform");
+    return streamFile(request, reply, posterPath, "image/jpeg", "private, max-age=300, no-transform");
+  });
+
+  fastify.get<{ Params: { serviceKey: string }; Querystring: { sessionId?: string } }>("/api/stream/service/poster/:serviceKey", async (request, reply) => {
+    const serviceKey = parseServiceKey(request.params.serviceKey);
+    const sessionId = request.query.sessionId?.trim();
+    if (!serviceKey || !sessionId) {
+      return reply.code(400).type("text/plain; charset=utf-8").send("Cererea pentru poster este invalidă.");
+    }
+
+    try {
+      await getActiveServiceStreamSession(sessionId, serviceKey);
+    } catch (error) {
+      return reply.code(403).type("text/plain; charset=utf-8").send(error instanceof Error ? error.message : "Posterul nu poate fi accesat.");
+    }
+
+    const asset = getServiceStreamAsset(serviceKey);
+    const posterPath = getServiceStreamPosterPath(asset);
+    if (!fs.existsSync(posterPath)) {
+      return reply.code(404).type("text/plain; charset=utf-8").send("Posterul lipsește.");
+    }
+
+    return streamFile(request, reply, posterPath, "image/jpeg", "private, max-age=300, no-transform");
   });
 
   fastify.get<{ Params: { day: string; file: string }; Querystring: { sessionId?: string } }>("/api/stream/media/:day/:file", async (request, reply) => {
@@ -319,7 +506,29 @@ export const streamingRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.header("Content-Type", resolvedFile.contentType).header("Cache-Control", "private, max-age=60, must-revalidate").header("X-Content-Type-Options", "nosniff").send(content);
     }
 
-    return streamFile(reply, resolvedFile.filePath, resolvedFile.contentType, "private, max-age=900, immutable");
+    return streamFile(request, reply, resolvedFile.filePath, resolvedFile.contentType, "private, max-age=900, immutable");
+  });
+
+  fastify.get<{ Params: { serviceKey: string }; Querystring: { sessionId?: string } }>("/api/stream/service/media/:serviceKey", async (request, reply) => {
+    const serviceKey = parseServiceKey(request.params.serviceKey);
+    const sessionId = request.query.sessionId?.trim();
+    if (!serviceKey || !sessionId) {
+      return reply.code(400).type("text/plain; charset=utf-8").send("Cererea video este invalidă.");
+    }
+
+    try {
+      await getActiveServiceStreamSession(sessionId, serviceKey);
+    } catch (error) {
+      return reply.code(403).type("text/plain; charset=utf-8").send(error instanceof Error ? error.message : "Sesiunea video nu este validă.");
+    }
+
+    const asset = getServiceStreamAsset(serviceKey);
+    const videoPath = getServiceStreamVideoPath(asset);
+    if (!fs.existsSync(videoPath)) {
+      return reply.code(404).type("text/plain; charset=utf-8").send("Fișierul video nu există.");
+    }
+
+    return streamFile(request, reply, videoPath, "video/mp4", "private, max-age=900, immutable");
   });
 
   fastify.post<{ Body: { token?: string; platform?: string | null; userAgent?: string | null; prefersNativeHls?: boolean } }>("/api/stream/session", async (request, reply) => {
@@ -342,6 +551,25 @@ export const streamingRoutes: FastifyPluginAsync = async (fastify) => {
     }
   });
 
+  fastify.post<{ Body: { token?: string; platform?: string | null; userAgent?: string | null } }>("/api/stream/service/session", async (request, reply) => {
+    try {
+      const token = request.body.token?.trim();
+      if (!token) {
+        return reply.code(400).send({ message: "Token-ul video lipsește." });
+      }
+
+      return await createServiceStreamSession({
+        token,
+        platform: request.body.platform,
+        userAgent: request.body.userAgent,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Sesiunea video nu a putut fi creată.";
+      logger.warn({ err: error }, "Crearea sesiunii video pentru serviciu a eșuat.");
+      return reply.code(400).send({ message });
+    }
+  });
+
   fastify.post<{ Body: { sessionId?: string; currentTimeSec?: number; durationSec?: number | null } }>("/api/stream/progress", async (request, reply) => {
     try {
       const sessionId = request.body.sessionId?.trim();
@@ -357,6 +585,26 @@ export const streamingRoutes: FastifyPluginAsync = async (fastify) => {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Nu am putut salva progresul.";
       logger.warn({ err: error }, "Actualizarea progresului de streaming a eșuat.");
+      return reply.code(400).send({ message });
+    }
+  });
+
+  fastify.post<{ Body: { sessionId?: string; currentTimeSec?: number } }>("/api/stream/service/progress", async (request, reply) => {
+    try {
+      const sessionId = request.body.sessionId?.trim();
+      if (!sessionId) {
+        return reply.code(400).send({ message: "sessionId lipsește." });
+      }
+
+      await recordServiceStreamProgress({
+        sessionId,
+        currentTimeSec: request.body.currentTimeSec ?? 0,
+      });
+
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Nu am putut salva progresul video.";
+      logger.warn({ err: error }, "Actualizarea progresului video pentru serviciu a eșuat.");
       return reply.code(400).send({ message });
     }
   });
@@ -381,11 +629,41 @@ export const streamingRoutes: FastifyPluginAsync = async (fastify) => {
     }
   });
 
+  fastify.post<{ Body: { sessionId?: string; currentTimeSec?: number | null } }>("/api/stream/service/complete", async (request, reply) => {
+    try {
+      const sessionId = request.body.sessionId?.trim();
+      if (!sessionId) {
+        return reply.code(400).send({ message: "sessionId lipsește." });
+      }
+
+      await completeServiceStreamSession({
+        sessionId,
+        currentTimeSec: request.body.currentTimeSec ?? null,
+      });
+
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Nu am putut finaliza sesiunea video.";
+      logger.warn({ err: error }, "Finalizarea sesiunii video pentru serviciu a eșuat.");
+      return reply.code(400).send({ message });
+    }
+  });
+
   fastify.post<{ Body: { token?: string | null; sessionId?: string | null; message?: string } }>("/api/stream/error", async (request, reply) => {
     await markStreamError({
       token: request.body.token ?? null,
       sessionId: request.body.sessionId ?? null,
       message: request.body.message?.trim() || "unknown_stream_error",
+    });
+
+    return reply.code(204).send();
+  });
+
+  fastify.post<{ Body: { token?: string | null; sessionId?: string | null; message?: string } }>("/api/stream/service/error", async (request, reply) => {
+    await markServiceStreamError({
+      token: request.body.token ?? null,
+      sessionId: request.body.sessionId ?? null,
+      message: request.body.message?.trim() || "unknown_service_stream_error",
     });
 
     return reply.code(204).send();
