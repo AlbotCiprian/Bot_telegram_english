@@ -4,6 +4,7 @@ import { campaignQueue, crmQueue } from "./queue.js";
 export async function wipeBotState(): Promise<void> {
   await prisma.userCampaign.deleteMany();
   await prisma.lessonProgress.deleteMany();
+  await prisma.lessonQuizResult.deleteMany();
   await prisma.botSession.deleteMany();
   await prisma.scheduledJob.deleteMany();
   await prisma.crmSyncLog.deleteMany();

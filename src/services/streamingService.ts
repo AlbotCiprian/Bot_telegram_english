@@ -8,9 +8,7 @@ import {
   getAbsoluteWatchUrl,
   getLessonStreamAsset,
   getStreamManifestPath,
-  getStreamManifestUrl,
   getStreamPosterPath,
-  getStreamPosterUrl,
   isLessonStreamReady,
   listLessonStreamAssets,
 } from "./streamingAssets.js";
@@ -40,6 +38,8 @@ type StreamSessionRecord = {
   maxRendition: number;
 };
 
+export type ActiveStreamSession = StreamSessionRecord;
+
 type StreamSessionResponse = {
   sessionId: string;
   lessonTitle: string;
@@ -54,7 +54,7 @@ type StreamSessionResponse = {
 const STREAM_SESSION_PREFIX = "stream:session:";
 const STREAM_ACTIVE_SESSIONS_KEY = "stream:sessions:active";
 const STREAM_ERROR_COUNTER_KEY = "stream:sessions:error-count";
-const STREAM_LAST_BUILD_MANIFEST = path.resolve(process.cwd(), "stream", "manifest.json");
+const STREAM_LAST_BUILD_MANIFEST = path.resolve(path.dirname(config.STREAM_HLS_ROOT), "manifest.json");
 
 function base64UrlEncode(value: string): string {
   return Buffer.from(value, "utf8").toString("base64url");
@@ -70,6 +70,14 @@ function signTokenSegment(payloadSegment: string): string {
 
 function buildStreamSessionKey(sessionId: string): string {
   return `${STREAM_SESSION_PREFIX}${sessionId}`;
+}
+
+function buildStreamMediaUrl(dayNumber: LessonDay, sessionId: string, fileName: string): string {
+  return `/api/stream/media/${dayNumber}/${encodeURIComponent(fileName)}?sessionId=${encodeURIComponent(sessionId)}`;
+}
+
+function buildStreamPosterUrl(dayNumber: LessonDay, sessionId: string): string {
+  return `/api/stream/poster/${dayNumber}?sessionId=${encodeURIComponent(sessionId)}`;
 }
 
 function getMaximumRenditionHeight(platform: string | null): number {
@@ -167,6 +175,23 @@ export function buildLessonWatchAccess(userId: number, dayNumber: LessonDay) {
   };
 }
 
+export async function getActiveStreamSession(
+  sessionId: string,
+  expectedDayNumber?: LessonDay,
+): Promise<ActiveStreamSession> {
+  const session = await getRedisJson<StreamSessionRecord>(buildStreamSessionKey(sessionId));
+
+  if (!session) {
+    throw new Error("Sesiunea de streaming nu mai este activă.");
+  }
+
+  if (expectedDayNumber && session.dayNumber !== expectedDayNumber) {
+    throw new Error("Sesiunea de streaming nu corespunde lecției cerute.");
+  }
+
+  return session;
+}
+
 export async function createStreamSession(params: {
   token: string;
   platform?: string | null;
@@ -257,8 +282,8 @@ export async function createStreamSession(params: {
     lessonTitle: asset.title,
     lessonDay: asset.dayNumber,
     streamKey: asset.streamKey,
-    manifestUrl: getStreamManifestUrl(asset),
-    posterUrl: getStreamPosterUrl(asset),
+    manifestUrl: buildStreamMediaUrl(asset.dayNumber, sessionId, "master.m3u8"),
+    posterUrl: buildStreamPosterUrl(asset.dayNumber, sessionId),
     maxRendition: session.maxRendition,
     canUseNativeHls: Boolean(params.prefersNativeHls),
   };
@@ -494,6 +519,5 @@ export function getLessonStreamAvailability(dayNumber: LessonDay) {
     manifestPath: getStreamManifestPath(asset),
     posterPath: getStreamPosterPath(asset),
     publicWatchBaseUrl: `${config.STREAM_PUBLIC_BASE_URL.replace(/\/+$/, "")}/watch/lesson/${dayNumber}`,
-    publicManifestUrl: `${config.STREAM_PUBLIC_BASE_URL.replace(/\/+$/, "")}${getStreamManifestUrl(asset)}`,
   };
 }

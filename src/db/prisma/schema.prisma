@@ -33,6 +33,7 @@ model User {
   session           BotSession?
   campaigns         UserCampaign[]
   lessonProgress    LessonProgress[]
+  quizResults       LessonQuizResult[]
   jobs              ScheduledJob[]
   crmSyncLogs       CrmSyncLog[]
   events            UserEvent[]
@@ -139,6 +140,26 @@ model LessonProgress {
 
   @@unique([userId, dayNumber])
   @@map("lesson_progress")
+}
+
+model LessonQuizResult {
+  id                    Int      @id @default(autoincrement())
+  userId                Int      @map("user_id")
+  dayNumber             Int      @map("day_number")
+  attemptCount          Int      @default(0) @map("attempt_count")
+  latestCorrectAnswers  Int      @default(0) @map("latest_correct_answers")
+  latestTotalQuestions  Int      @default(0) @map("latest_total_questions")
+  latestPercentage      Int      @default(0) @map("latest_percentage")
+  bestCorrectAnswers    Int      @default(0) @map("best_correct_answers")
+  bestPercentage        Int      @default(0) @map("best_percentage")
+  lastAnswers           Json?    @map("last_answers")
+  lastAttemptAt         DateTime? @map("last_attempt_at")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dayNumber])
+  @@map("lesson_quiz_results")
 }
 
 model ScheduledJob {

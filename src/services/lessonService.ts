@@ -1,11 +1,11 @@
 import { User } from "@prisma/client";
 import { Markup } from "telegraf";
 import { UI_LABELS } from "../content/copy.js";
-import { LESSON_ONE_QUIZ } from "../content/staticContent.js";
 import { prisma } from "../db/client.js";
 import { config } from "../utils/config.js";
 import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
 import { logUserEvent } from "./eventService.js";
+import { buildLessonQuizUrl, hasLessonQuiz } from "./lessonQuizService.js";
 import { buildMediaAssetKey, sendVideoAsset } from "./mediaAssetService.js";
 import { scheduleCampaignJob } from "./schedulerService.js";
 import { buildLessonWatchAccess } from "./streamingService.js";
@@ -138,11 +138,16 @@ function buildUnlockNotificationKeyboard(dayNumber: UnlockDay) {
 }
 
 function buildDeliveredLessonKeyboard(dayNumber: LessonDay) {
-  return Markup.inlineKeyboard([
-    [Markup.button.callback(UI_LABELS.testYourself, `lesson:quiz:${dayNumber}`)],
-    [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
-    [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
-  ]);
+  const rows = [];
+
+  if (hasLessonQuiz(dayNumber)) {
+    rows.push([Markup.button.callback(UI_LABELS.testYourself, `lesson:quiz:${dayNumber}`)]);
+  }
+
+  rows.push([Markup.button.callback(UI_LABELS.lessons, "menu:lessons")]);
+  rows.push([Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")]);
+
+  return Markup.inlineKeyboard(rows);
 }
 
 function buildStreamLessonKeyboard(dayNumber: LessonDay, watchUrl: string) {
@@ -150,10 +155,15 @@ function buildStreamLessonKeyboard(dayNumber: LessonDay, watchUrl: string) {
 
   if (supportsTelegramWebAppStreaming()) {
     rows.push([Markup.button.webApp(UI_LABELS.streamLesson, watchUrl)]);
+    rows.push([Markup.button.url(UI_LABELS.openLessonInBrowser, watchUrl)]);
+  } else {
+    rows.push([Markup.button.url(UI_LABELS.streamLesson, watchUrl)]);
   }
 
-  rows.push([Markup.button.url(UI_LABELS.openLessonInBrowser, watchUrl)]);
-  rows.push([Markup.button.callback(UI_LABELS.testYourself, `lesson:quiz:${dayNumber}`)]);
+  if (hasLessonQuiz(dayNumber)) {
+    rows.push([Markup.button.url(UI_LABELS.testYourself, buildLessonQuizUrl(watchUrl))]);
+  }
+
   rows.push([Markup.button.callback(UI_LABELS.lessons, "menu:lessons")]);
   rows.push([Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")]);
 
@@ -268,8 +278,8 @@ async function sendLessonStreamAccess(params: {
     "",
     params.messageText,
     "",
-    "Deschide lecția în playerul intern pentru încărcare mai rapidă pe mobil și desktop.",
-    "Testul se deblochează după minimum 60 de secunde de playback valid.",
+    "Începe lecția în playerul intern pentru o încărcare mai rapidă pe mobil și desktop.",
+    "După minimum 60 de secunde, testul se activează în aceeași pagină.",
   ].join("\n");
 
   await telegram.sendMessage(params.chatId, text, {
@@ -425,33 +435,6 @@ export async function sendReminder(userId: number, kind: "follow_up" | "inactive
       kind,
     },
   });
-}
-
-async function sendLessonOneQuiz(chatId: string): Promise<void> {
-  const telegram = getTelegramClient();
-  await telegram.sendMessage(
-    chatId,
-    "📝 Tema 1 - Present Simple\n\nRăspunde la întrebările de mai jos direct în Telegram.",
-  );
-
-  for (const item of LESSON_ONE_QUIZ) {
-    await telegram.sendQuiz(chatId, item.question, [...item.options], {
-      correct_option_id: item.correctOptionIndex,
-      is_anonymous: false,
-      explanation: "Verifică regula de Present Simple și continuă testul.",
-    });
-  }
-
-  await telegram.sendMessage(
-    chatId,
-    "Perfect. Ai terminat testul pentru Lecția 1. În meniul Lecțiile tale vezi când se deschide următoarea lecție.",
-    {
-      reply_markup: Markup.inlineKeyboard([
-        [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
-        [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
-      ]).reply_markup,
-    },
-  );
 }
 
 export async function syncLessonUnlockState(userId: number): Promise<User> {
@@ -689,30 +672,6 @@ export async function handleLessonQuiz(
     };
   }
 
-  if (!progress.quizAvailableAt) {
-    if (progress.streamStartedAt || progress.streamSessionCreatedAt) {
-      return {
-        status: "locked",
-        message:
-          "Testul se deblochează după minimum 60 de secunde de playback valid în playerul intern. Revino imediat după ce urmărești puțin din lecție.",
-      };
-    }
-
-    if (!progress.videoSentAt) {
-      return {
-        status: "missing",
-        message: "Deschide mai întâi lecția și apoi revino la test.",
-      };
-    }
-  }
-
-  if (progress.quizAvailableAt && progress.quizAvailableAt > new Date()) {
-    return {
-      status: "locked",
-      message: `Mai așteaptă puțin și apoi începe testul.\n\n⏳ ${formatRemainingTime(progress.quizAvailableAt) ?? "00h 00m"}`,
-    };
-  }
-
   const user = await prisma.user.findUnique({
     where: { id: userId },
   });
@@ -727,34 +686,41 @@ export async function handleLessonQuiz(
   if (dayNumber !== 1) {
     return {
       status: "coming_soon",
-      message: "Testul pentru această lecție vine imediat ce adăugăm conținutul final.",
+      message: "Testul pentru această lecție apare imediat ce adăugăm conținutul final.",
     };
   }
 
-  await sendLessonOneQuiz(user.telegramId.toString());
+  const telegram = getTelegramClient();
+  const access = buildLessonWatchAccess(userId, dayNumber);
+  const quizUrl = buildLessonQuizUrl(access.watchUrl);
+  const unlocked = Boolean(progress.quizAvailableAt && progress.quizAvailableAt <= new Date());
+  const promptMessage = unlocked
+    ? "Testul pentru Lecția 1 se rezolvă direct în aceeași pagină. Apasă pe buton și mergi la secțiunea de test."
+    : "Testul pentru Lecția 1 se deschide în aceeași pagină. După minimum 60 de secunde de vizionare, secțiunea de test devine activă.";
 
-  await prisma.lessonProgress.update({
-    where: {
-      userId_dayNumber: {
-        userId,
-        dayNumber,
-      },
+  await telegram.sendMessage(
+    user.telegramId.toString(),
+    promptMessage,
+    {
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.url(UI_LABELS.testYourself, quizUrl)],
+        [Markup.button.callback(UI_LABELS.lessons, "menu:lessons")],
+        [Markup.button.callback(UI_LABELS.wantsCourse, "menu:wants_course")],
+      ]).reply_markup,
     },
-    data: {
-      quizCompletedAt: progress.quizCompletedAt ?? new Date(),
-    },
-  });
+  );
 
   await logUserEvent({
     userId,
-    eventType: "lesson_quiz_sent",
+    eventType: "lesson_quiz_redirected",
     metadata: {
       dayNumber,
-      quiz: "present_simple",
+      quizUrl,
+      unlocked,
     },
   });
 
-  return { status: "sent" };
+  return { status: unlocked ? "sent" : "locked" };
 }
 
 export async function sendLessonNudge(userId: number, dayNumber: UnlockDay, afterHours: 12 | 24): Promise<void> {

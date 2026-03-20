@@ -88,12 +88,12 @@ export function getStreamPosterPath(asset: LessonStreamAsset): string {
   return path.resolve(config.STREAM_POSTER_ROOT, asset.posterFileName);
 }
 
-export function getStreamManifestUrl(asset: LessonStreamAsset): string {
-  return `/stream/hls/${asset.streamKey}/master.m3u8`;
+export function getStreamRenditionPlaylistPath(asset: LessonStreamAsset, playlistFileName: string): string {
+  return path.resolve(config.STREAM_HLS_ROOT, asset.streamKey, playlistFileName);
 }
 
-export function getStreamPosterUrl(asset: LessonStreamAsset): string {
-  return `/stream/posters/${asset.posterFileName}`;
+export function getStreamSegmentPath(asset: LessonStreamAsset, segmentFileName: string): string {
+  return path.resolve(config.STREAM_HLS_ROOT, asset.streamKey, segmentFileName);
 }
 
 export function getAbsoluteWatchUrl(dayNumber: LessonDay, token: string): string {
@@ -116,8 +116,6 @@ export function getStreamAssetSummary(dayNumber: LessonDay) {
     deliveryMode: asset.deliveryMode,
     manifestPath: getStreamManifestPath(asset),
     posterPath: getStreamPosterPath(asset),
-    manifestUrl: getStreamManifestUrl(asset),
-    posterUrl: getStreamPosterUrl(asset),
     ready: isLessonStreamReady(dayNumber),
   };
 }

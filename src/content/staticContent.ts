@@ -317,7 +317,7 @@ export const LESSON_SEED_CONTENT = [
     dayNumber: 1,
     key: "free-day-1",
     title: "Lecția 1 - Present Simple",
-    messageText: "Urmărește lecția, iar după un minut poți porni testul scurt pentru Present Simple.",
+    messageText: "Urmărește lecția, iar după minimum un minut poți deschide testul scurt pentru Present Simple.",
     mediaType: "video_file",
     mediaUrl: "lesson-1-v2-landscape.mp4",
     cta: [

@@ -107,8 +107,8 @@ async function finalizeConsultationRequest(
 
   await ctx.reply(
     params.priority === "urgent_contact"
-      ? "Am trimis cererea ta în CRM cu prioritate mare. Revenim cât mai rapid."
-      : "Am trimis cererea ta în CRM. Revenim cu consultația de carieră cât mai curând.",
+      ? "Procesăm cererea ta cu prioritate. În curând vei fi contactat. Îți mulțumim!"
+      : "Procesăm cererea ta. În curând vei fi contactat. Îți mulțumim!",
     {
       reply_markup: getMainMenuKeyboard({ showLessons: Boolean(user.lesson1Unlocked || user.currentLessonDay > 0) }).reply_markup,
     },
