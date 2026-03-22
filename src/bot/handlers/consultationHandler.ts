@@ -128,7 +128,7 @@ async function finalizeConsultationRequest(
 
   await ctx.reply(
     params.requestedService === "course_contact"
-      ? "Îți mulțumim! Un coleg din echipa noastră te va contacta în scurt timp."
+      ? SHARED_COPY.courseContactConfirmation
       : params.priority === "urgent_contact"
       ? "Procesăm cererea ta cu prioritate. În curând vei fi contactat. Îți mulțumim!"
       : "Procesăm cererea ta. În curând vei fi contactat. Îți mulțumim!",

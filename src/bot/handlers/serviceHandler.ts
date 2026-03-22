@@ -70,7 +70,6 @@ async function replyWithSharedVideo(
       localFilePath: localVideoPath,
       sourceFileName: params.fileName,
       uploadNoticeText: "Pregătesc video-ul. Prima încărcare poate dura câteva secunde.",
-      missingFileText: `${caption}\n\nVideo-ul final trebuie înlocuit cu un MP4 optimizat pentru redare directă în Telegram.`,
       options: {
         caption,
         parse_mode: "Markdown",
@@ -147,7 +146,6 @@ async function replyWithAstrologyVideo(ctx: Context, params: { title: string; bo
       localFilePath: videoAsset.localFilePath,
       sourceFileName: videoAsset.sourceFileName,
       uploadNoticeText: "Pregătesc video-ul. Prima încărcare poate dura câteva secunde.",
-      missingFileText: `${caption}\n\nVideo-ul pentru această secțiune nu este disponibil încă pe server.`,
       options: {
         caption,
         parse_mode: "Markdown",
@@ -207,7 +205,7 @@ export async function startFreeLessonsForUser(ctx: Context, userId: number): Pro
   });
 
   await ctx.reply(
-    "Perfect. Ți-am activat cele 3 lecții gratuite.\n\nÎn fiecare zi vei primi câte o lecție nouă, ca să construiești pas cu pas o bază sigură în engleză.",
+    "Perfect. Timp de 3 zile vei primi câte o lecție gratuită de engleză, ca să pui o bază solidă.",
     {
       reply_markup: getMainMenuKeyboard({ showLessons: true }).reply_markup,
     },

@@ -36,4 +36,6 @@ export const SHARED_COPY = {
   startMenuActivationRequired: "Mai întâi activează accesul din meniul de start.",
   commercialContactRequired: "Înainte de flow-ul comercial, am nevoie de datele de contact de bază.",
   acceptPrivacyRequired: "Pentru a continua, apasă butonul ✔ Accept.",
+  leadNamePrompt: "Perfect 🤩\nCum te numești?",
+  courseContactConfirmation: "Îți mulțumim! Operatorul nostru te va contacta în scurt timp.",
 } as const;

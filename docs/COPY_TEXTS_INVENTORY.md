@@ -1,6 +1,12 @@
 # Inventar Copy Curent
 
-Acest document descrie textele și etichetele publice active după rescrierea de copy și curățarea meniului principal.
+Acest document descrie textele publice active din bot după finisarea de content pe baza mesajelor dictate de Victoria.
+
+## Prioritate surse
+
+1. mesajele dictate de Victoria în chat
+2. notițele Notion
+3. rescrierile interne doar unde nu există text dictat exact
 
 ## Meniu principal
 
@@ -11,132 +17,90 @@ Acest document descrie textele și etichetele publice active după rescrierea de
 - `🌐 Website`
 - `🔮 Consultație astrologică în carieră`
 
-Scoase din meniul principal:
-
-- `📚 Lecțiile tale`
-- `💼 Programe și prețuri`
-- `⚡ Contact operator`
-- `🤖 Întreabă AI-ul`
-
 ## Mesaj de start
 
-`Salut și bine ai venit la Express English Academy!`
+`Salut și bine ai venit la Express English Academy!💫😍`
 
-`Eu sunt Victoria Coșovan, fondatoarea academiei și profesoara ta.`
+`Eu sunt Victoria Cosovan, fondatoarea academiei și profesoara ta.😊🕊️`
 
 `Aici am pregătit pentru tine:`
 
 - `3 lecții gratuite de engleză`
-- `cursuri Express English`
-- `programe create pentru domenii și profesii diferite`
-- `și un cadou pregătit special pentru tine`
+- `cursuri de engleză pentru fluență`
+- `cursuri de engleză pentru profesii (IT, psihologie, aviație, medicină, juridică, etc)`
+- `și un cadou 🎁 la final`
 
 `Alege din meniu opțiunea dorită și începem.`
 
-## Descriere profil bot
+## Profil bot în Telegram
 
-- descriere lungă:
-  - `3 lecții gratuite de engleză, explicații clare, player optimizat pentru mobil și acces rapid la resursele academiei.`
+- descriere:
+  - `3 lecții gratuite de engleză, cursuri de engleză pentru fluență și programe pentru profesii diferite. 💫`
 - short description:
-  - `Trimite /start dacă nu vezi butonul START.`
+  - `Trimite /start și începem. 💫`
 
-## Onboarding și lead capture
+## Onboarding pentru acces
 
-- `Alege cum vrei să continuăm:`
-- `Continuăm exact de unde ai rămas.`
-- `Cum te pot apela?`
+- `Perfect 🤩`
+- `Cum te numești?`
 - `Te rog să-mi trimiți numărul tău de telefon ca să îți putem activa accesul.`
-- `Numărul nu pare valid. Te rog să încerci formatul +373XXXXXXXX sau să folosești butonul dedicat.`
 - `Pentru a continua, te rog să confirmi acordul privind politica de confidențialitate și comunicările despre cursuri și oferte.`
-- `Mai întâi îți activăm rapid accesul.`
-- `Am nevoie doar de câteva date de bază ca să continuăm.`
 
-## Confirmări după onboarding
+Mesajele-punte după salvarea datelor au fost eliminate complet.
 
-- `Perfect. Datele tale au fost salvate, iar acum îți deschid serviciul pe care l-ai ales.`
-- `Perfect. Datele tale au fost salvate, iar meniul tău este acum activ.`
+## 3 lecții gratuite
 
-## Seria de 3 lecții gratuite
+### Activare / dashboard
 
-### Activare
+`Perfect. Timp de 3 zile vei primi câte o lecție gratuită de engleză, ca să pui o bază solidă.`
 
-- `Perfect. Ți-am activat cele 3 lecții gratuite.`
-- `În fiecare zi vei primi câte o lecție nouă, ca să construiești pas cu pas o bază sigură în engleză.`
+### Statusuri
 
-### Dashboard lecții
-
-- `Perfect. Timp de 3 zile vei primi câte o lecție gratuită de engleză, ca să pui o bază solidă.`
 - `✅ Lecția 1`
 - `🔒 Lecția 2 - se deschide în {timp}`
 - `🔒 Lecția 3 - se deschide în {timp}`
 
-### Dacă seria nu este activată
-
-- `Nu ai activat încă cele 3 lecții gratuite.`
-- `Apasă pe butonul de mai jos și îți deschidem imediat prima lecție.`
-- buton:
-  - `🎓 Începe cele 3 lecții gratuite`
-
-## Titluri lecții
+### Titluri lecții
 
 - `Lecția 1 · Cum formulezi o propoziție la prezent în engleză`
 - `Lecția 2 · Hai să vorbim despre rutina ta zilnică`
 - `Lecția 3 · Hai să vorbim la trecut în engleză`
 
-## Mesaje lecții
-
 ### Lecția 1
 
-- `Urmărește lecția, iar după minimum un minut se activează testul scurt din aceeași pagină.`
-
-### Lecția 2
-
-- `În această lecție exersăm cum vorbești despre rutina ta zilnică într-un mod simplu și natural.`
-
-### Lecția 3
-
-- `În această lecție facem pasul următor și începem să vorbim la trecut în engleză.`
-
-### Acces player
-
-- `Deschide lecția în playerul intern pentru o încărcare mai rapidă pe mobil și desktop.`
-- `După minimum 60 de secunde, testul se activează în aceeași pagină.`
+`Urmărește lecția, apoi deschide testul scurt.`
 
 ### Butoane lecție
 
 - `🎬 Începe lecția`
 - `📝 Test după lecție`
 - `📞 Vreau la curs`
-- `📚 Lecțiile tale`
 - `⬅️ Meniul principal`
 
-## Mesaj comercial după lecția 3 / metoda noastră
+## Metoda noastră
 
-- `Mă bucur că ai ajuns până aici.`
-- `Dacă simți că ți se potrivește felul în care explic și lucrez cu studenții mei, te invit să înveți engleza alături de mine.`
-- `Dacă începi astăzi cursul, beneficiezi de o reducere de 10%.`
+`Noi suntem profesorii care te susținem 🪄😍`
 
-## Vreau la curs
+`Pentru noi e important succesul și progresul tău ❤️`
 
-- dacă lipsește telefonul:
-  - `Te rog să-mi trimiți numărul tău de telefon ca să te putem contacta în legătură cu cursul potrivit pentru tine.`
-- confirmare finală:
-  - `Îți mulțumim! Un coleg din echipa noastră te va contacta în scurt timp.`
+`Cu mare grijă și dedicare îți pregătim un program personalizat după ritmul tău de învățare și engleza reală de care ai nevoie 😊`
+
+`Alege să înveți azi engleza cu noi și primești 10% reducere la orice curs ✅`
 
 ## Cum scapi de frica de a vorbi
 
-- titlu:
-  - `Cum scapi de frica de a vorbi`
-- text:
-  - `Un video scurt care te ajută să înțelegi de unde apare blocajul și cum poți începe să vorbești mai sigur și mai natural.`
+`☀️Privește acest webinar pentru a înțelege:`
+
+`1. Cum poți scăpa de frica de vorbire 🗣️`
+
+`3. 5 metode cum să vorbești fluent engleza fără profesor 🧑‍🏫`
 
 ## Consultație astrologică în carieră
 
-- titlu:
-  - `Consultație astrologică în carieră`
-- text:
-  - `Am pregătit pentru tine un video scurt despre consultația astrologică în carieră.`
-  - `Dacă simți că ți se potrivește, apasă pe butonul de mai jos și trimitem cererea ta mai departe.`
+`Am pregătit pentru tine un video scurt despre consultația astrologică în carieră.`
+
+`Dacă simți că ți se potrivește, apasă pe butonul de mai jos și trimitem cererea ta mai departe.`
+
 - buton:
   - `🔮 Vreau o consultație`
 - confirmare:
@@ -144,29 +108,26 @@ Scoase din meniul principal:
 - CRM:
   - `Consultation Requested Astrology`
 
+## Vreau la curs
+
+`Îți mulțumim! Operatorul nostru te va contacta în scurt timp.`
+
 ## Website
 
-- titlu:
-  - `Website`
-- text:
-  - `Pentru toate detaliile despre academie, cursuri și înscriere, deschide website-ul oficial.`
+`Pentru toate detaliile despre academie, cursuri și înscriere, deschide website-ul oficial.`
+
 - buton:
   - `🌐 Deschide website-ul`
 
 ## Maraton de engleză
 
-- mesaj public:
-  - `Dacă vrei să afli mai multe despre maratonul de engleză, apasă pe butonul de mai jos și deschide pagina dedicată de pe website.`
-- buton:
-  - `🌐 Vezi detaliile pe website`
+`Am pregătit pentru tine toate detaliile despre maraton pe website.`
 
-## Reminder-e și deblocare lecții
+`Apasă pe butonul de mai jos și vezi programul complet, structura și condițiile de participare.`
+
+## Reminder-e și follow-up
 
 - `Bună! Lecția {n} este acum disponibilă. Când ai câteva minute libere, o poți deschide direct din bot.`
 - `Lecția {n} te așteaptă. Când ai puțin timp, o poți deschide și continua seria gratuită.`
 - `Lecția {n} este în continuare disponibilă. Dacă vrei să păstrezi ritmul, îți recomand să o deschizi astăzi.`
 - `Dacă vrei să continui engleza într-un ritm clar și ușor de urmat, noi te ajutăm cu plăcere mai departe.`
-
-## AI
-
-AI rămâne disponibil ca funcționalitate secundară, dar nu mai apare în meniul principal.

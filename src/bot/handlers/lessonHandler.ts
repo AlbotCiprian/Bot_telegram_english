@@ -1,4 +1,5 @@
 import { Context } from "telegraf";
+import { SHARED_COPY } from "../../content/copy.js";
 import { prisma } from "../../db/client.js";
 import { scheduleCrmJob } from "../../services/schedulerService.js";
 import { clearSession } from "../../services/sessionService.js";
@@ -59,17 +60,12 @@ export async function finalizeLeadAndStartCampaign(params: {
     params.firstRequestedService ??
     (params.nextAction === "wants_course" ? undefined : (params.nextAction as PublicEntryKey | undefined));
 
-  await params.ctx.reply(
-    targetAction
-      ? "Perfect. Datele tale au fost salvate, iar acum îți deschid serviciul pe care l-ai ales."
-      : "Perfect. Datele tale au fost salvate, iar meniul tău este acum activ.",
-    {
-      reply_markup: getMainMenuKeyboard().reply_markup,
-    },
-  );
-
   if (targetAction) {
     await continueRequestedService(params.ctx, params.user, targetAction);
+  } else {
+    await params.ctx.reply(SHARED_COPY.chooseHowToContinue, {
+      reply_markup: getMainMenuKeyboard().reply_markup,
+    });
   }
 
   await logUserEvent({
@@ -97,7 +93,5 @@ export async function handleFreeLessonEntry(ctx: Context, user: BotUser): Promis
     return;
   }
 
-  await ctx.reply(
-    "Pornim cu un onboarding scurt. Începem simplu: cum te pot apela?",
-  );
+  await ctx.reply(SHARED_COPY.leadNamePrompt);
 }

@@ -1,21 +1,22 @@
 # Propunere Finală de Copy
 
-Acest document este sursa de adevăr pentru tonul și structura de copy folosite după simplificarea meniului principal.
+Acest document este sursa de adevăr pentru stilul și formulările finale folosite în bot după auditul făcut pe baza feedbackului din chatul Victoriei.
 
-## Direcție de ton
+## Reguli de ton
 
 Textele trebuie să fie:
 
 - politicoase
-- clare
-- feminine, fără promisiuni agresive
-- calde, dar credibile
+- feminine
+- calde
+- scurte și clare
+- fără limbaj tehnic în fața utilizatorului
 
-Evităm formulări de tip:
+Nu folosim:
 
-- `unica școală`
-- `vei vorbi fluent în două săptămâni`
-- `învață cu o profesoară frumoasă`
+- promisiuni agresive
+- formulări reci sau administrative
+- explicații tehnice despre player, upload, MP4 sau streaming
 
 ## Meniu principal final
 
@@ -26,69 +27,65 @@ Evităm formulări de tip:
 - `🌐 Website`
 - `🔮 Consultație astrologică în carieră`
 
-Scoase din meniul principal:
+## Mesaj de start final
 
-- `📚 Lecțiile tale`
-- `💼 Programe și prețuri`
-- `⚡ Contact operator`
-- `🤖 Întreabă AI-ul`
+`Salut și bine ai venit la Express English Academy!💫😍`
 
-## Mesaj de start recomandat
-
-`Salut și bine ai venit la Express English Academy!`
-
-`Eu sunt Victoria Coșovan, fondatoarea academiei și profesoara ta.`
+`Eu sunt Victoria Cosovan, fondatoarea academiei și profesoara ta.😊🕊️`
 
 `Aici am pregătit pentru tine:`
 
 - `3 lecții gratuite de engleză`
-- `cursuri Express English`
-- `programe create pentru domenii și profesii diferite`
-- `și un cadou pregătit special pentru tine`
+- `cursuri de engleză pentru fluență`
+- `cursuri de engleză pentru profesii (IT, psihologie, aviație, medicină, juridică, etc)`
+- `și un cadou 🎁 la final`
 
 `Alege din meniu opțiunea dorită și începem.`
+
+## Onboarding final
+
+Primul mesaj din onboarding:
+
+`Perfect 🤩`
+
+`Cum te numești?`
+
+Se elimină complet intro-urile administrative și mesajele-punte după salvarea datelor.
 
 ## Seria gratuită
 
 ### Activare
 
-`Perfect. Ți-am activat cele 3 lecții gratuite.`
-
-`În fiecare zi vei primi câte o lecție nouă, ca să construiești pas cu pas o bază sigură în engleză.`
-
-### Dashboard
-
 `Perfect. Timp de 3 zile vei primi câte o lecție gratuită de engleză, ca să pui o bază solidă.`
 
-### Titluri lecții
+### Lecția 1
 
-- `Lecția 1 · Cum formulezi o propoziție la prezent în engleză`
-- `Lecția 2 · Hai să vorbim despre rutina ta zilnică`
-- `Lecția 3 · Hai să vorbim la trecut în engleză`
+`Urmărește lecția, apoi deschide testul scurt.`
 
-## Butoane lecție
+### Butoane
 
 - `🎬 Începe lecția`
 - `📝 Test după lecție`
 - `📞 Vreau la curs`
-
-## Vreau la curs
-
-Mesaj final recomandat:
-
-`Îți mulțumim! Un coleg din echipa noastră te va contacta în scurt timp.`
+- `⬅️ Meniul principal`
 
 ## Metoda noastră
 
-`Mă bucur că ai ajuns până aici.`
+`Noi suntem profesorii care te susținem 🪄😍`
 
-`Dacă simți că ți se potrivește felul în care explic și lucrez cu studenții mei, te invit să înveți engleza alături de mine.`
+`Pentru noi e important succesul și progresul tău ❤️`
 
-`Dacă începi astăzi cursul, beneficiezi de o reducere de 10%.`
+`Cu mare grijă și dedicare îți pregătim un program personalizat după ritmul tău de învățare și engleza reală de care ai nevoie 😊`
+
+`Alege să înveți azi engleza cu noi și primești 10% reducere la orice curs ✅`
 
 ## Cum scapi de frica de a vorbi
 
-`Un video scurt care te ajută să înțelegi de unde apare blocajul și cum poți începe să vorbești mai sigur și mai natural.`
+`☀️Privește acest webinar pentru a înțelege:`
+
+`1. Cum poți scăpa de frica de vorbire 🗣️`
+
+`3. 5 metode cum să vorbești fluent engleza fără profesor 🧑‍🏫`
 
 ## Consultație astrologică în carieră
 
@@ -96,33 +93,18 @@ Mesaj final recomandat:
 
 `Dacă simți că ți se potrivește, apasă pe butonul de mai jos și trimitem cererea ta mai departe.`
 
-Buton:
+- buton:
+  - `🔮 Vreau o consultație`
+- confirmare:
+  - `Procesăm cererea ta. În curând vei fi contactat. Îți mulțumim!`
 
-`🔮 Vreau o consultație`
+## Vreau la curs
 
-Confirmare:
+`Îți mulțumim! Operatorul nostru te va contacta în scurt timp.`
 
-`Procesăm cererea ta. În curând vei fi contactat. Îți mulțumim!`
+## Profil bot
 
-CRM target:
-
-- `Consultation Requested Astrology`
-
-## Website
-
-`Pentru toate detaliile despre academie, cursuri și înscriere, deschide website-ul oficial.`
-
-Buton:
-
-`🌐 Deschide website-ul`
-
-## Maraton
-
-Pentru faza actuală, flow-ul public din bot rămâne simplu:
-
-- mesaj scurt și politicos
-- buton direct către pagina maratonului de pe website
-
-## AI
-
-AI rămâne disponibil doar ca funcționalitate secundară. Nu mai apare în meniul principal și nu mai este promovat în mesajele publice principale.
+- descriere:
+  - `3 lecții gratuite de engleză, cursuri de engleză pentru fluență și programe pentru profesii diferite. 💫`
+- short description:
+  - `Trimite /start și începem. 💫`

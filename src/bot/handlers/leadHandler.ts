@@ -1,7 +1,7 @@
 import { Context, Markup } from "telegraf";
 import { SHARED_COPY, UI_LABELS } from "../../content/copy.js";
 import { prisma } from "../../db/client.js";
-import { PUBLIC_ENTRY_LABELS, PublicEntryKey } from "../../content/staticContent.js";
+import { PublicEntryKey } from "../../content/staticContent.js";
 import { logUserEvent } from "../../services/eventService.js";
 import { cancelPendingUserJobs, scheduleCrmJob } from "../../services/schedulerService.js";
 import { clearSession, setSession, updateSessionStep } from "../../services/sessionService.js";
@@ -19,7 +19,7 @@ import { startCourseContactFlow } from "./consultationHandler.js";
 
 export async function replyLeadStepPrompt(ctx: Context, step: LeadCaptureStep): Promise<void> {
   if (step === "first_name") {
-    await ctx.reply("Cum te pot apela?");
+    await ctx.reply(SHARED_COPY.leadNamePrompt);
     return;
   }
 
@@ -57,12 +57,8 @@ export async function startLeadCapture(
   });
 
   if (!options?.silentIntro) {
-    const firstRequestedService =
-      options?.firstRequestedService && PUBLIC_ENTRY_LABELS[options.firstRequestedService]
-        ? `Mai întâi îți activăm rapid accesul pentru: ${PUBLIC_ENTRY_LABELS[options.firstRequestedService]}.`
-        : "Mai întâi îți activăm rapid accesul.";
-
-    await ctx.reply(`${firstRequestedService}\n\nAm nevoie doar de câteva date de bază ca să continuăm.`);
+    await replyLeadStepPrompt(ctx, "first_name");
+    return;
   }
 
   await replyLeadStepPrompt(ctx, "first_name");

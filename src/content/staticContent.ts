@@ -235,15 +235,15 @@ export const MAIN_MENU = [...PUBLIC_ENTRY_MENU] as const;
 
 export const STATIC_PAGES = {
   welcome: {
-    title: "Salut și bine ai venit la Express English Academy!",
+    title: "Salut și bine ai venit la Express English Academy!💫😍",
     body: [
-      "Eu sunt Victoria Cosovan, fondatoarea academiei și profesoara ta.",
+      "Eu sunt Victoria Cosovan, fondatoarea academiei și profesoara ta.😊🕊️",
       "",
       "Aici am pregătit pentru tine:",
       "- 3 lecții gratuite de engleză",
-      "- cursuri Express English",
-      "- programe create pentru domenii și profesii diferite",
-      "- și un cadou pregătit special pentru tine",
+      "- cursuri de engleză pentru fluență",
+      "- cursuri de engleză pentru profesii (IT, psihologie, aviație, medicină, juridică, etc)",
+      "- și un cadou 🎁 la final",
       "",
       "Alege din meniu opțiunea dorită și începem.",
     ].join("\n"),
@@ -263,16 +263,23 @@ export const STATIC_PAGES = {
   method: {
     title: "Metoda noastră",
     body: [
-      "Mă bucur că ai ajuns până aici.",
+      "Noi suntem profesorii care te susținem 🪄😍",
       "",
-      "Dacă simți că ți se potrivește felul în care explic și lucrez cu studenții mei, te invit să înveți engleza alături de mine.",
+      "Pentru noi e important succesul și progresul tău ❤️",
       "",
-      "Dacă începi astăzi cursul, beneficiezi de o reducere de 10%.",
+      "Cu mare grijă și dedicare îți pregătim un program personalizat după ritmul tău de învățare și engleza reală de care ai nevoie 😊",
+      "",
+      "Alege să înveți azi engleza cu noi și primești 10% reducere la orice curs ✅",
     ].join("\n"),
   },
   fear_speaking: {
     title: "Cum scapi de frica de a vorbi",
-    body: "Un video scurt care te ajută să înțelegi de unde apare blocajul și cum poți începe să vorbești mai sigur și mai natural.",
+    body: [
+      "☀️Privește acest webinar pentru a înțelege:",
+      "",
+      "1. Cum poți scăpa de frica de vorbire 🗣️",
+      "3. 5 metode cum să vorbești fluent engleza fără profesor 🧑‍🏫",
+    ].join("\n"),
   },
   website: {
     title: "Website",
@@ -315,7 +322,7 @@ export const LESSON_SEED_CONTENT = [
     dayNumber: 1,
     key: "free-day-1",
     title: "Lecția 1 · Cum formulezi o propoziție la prezent în engleză",
-    messageText: "Urmărește lecția, iar după minimum un minut se activează testul scurt din aceeași pagină.",
+    messageText: "Urmărește lecția, apoi deschide testul scurt.",
     mediaType: "video_file",
     mediaUrl: "lesson-1-v2-landscape.mp4",
     cta: [

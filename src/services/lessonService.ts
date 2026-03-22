@@ -283,9 +283,6 @@ async function sendLessonStreamAccess(params: {
     `*${params.title}*`,
     "",
     params.messageText,
-    "",
-    "Deschide lecția în playerul intern pentru o încărcare mai rapidă pe mobil și desktop.",
-    "După minimum 60 de secunde, testul se activează în aceeași pagină.",
   ].join("\n");
 
   await telegram.sendMessage(params.chatId, text, {
@@ -299,11 +296,13 @@ async function sendCourseFollowUp(chatId: string): Promise<void> {
   await telegram.sendMessage(
     chatId,
     [
-      "Mă bucur că ai ajuns până aici.",
+      "Noi suntem profesorii care te susținem 🪄😍",
       "",
-      "Dacă simți că ți se potrivește felul în care lucrăm, te invit să continui alături de mine.",
+      "Pentru noi e important succesul și progresul tău ❤️",
       "",
-      "Dacă începi astăzi cursul, beneficiezi de o reducere de 10%.",
+      "Cu mare grijă și dedicare îți pregătim un program personalizat după ritmul tău de învățare și engleza reală de care ai nevoie 😊",
+      "",
+      "Alege să înveți azi engleza cu noi și primești 10% reducere la orice curs ✅",
     ].join("\n"),
     {
       reply_markup: buildCourseCtaKeyboard().reply_markup,
@@ -706,8 +705,8 @@ export async function handleLessonQuiz(
   const quizUrl = buildLessonQuizUrl(access.watchUrl);
   const unlocked = Boolean(progress.quizAvailableAt && progress.quizAvailableAt <= new Date());
   const promptMessage = unlocked
-    ? "Testul pentru Lecția 1 se rezolvă direct în aceeași pagină. Apasă pe buton și mergi la secțiunea de test."
-    : "Testul pentru Lecția 1 se activează în aceeași pagină după minimum 60 de secunde de vizionare.";
+    ? "Testul pentru Lecția 1 este pregătit. Apasă pe buton și deschide secțiunea de test."
+    : "Testul pentru Lecția 1 se activează după ce urmărești puțin lecția.";
 
   await telegram.sendMessage(
     user.telegramId.toString(),
