@@ -45,10 +45,10 @@ async function main(): Promise<void> {
 
   const mediaChecks = [
     { label: "Welcome image", fileName: config.WELCOME_IMAGE_PATH },
-    { label: "Lesson 1", fileName: "lesson-1.mp4" },
-    { label: "Lesson 2", fileName: "lesson-2.mp4" },
-    { label: "Lesson 3", fileName: "lesson-3.mp4" },
-    { label: "Method", fileName: "method.mp4" },
+    { label: "Lesson 1", fileName: "lesson-1-v2-landscape.mp4" },
+    { label: "Lesson 2", fileName: "lesson-2-v2-landscape.mp4" },
+    { label: "Lesson 3", fileName: "lesson-3-v2-landscape.mp4" },
+    { label: "Method", fileName: "Metoda_noastra.mp4" },
   ];
 
   for (const item of mediaChecks) {
