@@ -20,9 +20,9 @@ async function configureTelegramProfile(bot: ReturnType<typeof createBot>): Prom
       },
     }),
     bot.telegram.setMyDescription(
-      "3 lecții gratuite de engleză, cursuri de engleză pentru fluență și programe pentru profesii diferite. 💫",
+      "Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani.\n❤️",
     ),
-    bot.telegram.setMyShortDescription("Trimite /start și începem. 💫"),
+    bot.telegram.setMyShortDescription("Salutare bine ai venit la academia Express English. ❤️"),
   ];
 
   const results = await Promise.allSettled(operations);

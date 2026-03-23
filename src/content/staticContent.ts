@@ -235,17 +235,9 @@ export const MAIN_MENU = [...PUBLIC_ENTRY_MENU] as const;
 
 export const STATIC_PAGES = {
   welcome: {
-    title: "Salut și bine ai venit la Express English Academy!💫😍",
+    title: "Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani.",
     body: [
-      "Eu sunt Victoria Cosovan, fondatoarea academiei și profesoara ta.😊🕊️",
-      "",
-      "Aici am pregătit pentru tine:",
-      "- 3 lecții gratuite de engleză",
-      "- cursuri de engleză pentru fluență",
-      "- cursuri de engleză pentru profesii (IT, psihologie, aviație, medicină, juridică, etc)",
-      "- și un cadou 🎁 la final",
-      "",
-      "Alege din meniu opțiunea dorită și începem.",
+      "❤️",
     ].join("\n"),
   },
   academy: {

@@ -19,25 +19,17 @@ Acest document descrie textele publice active din bot după finisarea de content
 
 ## Mesaj de start
 
-`Salut și bine ai venit la Express English Academy!💫😍`
+`Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani.`
 
-`Eu sunt Victoria Cosovan, fondatoarea academiei și profesoara ta.😊🕊️`
-
-`Aici am pregătit pentru tine:`
-
-- `3 lecții gratuite de engleză`
-- `cursuri de engleză pentru fluență`
-- `cursuri de engleză pentru profesii (IT, psihologie, aviație, medicină, juridică, etc)`
-- `și un cadou 🎁 la final`
-
-`Alege din meniu opțiunea dorită și începem.`
+`❤️`
 
 ## Profil bot în Telegram
 
 - descriere:
-  - `3 lecții gratuite de engleză, cursuri de engleză pentru fluență și programe pentru profesii diferite. 💫`
+  - `Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani.`
+  - `❤️`
 - short description:
-  - `Trimite /start și începem. 💫`
+  - `Salutare bine ai venit la academia Express English. ❤️`
 
 ## Onboarding pentru acces
 
