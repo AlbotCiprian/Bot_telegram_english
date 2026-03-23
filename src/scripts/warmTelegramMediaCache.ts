@@ -1,8 +1,26 @@
+import fs from "node:fs";
 import path from "node:path";
 import { SERVICE_VIDEO_FILES, STATIC_PAGES } from "../content/staticContent.js";
-import { buildMediaAssetKey, sendDocumentAsset, sendVideoAsset } from "../services/mediaAssetService.js";
+import { buildMediaAssetKey, sendVideoAsset } from "../services/mediaAssetService.js";
 import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
 import { config, isConfigured } from "../utils/config.js";
+
+function resolveTeachingMethodVideoPath(fileName: string): string | null {
+  const exactPath = path.resolve(process.cwd(), "video", fileName);
+  if (!fs.existsSync(exactPath)) {
+    return null;
+  }
+
+  try {
+    if (fs.statSync(exactPath).isFile()) {
+      return exactPath;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
 
 async function main() {
   if (!isConfigured(config.MEDIA_WARMUP_CHAT_ID)) {
@@ -11,9 +29,9 @@ async function main() {
 
   const assets = [
     {
-      kind: "document",
+      kind: "video",
       fileName: SERVICE_VIDEO_FILES.teachingMethod,
-      assetKey: buildMediaAssetKey("service-document", SERVICE_VIDEO_FILES.teachingMethod),
+      assetKey: buildMediaAssetKey("service", SERVICE_VIDEO_FILES.teachingMethod),
       sourceFileName: SERVICE_VIDEO_FILES.teachingMethod,
       title: STATIC_PAGES.method.title,
       body: STATIC_PAGES.method.body,
@@ -45,7 +63,9 @@ async function main() {
   ];
 
   for (const asset of assets) {
-    const localPath = resolveExistingMediaFile(asset.fileName);
+    const localPath = asset.fileName === SERVICE_VIDEO_FILES.teachingMethod
+      ? resolveTeachingMethodVideoPath(asset.fileName)
+      : resolveExistingMediaFile(asset.fileName);
     if (!localPath) {
       console.log(`Săr asset-ul ${asset.fileName}: fișierul nu există local.`);
       continue;
@@ -63,15 +83,13 @@ async function main() {
       },
     };
 
-    const result = asset.kind === "document"
-      ? await sendDocumentAsset(commonParams)
-      : await sendVideoAsset({
-          ...commonParams,
-          options: {
-            ...commonParams.options,
-            supports_streaming: true,
-          },
-        });
+    const result = await sendVideoAsset({
+      ...commonParams,
+      options: {
+        ...commonParams.options,
+        supports_streaming: true,
+      },
+    });
 
     console.log(`${asset.fileName}: ${result}`);
   }
