@@ -1,5 +1,5 @@
 import { prisma } from "../db/client.js";
-import { LESSON_ONE_QUIZ } from "../content/staticContent.js";
+import { LESSON_ONE_QUIZ, LESSON_THREE_QUIZ, LESSON_TWO_QUIZ } from "../content/staticContent.js";
 import { logUserEvent } from "./eventService.js";
 import { verifyLessonWatchToken } from "./streamingService.js";
 import type { LessonDay } from "./lessonService.js";
@@ -39,6 +39,16 @@ const LESSON_QUIZZES: Partial<Record<LessonDay, { title: string; intro: string; 
     title: "Test după lecție",
     intro: "Verifică rapid Present Simple. Poți repeta testul ori de câte ori vrei, iar ultimul scor se salvează.",
     questions: LESSON_ONE_QUIZ,
+  },
+  2: {
+    title: "Test după lecție",
+    intro: "Verifică rapid Daily Routines. Poți relua testul oricând, iar scorul tău rămâne salvat.",
+    questions: LESSON_TWO_QUIZ,
+  },
+  3: {
+    title: "Test după lecție",
+    intro: "Verifică rapid Past Simple. Poți relua testul oricând, iar scorul tău rămâne salvat.",
+    questions: LESSON_THREE_QUIZ,
   },
 };
 

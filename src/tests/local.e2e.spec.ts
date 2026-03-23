@@ -6,6 +6,7 @@ import { MAIN_MENU, isMarathonVisible } from "../content/staticContent.js";
 import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
 import { getMainMenuKeyboard, resolveMenuActionFromLabel } from "../bot/menu.js";
 import { getLessonStreamAsset } from "../services/streamingAssets.js";
+import { hasLessonQuiz } from "../services/lessonQuizService.js";
 import {
   buildMarathonLandingMessage,
   buildMarathonOfferMessage,
@@ -94,7 +95,7 @@ describe("local runtime invariants", () => {
 
   it("resolves versioned lesson and promo assets through aliases", () => {
     expect(resolveExistingMediaFile("lesson-1-v2-landscape.mp4")).toBeTruthy();
-    expect(resolveExistingMediaFile("method-v3-mobile.mp4")).toBeTruthy();
+    expect(resolveExistingMediaFile("method-v5-fit.mp4")).toBeTruthy();
   });
 
   it("maps reply keyboard labels back to menu actions", () => {
@@ -110,6 +111,12 @@ describe("local runtime invariants", () => {
     });
     expect(getLessonStreamAsset(2).renditions.map((item) => item.height)).toEqual([480, 720]);
     expect(getLessonStreamAsset(3).sourceFileName).toBe("lesson-3-v2-landscape.mp4");
+  });
+
+  it("exposes quizzes for all three free lessons", () => {
+    expect(hasLessonQuiz(1)).toBe(true);
+    expect(hasLessonQuiz(2)).toBe(true);
+    expect(hasLessonQuiz(3)).toBe(true);
   });
 
   it("builds the marathon package catalog from the configured defaults", () => {

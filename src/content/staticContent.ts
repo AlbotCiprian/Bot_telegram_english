@@ -13,7 +13,7 @@ export const BRANDING = {
 
 export const SERVICE_VIDEO_FILES = {
   fearSpeaking: "webinar-fear-v2-vertical.mp4",
-  teachingMethod: "method-v3-mobile.mp4",
+  teachingMethod: "method-v5-fit.mp4",
   aboutAcademy: "academy-v2-vertical.mp4",
   astrologyConsultation: "Video_consultatie_astrologica.MOV",
 } as const;
@@ -235,8 +235,18 @@ export const MAIN_MENU = [...PUBLIC_ENTRY_MENU] as const;
 
 export const STATIC_PAGES = {
   welcome: {
-    title: "Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani. ❤️❤️❤️",
-    body: "",
+    title: "Salut și bine ai venit la Express English Academy!💫😍",
+    body: [
+      "Eu sunt Victoria Cosovan, fondatoarea academiei și profesoara ta.😊🕊️",
+      "",
+      "Aici am pregătit pentru tine:",
+      "- 3 lecții gratuite de engleză",
+      "- cursuri de engleză pentru fluență",
+      "- cursuri de engleză pentru profesii (IT, psihologie, aviație, medicină, juridică, etc)",
+      "- și un cadou 🎁 la final",
+      "",
+      "Alege din meniu opțiunea dorită și începem.",
+    ].join("\n"),
   },
   academy: {
     title: "Despre academie",
@@ -418,5 +428,161 @@ export const LESSON_ONE_QUIZ = [
     question: "They ___ breakfast at 8 am.",
     options: ["eat", "eats", "eating"],
     correctOptionIndex: 0,
+  },
+] as const;
+
+export const LESSON_TWO_QUIZ = [
+  {
+    question: "I ___ up at 7 o'clock.",
+    options: ["wake", "wakes", "waking"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "I ___ dressed before breakfast.",
+    options: ["get", "gets", "getting"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "She ___ breakfast every morning.",
+    options: ["make", "makes", "making"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "We ___ breakfast at 8 a.m.",
+    options: ["have", "has", "having"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "I ___ a shower every morning.",
+    options: ["take", "takes", "taking"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "She ___ her teeth after breakfast.",
+    options: ["brush", "brushes", "brushing"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "I ___ messages on my phone.",
+    options: ["check", "checks", "checking"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "They ___ work at 9 o'clock.",
+    options: ["start", "starts", "starting"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "I ___ lunch at noon.",
+    options: ["have", "has", "having"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "We ___ home after work.",
+    options: ["go", "goes", "going"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "I ___ with friends on weekends.",
+    options: ["spend", "spends", "spending"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "She ___ TV after dinner.",
+    options: ["watch", "watches", "watching"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "I ___ to bed at 10:30.",
+    options: ["go", "goes", "going"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "He ___ 8 hours every night.",
+    options: ["sleep", "sleeps", "sleeping"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "I ___ music while cooking.",
+    options: ["listen", "listens", "listening"],
+    correctOptionIndex: 0,
+  },
+] as const;
+
+export const LESSON_THREE_QUIZ = [
+  {
+    question: "I ___ to work yesterday.",
+    options: ["go", "went", "goed"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "She ___ coffee this morning.",
+    options: ["drink", "drank", "drinked"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "We ___ dinner at 7 yesterday.",
+    options: ["have", "had", "haved"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "I ___ a coffee before the meeting.",
+    options: ["made", "make", "maked"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "He ___ the truth.",
+    options: ["tell", "told", "telled"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "I ___ very well last night.",
+    options: ["sleep", "slept", "sleeped"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "She ___ flowers yesterday.",
+    options: ["give", "gave", "gived"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "I ___ the bus at 8 o'clock.",
+    options: ["took", "take", "taked"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "I ___ bread this morning.",
+    options: ["bought", "buy", "buyed"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "They ___ English at the meeting.",
+    options: ["spoke", "speak", "speaked"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "I ___ work yesterday.",
+    options: ["didn't", "don't", "doesn't"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "He ___ make a mistake.",
+    options: ["didn't", "don't", "doesn't"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "___ you sleep well last night?",
+    options: ["Do", "Did", "Does"],
+    correctOptionIndex: 1,
+  },
+  {
+    question: "___ he call you yesterday?",
+    options: ["Did", "Do", "Does"],
+    correctOptionIndex: 0,
+  },
+  {
+    question: "I ___ a question in class.",
+    options: ["ask", "asked", "asking"],
+    correctOptionIndex: 1,
   },
 ] as const;

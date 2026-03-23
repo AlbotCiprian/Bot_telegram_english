@@ -693,7 +693,7 @@ export async function handleLessonQuiz(
     };
   }
 
-  if (dayNumber !== 1) {
+  if (!hasLessonQuiz(dayNumber)) {
     return {
       status: "coming_soon",
       message: "Testul pentru această lecție apare imediat ce adăugăm conținutul final.",

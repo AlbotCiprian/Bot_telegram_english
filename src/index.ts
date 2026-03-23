@@ -12,6 +12,10 @@ async function configureTelegramProfile(bot: ReturnType<typeof createBot>): Prom
     { command: "help", description: "Ajutor și explicații" },
   ];
 
+  const publicDescription =
+    "Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani. ❤️❤️❤️";
+  const publicShortDescription = "Academia Express English te ajută să vorbești fluent în engleză. ❤️❤️❤️";
+
   const operations: Array<Promise<unknown>> = [
     bot.telegram.setMyCommands(botCommands),
     bot.telegram.setChatMenuButton({
@@ -19,8 +23,8 @@ async function configureTelegramProfile(bot: ReturnType<typeof createBot>): Prom
         type: "commands",
       },
     }),
-    bot.telegram.setMyDescription(""),
-    bot.telegram.setMyShortDescription(""),
+    bot.telegram.setMyDescription(publicDescription),
+    bot.telegram.setMyShortDescription(publicShortDescription),
   ];
 
   const results = await Promise.allSettled(operations);
