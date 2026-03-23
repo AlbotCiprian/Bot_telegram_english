@@ -16,6 +16,7 @@ const MEDIA_FILE_ALIASES: Record<string, string[]> = {
   "method-v4-iphone.mp4": ["method-v4-iphone.mp4", "method-v3-mobile.mp4", "method-v2-vertical.mp4", "method.mp4", "Video_metda_depredare!.mp4"],
   "method-v5-fit.mp4": ["method-v5-fit.mp4", "method-v4-iphone.mp4", "method-v3-mobile.mp4", "method-v2-vertical.mp4", "method.mp4", "Video_metda_depredare!.mp4"],
   "Metoda_noastra.mp4": ["Metoda_noastra.mp4", "method-v5-fit.mp4", "method-v4-iphone.mp4", "method-v3-mobile.mp4", "method-v2-vertical.mp4", "method.mp4", "Video_metda_depredare!.mp4"],
+  "Metoda_noastra_optimized.mp4": ["Metoda_noastra_optimized.mp4", "Metoda_noastra_optimized.mov", "Metoda_noastra.MOV", "Metoda_noastra.mp4", "method-v5-fit.mp4", "method-v4-iphone.mp4", "method-v3-mobile.mp4", "method-v2-vertical.mp4", "method.mp4", "Video_metda_depredare!.mp4"],
   "academy.mp4": ["academy.mp4", "Despre academie.mp4", "Despre_academie.mp4"],
   "academy-v2-vertical.mp4": ["academy-v2-vertical.mp4", "academy.mp4", "Despre academie.mp4", "Despre_academie.mp4"],
   "webinar-fear.mp4": ["webinar-fear.mp4", "Webinar_fear_speaking.mp4"],

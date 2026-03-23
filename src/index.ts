@@ -13,8 +13,8 @@ async function configureTelegramProfile(bot: ReturnType<typeof createBot>): Prom
   ];
 
   const publicDescription =
-    "Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani. ❤️❤️❤️";
-  const publicShortDescription = "Academia Express English te ajută să vorbești fluent în engleză. ❤️❤️❤️";
+    "Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață să vorbești fluent în doar șapte săptămâni. ❤️❤️❤️";
+  const publicShortDescription = "Academia Express English te ajută să vorbești fluent în doar șapte săptămâni. ❤️❤️❤️";
 
   const operations: Array<Promise<unknown>> = [
     bot.telegram.setMyCommands(botCommands),

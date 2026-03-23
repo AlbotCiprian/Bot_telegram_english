@@ -28,9 +28,10 @@ export const UI_LABELS = {
 export const SHARED_COPY = {
   chooseHowToContinue: "Alege cum vrei să continuăm:",
   continueFromWhereLeftOff: "Continuăm exact de unde ai rămas.",
-  phoneFormatPrompt: "Te rog să scrii numărul tău în formatul +373XXXXXXXX.",
+  phoneFormatPrompt:
+    "Te rog să scrii numărul tău de telefon cu prefixul țării tale, de exemplu +373..., +40... sau alt prefix internațional.",
   invalidPhonePrompt:
-    "Numărul nu pare valid. Te rog să încerci formatul +373XXXXXXXX sau să folosești butonul dedicat.",
+    "Numărul nu pare valid încă. Te rog să îl scrii cu prefixul țării tale, de exemplu +373..., +40... sau alt prefix internațional.",
   onboardingMenuPrompt: "Alege din meniu opțiunea dorită și începem.",
   useMainMenuPrompt: "Folosește meniul principal pentru a continua.",
   startMenuActivationRequired: "Mai întâi activează accesul din meniul de start.",
