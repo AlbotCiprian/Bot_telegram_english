@@ -19,10 +19,8 @@ async function configureTelegramProfile(bot: ReturnType<typeof createBot>): Prom
         type: "commands",
       },
     }),
-    bot.telegram.setMyDescription(
-      "Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani.\n❤️",
-    ),
-    bot.telegram.setMyShortDescription("Salutare bine ai venit la academia Express English. ❤️"),
+    bot.telegram.setMyDescription(""),
+    bot.telegram.setMyShortDescription(""),
   ];
 
   const results = await Promise.allSettled(operations);

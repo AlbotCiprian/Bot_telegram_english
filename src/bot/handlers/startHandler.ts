@@ -9,7 +9,7 @@ import { resolveExistingMediaFile } from "../../utils/mediaAssets.js";
 import { buildHelpMessage, getMainMenuKeyboard, getPublicMenuKeyboard } from "../menu.js";
 
 function buildWelcomeCaption(showMainMenu: boolean, showLessons: boolean): string {
-  const lines = [`*${STATIC_PAGES.welcome.title}*`];
+  const lines: string[] = [STATIC_PAGES.welcome.title];
 
   if (STATIC_PAGES.welcome.body.trim()) {
     lines.push("", STATIC_PAGES.welcome.body);

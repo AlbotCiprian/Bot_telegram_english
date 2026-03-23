@@ -13,7 +13,7 @@ export const BRANDING = {
 
 export const SERVICE_VIDEO_FILES = {
   fearSpeaking: "webinar-fear-v2-vertical.mp4",
-  teachingMethod: "method-v2-vertical.mp4",
+  teachingMethod: "method-v3-mobile.mp4",
   aboutAcademy: "academy-v2-vertical.mp4",
   astrologyConsultation: "Video_consultatie_astrologica.MOV",
 } as const;
@@ -235,10 +235,8 @@ export const MAIN_MENU = [...PUBLIC_ENTRY_MENU] as const;
 
 export const STATIC_PAGES = {
   welcome: {
-    title: "Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani.",
-    body: [
-      "❤️",
-    ].join("\n"),
+    title: "Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani. ❤️❤️❤️",
+    body: "",
   },
   academy: {
     title: "Despre academie",
