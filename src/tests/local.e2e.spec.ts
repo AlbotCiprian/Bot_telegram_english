@@ -95,7 +95,7 @@ describe("local runtime invariants", () => {
 
   it("resolves versioned lesson and promo assets through aliases", () => {
     expect(resolveExistingMediaFile("lesson-1-v2-landscape.mp4")).toBeTruthy();
-    expect(resolveExistingMediaFile("Metoda_noastra_optimized.mp4")).toBeTruthy();
+    expect(resolveExistingMediaFile("Metoda_noastra_optimized.MOV")).toBeTruthy();
   });
 
   it("maps reply keyboard labels back to menu actions", () => {

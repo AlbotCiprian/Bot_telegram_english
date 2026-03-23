@@ -13,7 +13,7 @@ export const BRANDING = {
 
 export const SERVICE_VIDEO_FILES = {
   fearSpeaking: "webinar-fear-v2-vertical.mp4",
-  teachingMethod: "Metoda_noastra_optimized.mp4",
+  teachingMethod: "Metoda_noastra_optimized.MOV",
   aboutAcademy: "academy-v2-vertical.mp4",
   astrologyConsultation: "Video_consultatie_astrologica.MOV",
 } as const;
