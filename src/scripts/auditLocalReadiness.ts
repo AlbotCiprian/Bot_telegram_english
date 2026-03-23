@@ -48,7 +48,7 @@ async function main(): Promise<void> {
     { label: "Lesson 1", fileName: "lesson-1-v2-landscape.mp4" },
     { label: "Lesson 2", fileName: "lesson-2-v2-landscape.mp4" },
     { label: "Lesson 3", fileName: "lesson-3-v2-landscape.mp4" },
-    { label: "Method", fileName: "Metoda_noastra_optimized.MOV" },
+    { label: "Method", fileName: "Metoda_noastra_optimized.mov" },
   ];
 
   for (const item of mediaChecks) {
