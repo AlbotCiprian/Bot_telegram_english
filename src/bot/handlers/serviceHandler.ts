@@ -10,6 +10,7 @@ import { scheduleFreeLessonCampaign } from "../../services/schedulerService.js";
 import { buildMediaAssetKey, sendVideoAsset } from "../../services/mediaAssetService.js";
 import { BotUser } from "../../types/bot.js";
 import { config } from "../../utils/config.js";
+import { logger } from "../../utils/logger.js";
 import { resolveExistingMediaFile } from "../../utils/mediaAssets.js";
 import { getMainMenuKeyboard } from "../menu.js";
 
@@ -45,6 +46,10 @@ function buildActionButtons(params: {
 
   buttons.push(Markup.button.callback(UI_LABELS.backToMenu, "menu:menu"));
   return Markup.inlineKeyboard(buttons, { columns: 1 });
+}
+
+function getTeachingMethodExpectedPath(fileName: string): string {
+  return path.resolve(process.cwd(), "video", fileName);
 }
 
 async function replyWithSharedVideo(
@@ -118,7 +123,7 @@ async function replyWithSharedVideo(
 }
 
 function resolveTeachingMethodVideoPath(fileName: string): string | null {
-  const exactPath = path.resolve(process.cwd(), "video", fileName);
+  const exactPath = getTeachingMethodExpectedPath(fileName);
   if (!fs.existsSync(exactPath)) {
     return null;
   }
@@ -147,6 +152,17 @@ async function replyWithTeachingMethodVideo(
   const caption = `*${params.title}*\n\n${params.body}`;
 
   if (ctx.chat?.id) {
+    if (!localVideoPath) {
+      logger.warn(
+        {
+          assetKey: buildMediaAssetKey("service", params.fileName),
+          sourceFileName: params.fileName,
+          expectedPath: getTeachingMethodExpectedPath(params.fileName),
+        },
+        "Teaching method video lipseste in runtime; trimit fallback text-only.",
+      );
+    }
+
     const result = await sendVideoAsset({
       chatId: ctx.chat.id.toString(),
       assetKey: buildMediaAssetKey("service", params.fileName),

@@ -35,6 +35,7 @@
     "verify:ai": "tsx src/scripts/verifyAi.ts",
     "verify:deepseek": "tsx src/scripts/verifyDeepSeek.ts",
     "verify:telegram": "tsx src/scripts/verifyTelegram.ts",
+    "verify:teaching-method": "tsx src/scripts/verifyTeachingMethodMedia.ts",
     "verify:kommo": "tsx src/scripts/verifyKommo.ts",
     "docs:pdf": "md-to-pdf docs/PROJECT_AUDIT.md --stylesheet docs/pdf-theme.css"
   },

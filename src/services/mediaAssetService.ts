@@ -152,6 +152,14 @@ export async function sendVideoAsset(params: SendVideoAssetParams): Promise<Send
   }
 
   if (!params.localFilePath) {
+    logger.warn(
+      {
+        assetKey: params.assetKey,
+        sourceFileName: params.sourceFileName ?? null,
+      },
+      "Asset video local lipseste; flow-ul va cadea pe fallback.",
+    );
+
     if (params.missingFileText) {
       await telegram.sendMessage(params.chatId, params.missingFileText, {
         parse_mode: params.options.parse_mode,
@@ -248,6 +256,14 @@ export async function sendDocumentAsset(params: SendDocumentAssetParams): Promis
   }
 
   if (!params.localFilePath) {
+    logger.warn(
+      {
+        assetKey: params.assetKey,
+        sourceFileName: params.sourceFileName ?? null,
+      },
+      "Asset document local lipseste; flow-ul va cadea pe fallback.",
+    );
+
     if (params.missingFileText) {
       await telegram.sendMessage(params.chatId, params.missingFileText, {
         parse_mode: params.options.parse_mode,
