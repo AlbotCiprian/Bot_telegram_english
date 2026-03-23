@@ -1,6 +1,6 @@
 import path from "node:path";
 import { SERVICE_VIDEO_FILES, STATIC_PAGES } from "../content/staticContent.js";
-import { buildMediaAssetKey, sendVideoAsset } from "../services/mediaAssetService.js";
+import { buildMediaAssetKey, sendDocumentAsset, sendVideoAsset } from "../services/mediaAssetService.js";
 import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
 import { config, isConfigured } from "../utils/config.js";
 
@@ -11,13 +11,15 @@ async function main() {
 
   const assets = [
     {
+      kind: "document",
       fileName: SERVICE_VIDEO_FILES.teachingMethod,
-      assetKey: buildMediaAssetKey("service", SERVICE_VIDEO_FILES.teachingMethod),
+      assetKey: buildMediaAssetKey("service-document", SERVICE_VIDEO_FILES.teachingMethod),
       sourceFileName: SERVICE_VIDEO_FILES.teachingMethod,
       title: STATIC_PAGES.method.title,
       body: STATIC_PAGES.method.body,
     },
     {
+      kind: "video",
       fileName: SERVICE_VIDEO_FILES.aboutAcademy,
       assetKey: buildMediaAssetKey("service", SERVICE_VIDEO_FILES.aboutAcademy),
       sourceFileName: SERVICE_VIDEO_FILES.aboutAcademy,
@@ -25,6 +27,7 @@ async function main() {
       body: STATIC_PAGES.academy.body,
     },
     {
+      kind: "video",
       fileName: SERVICE_VIDEO_FILES.fearSpeaking,
       assetKey: buildMediaAssetKey("service", SERVICE_VIDEO_FILES.fearSpeaking),
       sourceFileName: SERVICE_VIDEO_FILES.fearSpeaking,
@@ -32,6 +35,7 @@ async function main() {
       body: STATIC_PAGES.fear_speaking.body,
     },
     {
+      kind: "video",
       fileName: path.resolve(config.STREAM_MP4_ROOT, "career-astrology.mp4"),
       assetKey: buildMediaAssetKey("service", "career-astrology.mp4"),
       sourceFileName: "career-astrology.mp4",
@@ -47,7 +51,7 @@ async function main() {
       continue;
     }
 
-    const result = await sendVideoAsset({
+    const commonParams = {
       chatId: config.MEDIA_WARMUP_CHAT_ID,
       assetKey: asset.assetKey,
       localFilePath: localPath,
@@ -55,10 +59,19 @@ async function main() {
       uploadNoticeText: `Pregătesc asset-ul ${asset.fileName} pentru cache.`,
       options: {
         caption: `*${asset.title}*\n\n${asset.body}`,
-        parse_mode: "Markdown",
-        supports_streaming: true,
+        parse_mode: "Markdown" as const,
       },
-    });
+    };
+
+    const result = asset.kind === "document"
+      ? await sendDocumentAsset(commonParams)
+      : await sendVideoAsset({
+          ...commonParams,
+          options: {
+            ...commonParams.options,
+            supports_streaming: true,
+          },
+        });
 
     console.log(`${asset.fileName}: ${result}`);
   }

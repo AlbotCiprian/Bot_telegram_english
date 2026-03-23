@@ -6,7 +6,7 @@ import { BRANDING, PUBLIC_ENTRY_LABELS, PublicEntryKey, SERVICE_VIDEO_FILES, STA
 import { logUserEvent } from "../../services/eventService.js";
 import { deliverLesson, getLessonsMenu } from "../../services/lessonService.js";
 import { scheduleFreeLessonCampaign } from "../../services/schedulerService.js";
-import { buildMediaAssetKey, sendVideoAsset } from "../../services/mediaAssetService.js";
+import { buildMediaAssetKey, sendDocumentAsset, sendVideoAsset } from "../../services/mediaAssetService.js";
 import { BotUser } from "../../types/bot.js";
 import { config } from "../../utils/config.js";
 import { resolveExistingMediaFile } from "../../utils/mediaAssets.js";
@@ -112,6 +112,47 @@ async function replyWithSharedVideo(
       primaryUrl: params.fallbackUrl,
       primaryLabel: params.fallbackLabel,
       includeCourseCta: params.includeCourseCta,
+    }).reply_markup,
+  });
+}
+
+async function replyWithTeachingMethodDocument(
+  ctx: Context,
+  params: {
+    title: string;
+    body: string;
+    showLessons: boolean;
+    fileName: string;
+  },
+): Promise<void> {
+  const localVideoPath = resolveExistingMediaFile(params.fileName);
+  const caption = `*${params.title}*\n\n${params.body}`;
+
+  if (ctx.chat?.id) {
+    const result = await sendDocumentAsset({
+      chatId: ctx.chat.id.toString(),
+      assetKey: buildMediaAssetKey("service-document", params.fileName),
+      localFilePath: localVideoPath,
+      sourceFileName: params.fileName,
+      uploadNoticeText: "Pregătesc video-ul. Prima încărcare poate dura câteva secunde.",
+      options: {
+        caption,
+        parse_mode: "Markdown",
+        reply_markup: buildActionButtons({
+          showLessons: params.showLessons,
+        }).reply_markup,
+      },
+    });
+
+    if (result !== "missing") {
+      return;
+    }
+  }
+
+  await ctx.reply(caption, {
+    parse_mode: "Markdown",
+    reply_markup: buildActionButtons({
+      showLessons: params.showLessons,
     }).reply_markup,
   });
 }
@@ -253,7 +294,7 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       fallbackMode: "preview",
     });
   } else if (action === "teaching_method") {
-    await replyWithSharedVideo(ctx, {
+    await replyWithTeachingMethodDocument(ctx, {
       title: STATIC_PAGES.method.title,
       body: STATIC_PAGES.method.body,
       showLessons,

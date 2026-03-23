@@ -24,7 +24,25 @@ type SendVideoAssetParams = {
   uploadFailedText?: string;
 };
 
-type SendVideoAssetStatus = "cached" | "uploaded" | "missing" | "failed";
+type DocumentSendOptions = {
+  caption: string;
+  parse_mode?: "Markdown";
+  reply_markup?: InlineKeyboardMarkup | ReplyKeyboardMarkup | ReplyKeyboardRemove | ForceReply;
+  disable_content_type_detection?: boolean;
+};
+
+type SendDocumentAssetParams = {
+  chatId: string;
+  assetKey: string;
+  localFilePath: string | null;
+  sourceFileName?: string | null;
+  options: DocumentSendOptions;
+  uploadNoticeText?: string;
+  missingFileText?: string;
+  uploadFailedText?: string;
+};
+
+type SendMediaAssetStatus = "cached" | "uploaded" | "missing" | "failed";
 
 type InvalidateMediaAssetCacheParams = {
   assetKeys?: string[];
@@ -118,7 +136,7 @@ export async function invalidateMediaAssetCache(params: InvalidateMediaAssetCach
   });
 }
 
-export async function sendVideoAsset(params: SendVideoAssetParams): Promise<SendVideoAssetStatus> {
+export async function sendVideoAsset(params: SendVideoAssetParams): Promise<SendMediaAssetStatus> {
   const telegram = getTelegramClient();
   const cachedAsset = await prisma.telegramMediaAsset.findUnique({
     where: { assetKey: params.assetKey },
@@ -168,6 +186,102 @@ export async function sendVideoAsset(params: SendVideoAssetParams): Promise<Send
     message = await telegram.sendVideo(params.chatId, Input.fromLocalFile(params.localFilePath), params.options);
   } catch (error) {
     logger.error({ err: error, assetKey: params.assetKey }, "Upload-ul video din fișier local a eșuat.");
+
+    if (params.uploadFailedText) {
+      const description = getTelegramErrorDescription(error);
+      await telegram.sendMessage(
+        params.chatId,
+        description ? `${params.uploadFailedText}\n\nDetaliu Telegram: ${description}` : params.uploadFailedText,
+        {
+          parse_mode: params.options.parse_mode,
+          reply_markup: params.options.reply_markup,
+        },
+      );
+    }
+
+    if (uploadToken) {
+      await releaseRedisLock(lockKey, uploadToken);
+    }
+
+    return "failed";
+  }
+
+  const uploadedFile = extractTelegramFileId(message);
+
+  if (uploadedFile.fileId) {
+    await prisma.telegramMediaAsset.upsert({
+      where: { assetKey: params.assetKey },
+      update: {
+        telegramFileId: uploadedFile.fileId,
+        telegramFileUniqueId: uploadedFile.uniqueId ?? null,
+        sourceFileName: params.sourceFileName ?? null,
+      },
+      create: {
+        assetKey: params.assetKey,
+        telegramFileId: uploadedFile.fileId,
+        telegramFileUniqueId: uploadedFile.uniqueId ?? null,
+        sourceFileName: params.sourceFileName ?? null,
+      },
+    });
+  }
+
+  if (uploadToken) {
+    await releaseRedisLock(lockKey, uploadToken);
+  }
+
+  return "uploaded";
+}
+
+export async function sendDocumentAsset(params: SendDocumentAssetParams): Promise<SendMediaAssetStatus> {
+  const telegram = getTelegramClient();
+  const cachedAsset = await prisma.telegramMediaAsset.findUnique({
+    where: { assetKey: params.assetKey },
+  });
+
+  if (cachedAsset?.telegramFileId) {
+    try {
+      await telegram.sendDocument(params.chatId, cachedAsset.telegramFileId, params.options);
+      return "cached";
+    } catch (error) {
+      logger.warn({ err: error, assetKey: params.assetKey }, "Trimiterea documentului prin telegram_file_id a eșuat, reiau din fișier.");
+    }
+  }
+
+  if (!params.localFilePath) {
+    if (params.missingFileText) {
+      await telegram.sendMessage(params.chatId, params.missingFileText, {
+        parse_mode: params.options.parse_mode,
+        reply_markup: params.options.reply_markup,
+      });
+    }
+    return "missing";
+  }
+
+  const lockKey = `media:upload:${params.assetKey}`;
+  const lockToken = await tryAcquireRedisLock(lockKey, config.MEDIA_UPLOAD_LOCK_TTL_SEC * 1000);
+
+  if (!lockToken) {
+    const awaitedAsset = await waitForCachedAsset(params.assetKey, Math.min(config.MEDIA_UPLOAD_LOCK_TTL_SEC * 1000, 120_000));
+    if (awaitedAsset?.telegramFileId) {
+      await telegram.sendDocument(params.chatId, awaitedAsset.telegramFileId, params.options);
+      return "cached";
+    }
+  }
+
+  if (params.uploadNoticeText) {
+    await telegram.sendMessage(params.chatId, params.uploadNoticeText);
+  }
+
+  let uploadToken = lockToken;
+  if (!uploadToken) {
+    uploadToken = await tryAcquireRedisLock(lockKey, config.MEDIA_UPLOAD_LOCK_TTL_SEC * 1000);
+  }
+
+  let message: Awaited<ReturnType<typeof telegram.sendDocument>>;
+  try {
+    message = await telegram.sendDocument(params.chatId, Input.fromLocalFile(params.localFilePath), params.options);
+  } catch (error) {
+    logger.error({ err: error, assetKey: params.assetKey }, "Upload-ul documentului din fișier local a eșuat.");
 
     if (params.uploadFailedText) {
       const description = getTelegramErrorDescription(error);
