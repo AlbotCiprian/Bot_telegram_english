@@ -29,9 +29,9 @@ Nu folosim:
 
 ## Mesaj de start final
 
-`Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani.`
+Mesajul de `/start` rămâne:
 
-`❤️`
+`Salut și bine ai venit la Express English Academy!💫😍`
 
 ## Onboarding final
 
@@ -49,9 +49,9 @@ Se elimină complet intro-urile administrative și mesajele-punte după salvarea
 
 `Perfect. Timp de 3 zile vei primi câte o lecție gratuită de engleză, ca să pui o bază solidă.`
 
-### Lecția 1
+### Lecțiile 1-3
 
-`Urmărește lecția, apoi deschide testul scurt.`
+În mesajul de deschidere rămâne doar titlul lecției, fără text secundar sub el.
 
 ### Butoane
 
@@ -72,11 +72,11 @@ Se elimină complet intro-urile administrative și mesajele-punte după salvarea
 
 ## Cum scapi de frica de a vorbi
 
-`☀️Privește acest webinar pentru a înțelege:`
+`☀️ Privește acest webinar pentru a înțelege:`
 
-`1. Cum poți scăpa de frica de vorbire 🗣️`
+`1. Cum poți scăpa de frica de a vorbi 🗣️`
 
-`3. 5 metode cum să vorbești fluent engleza fără profesor 🧑‍🏫`
+`2. 5 metode prin care să vorbești fluent în engleză fără profesor 🧑‍🏫`
 
 ## Consultație astrologică în carieră
 
@@ -96,7 +96,6 @@ Se elimină complet intro-urile administrative și mesajele-punte după salvarea
 ## Profil bot
 
 - descriere:
-  - `Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani.`
-  - `❤️`
+  - `Salutare! Bine ai venit la Academia Express English — unica școală de limba engleză care te ajută să începi să vorbești fluent în doar 7 săptămâni! ❤️`
 - short description:
-  - `Salutare bine ai venit la academia Express English. ❤️`
+  - `Academia Express English te ajută să începi să vorbești fluent în 7 săptămâni. ❤️`

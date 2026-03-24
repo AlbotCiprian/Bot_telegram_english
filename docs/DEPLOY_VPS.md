@@ -131,6 +131,11 @@ docker compose --env-file .env.vps -f docker-compose.prod.yml down
 docker compose --env-file .env.vps -f docker-compose.prod.yml build --no-cache
 docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm run prisma:migrate
 docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm run prisma:seed
+```
+
+Optional, doar daca ai schimbat sursele AI sau continutul indexat de website:
+
+```bash
 docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm run crawl
 docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm run embed
 ```
@@ -169,18 +174,103 @@ docker compose --env-file .env.vps -f docker-compose.prod.yml down
 docker compose --env-file .env.vps -f docker-compose.prod.yml build --no-cache
 docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm run prisma:migrate
 docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm run prisma:seed
-docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm run crawl
-docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm run embed
 docker compose --env-file .env.vps -f docker-compose.prod.yml up -d
 ```
 
-## 8. Reset complet pentru retestarea onboardingului
+Ruleaza `crawl` si `embed` doar daca ai modificat sursele AI sau continutul website indexat:
+
+```bash
+docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm run crawl
+docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm run embed
+```
+
+## 8. Restart rapid si restart complet
+
+Restart rapid doar pentru runtime-ul Express:
+
+```text
+/restart_express
+```
+
+Comanda se ruleaza din `ops-bot` si restarteaza containerele `bot` si `worker`.
+
+Restart complet pentru tot proiectul:
+
+```bash
+cd /allengual-telegram-bot
+docker compose --env-file .env.vps -f docker-compose.prod.yml restart
+```
+
+Nu folosi `down -v` in update-urile normale.
+
+## 9. Verificare dupa deploy
+
+```bash
+cd /allengual-telegram-bot
+docker compose --env-file .env.vps -f docker-compose.prod.yml ps
+docker compose --env-file .env.vps -f docker-compose.prod.yml logs --tail=100 bot
+docker compose --env-file .env.vps -f docker-compose.prod.yml logs --tail=100 worker
+docker compose --env-file .env.vps -f docker-compose.prod.yml logs --tail=100 ops-bot
+curl http://127.0.0.1:3000/health
+docker stats --no-stream
+docker system df
+```
+
+In `ops-bot` verifica si:
+
+```text
+/status
+/health
+/queues
+```
+
+## 10. Curatare sigura Docker
+
+Imaginile Docker vechi ocupa spatiu pe disk, nu RAM. Pentru RAM verifica `docker stats --no-stream`.
+
+Verificare imagini dangling:
+
+```bash
+docker image ls --filter dangling=true
+```
+
+Curatare sigura doar pentru imagini dangling:
+
+```bash
+docker image prune -f
+```
+
+Evita pe acest VPS:
+
+- `docker system prune -a`
+- `docker volume prune`
+
+## 11. Curatare cache media Telegram
+
+```bash
+cd /allengual-telegram-bot
+docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm run media:invalidate-cache
+```
+
+## 12. Reset total bot, useri si cozi
 
 ```bash
 cd /allengual-telegram-bot
 docker compose --env-file .env.vps -f docker-compose.prod.yml run --rm bot npm run reset:bot-state
 docker compose --env-file .env.vps -f docker-compose.prod.yml up -d
 ```
+
+Acest reset sterge:
+
+- utilizatori
+- profiluri
+- sesiuni
+- progres lectii
+- rezultate quiz
+- joburi programate
+- event logs
+- cache media Telegram
+- coziile BullMQ
 
 ## Observatii
 

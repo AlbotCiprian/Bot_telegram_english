@@ -1,6 +1,7 @@
 import { User } from "@prisma/client";
 import { Markup } from "telegraf";
 import { UI_LABELS } from "../content/copy.js";
+import { buildLessonDeliveryText, buildLessonQuizPrompt } from "../content/lessonCopy.js";
 import { prisma } from "../db/client.js";
 import { config } from "../utils/config.js";
 import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
@@ -228,7 +229,7 @@ async function sendLessonTelegramVideo(params: {
   mediaUrl: string | null;
 }) {
   const telegram = getTelegramClient();
-  const caption = [`*${params.title}*`, "", params.messageText].join("\n");
+  const caption = buildLessonDeliveryText(params.title, params.messageText);
   const localVideoPath = params.mediaUrl ? resolveExistingMediaFile(params.mediaUrl) : null;
 
   if (params.mediaUrl) {
@@ -279,11 +280,7 @@ async function sendLessonStreamAccess(params: {
 }) {
   const telegram = getTelegramClient();
   const access = buildLessonWatchAccess(params.userId, params.dayNumber);
-  const text = [
-    `*${params.title}*`,
-    "",
-    params.messageText,
-  ].join("\n");
+  const text = buildLessonDeliveryText(params.title, params.messageText);
 
   await telegram.sendMessage(params.chatId, text, {
     parse_mode: "Markdown",
@@ -704,9 +701,7 @@ export async function handleLessonQuiz(
   const access = buildLessonWatchAccess(userId, dayNumber);
   const quizUrl = buildLessonQuizUrl(access.watchUrl);
   const unlocked = Boolean(progress.quizAvailableAt && progress.quizAvailableAt <= new Date());
-  const promptMessage = unlocked
-    ? "Testul pentru Lecția 1 este pregătit. Apasă pe buton și deschide secțiunea de test."
-    : "Testul pentru Lecția 1 se activează după ce urmărești puțin lecția.";
+  const promptMessage = buildLessonQuizPrompt(dayNumber, unlocked);
 
   await telegram.sendMessage(
     user.telegramId.toString(),

@@ -275,10 +275,10 @@ export const STATIC_PAGES = {
   fear_speaking: {
     title: "Cum scapi de frica de a vorbi",
     body: [
-      "☀️Privește acest webinar pentru a înțelege:",
+      "☀️ Privește acest webinar pentru a înțelege:",
       "",
-      "1. Cum poți scăpa de frica de vorbire 🗣️",
-      "3. 5 metode cum să vorbești fluent engleza fără profesor 🧑‍🏫",
+      "1. Cum poți scăpa de frica de a vorbi 🗣️",
+      "2. 5 metode prin care să vorbești fluent în engleză fără profesor 🧑‍🏫",
     ].join("\n"),
   },
   website: {
@@ -322,7 +322,7 @@ export const LESSON_SEED_CONTENT = [
     dayNumber: 1,
     key: "free-day-1",
     title: "Lecția 1 · Cum formulezi o propoziție la prezent în engleză",
-    messageText: "Urmărește lecția, apoi deschide testul scurt.",
+    messageText: "",
     mediaType: "video_file",
     mediaUrl: "lesson-1-v2-landscape.mp4",
     cta: [
@@ -333,7 +333,7 @@ export const LESSON_SEED_CONTENT = [
     dayNumber: 2,
     key: "free-day-2",
     title: "Lecția 2 · Hai să vorbim despre rutina ta zilnică",
-    messageText: "În această lecție exersăm cum vorbești despre rutina ta zilnică într-un mod simplu și natural.",
+    messageText: "",
     mediaType: "video_file",
     mediaUrl: "lesson-2-v2-landscape.mp4",
     cta: [
@@ -344,7 +344,7 @@ export const LESSON_SEED_CONTENT = [
     dayNumber: 3,
     key: "free-day-3",
     title: "Lecția 3 · Hai să vorbim la trecut în engleză",
-    messageText: "În această lecție facem pasul următor și începem să vorbim la trecut în engleză.",
+    messageText: "",
     mediaType: "video_file",
     mediaUrl: "lesson-3-v2-landscape.mp4",
     cta: [

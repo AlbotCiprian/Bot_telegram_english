@@ -1,5 +1,6 @@
 import { createBot } from "./bot/bot.js";
 import { buildApp } from "./app.js";
+import { BOT_PROFILE_COPY } from "./content/botProfile.js";
 import { prisma } from "./db/client.js";
 import { closeRedisClient } from "./services/redis.js";
 import { logger } from "./utils/logger.js";
@@ -12,10 +13,6 @@ async function configureTelegramProfile(bot: ReturnType<typeof createBot>): Prom
     { command: "help", description: "Ajutor și explicații" },
   ];
 
-  const publicDescription =
-    "Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață să vorbești fluent în doar șapte săptămâni. ❤️❤️❤️";
-  const publicShortDescription = "Academia Express English te ajută să vorbești fluent în doar șapte săptămâni. ❤️❤️❤️";
-
   const operations: Array<Promise<unknown>> = [
     bot.telegram.setMyCommands(botCommands),
     bot.telegram.setChatMenuButton({
@@ -23,8 +20,8 @@ async function configureTelegramProfile(bot: ReturnType<typeof createBot>): Prom
         type: "commands",
       },
     }),
-    bot.telegram.setMyDescription(publicDescription),
-    bot.telegram.setMyShortDescription(publicShortDescription),
+    bot.telegram.setMyDescription(BOT_PROFILE_COPY.description),
+    bot.telegram.setMyShortDescription(BOT_PROFILE_COPY.shortDescription),
   ];
 
   const results = await Promise.allSettled(operations);

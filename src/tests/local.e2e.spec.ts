@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { getDelayMap } from "../utils/schedule.js";
+import { BOT_PROFILE_COPY } from "../content/botProfile.js";
+import { buildLessonDeliveryText, buildLessonQuizPrompt } from "../content/lessonCopy.js";
 import { embedTextLocally, splitIntoChunks } from "../services/vectorService.js";
 import { isValidEmail, isValidPhone, normalizePhone } from "../utils/validators.js";
-import { MAIN_MENU, isMarathonVisible } from "../content/staticContent.js";
+import { LESSON_SEED_CONTENT, MAIN_MENU, isMarathonVisible } from "../content/staticContent.js";
 import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
 import { getMainMenuKeyboard, resolveMenuActionFromLabel } from "../bot/menu.js";
 import { getLessonStreamAsset } from "../services/streamingAssets.js";
@@ -79,6 +81,16 @@ describe("local runtime invariants", () => {
     expect(isMarathonVisible()).toBe(true);
   });
 
+  it("keeps the public bot profile copy aligned with the requested wording", () => {
+    expect(BOT_PROFILE_COPY.description).toBe(
+      "Salutare! Bine ai venit la Academia Express English — unica școală de limba engleză care te ajută să începi să vorbești fluent în doar 7 săptămâni! ❤️",
+    );
+    expect(BOT_PROFILE_COPY.shortDescription).toBe(
+      "Academia Express English te ajută să începi să vorbești fluent în 7 săptămâni. ❤️",
+    );
+    expect(BOT_PROFILE_COPY.shortDescription.length).toBeLessThanOrEqual(120);
+  });
+
   it("treats marathon start and end dates as inclusive Chisinau calendar days", () => {
     const window = {
       startDate: "2026-04-10",
@@ -117,6 +129,20 @@ describe("local runtime invariants", () => {
     expect(hasLessonQuiz(1)).toBe(true);
     expect(hasLessonQuiz(2)).toBe(true);
     expect(hasLessonQuiz(3)).toBe(true);
+  });
+
+  it("stores lesson intro copy as title-only for all free lessons", () => {
+    expect(LESSON_SEED_CONTENT.map((lesson) => lesson.messageText)).toEqual(["", "", ""]);
+  });
+
+  it("renders lesson delivery text without an empty paragraph", () => {
+    expect(buildLessonDeliveryText("Lecția 1 · Test", "")).toBe("*Lecția 1 · Test*");
+    expect(buildLessonDeliveryText("Lecția 1 · Test", "Text scurt")).toBe("*Lecția 1 · Test*\n\nText scurt");
+  });
+
+  it("personalizes the quiz prompt for the opened lesson", () => {
+    expect(buildLessonQuizPrompt(2, false)).toContain("Lecția 2");
+    expect(buildLessonQuizPrompt(3, true)).toContain("Lecția 3");
   });
 
   it("builds the marathon package catalog from the configured defaults", () => {

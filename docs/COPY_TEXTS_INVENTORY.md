@@ -19,17 +19,14 @@ Acest document descrie textele publice active din bot după finisarea de content
 
 ## Mesaj de start
 
-`Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani.`
-
-`❤️`
+`Salut și bine ai venit la Express English Academy!💫😍`
 
 ## Profil bot în Telegram
 
 - descriere:
-  - `Salutare bine ai venit la academia Express English, unica scoală de engleză care te incvață sa vb fluent in doua saptamani.`
-  - `❤️`
+  - `Salutare! Bine ai venit la Academia Express English — unica școală de limba engleză care te ajută să începi să vorbești fluent în doar 7 săptămâni! ❤️`
 - short description:
-  - `Salutare bine ai venit la academia Express English. ❤️`
+  - `Academia Express English te ajută să începi să vorbești fluent în 7 săptămâni. ❤️`
 
 ## Onboarding pentru acces
 
@@ -58,9 +55,9 @@ Mesajele-punte după salvarea datelor au fost eliminate complet.
 - `Lecția 2 · Hai să vorbim despre rutina ta zilnică`
 - `Lecția 3 · Hai să vorbim la trecut în engleză`
 
-### Lecția 1
+### Mesaj deschidere lecție
 
-`Urmărește lecția, apoi deschide testul scurt.`
+La lecțiile 1, 2 și 3 se afișează doar titlul lecției, fără text secundar sub el.
 
 ### Butoane lecție
 
@@ -81,11 +78,11 @@ Mesajele-punte după salvarea datelor au fost eliminate complet.
 
 ## Cum scapi de frica de a vorbi
 
-`☀️Privește acest webinar pentru a înțelege:`
+`☀️ Privește acest webinar pentru a înțelege:`
 
-`1. Cum poți scăpa de frica de vorbire 🗣️`
+`1. Cum poți scăpa de frica de a vorbi 🗣️`
 
-`3. 5 metode cum să vorbești fluent engleza fără profesor 🧑‍🏫`
+`2. 5 metode prin care să vorbești fluent în engleză fără profesor 🧑‍🏫`
 
 ## Consultație astrologică în carieră
 
