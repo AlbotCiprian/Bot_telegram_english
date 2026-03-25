@@ -82,12 +82,12 @@ describe("local runtime invariants", () => {
     expect(isMarathonVisible()).toBe(true);
   });
 
-  it("renders the marathon message with the dedicated Tilda link and CTA", () => {
+  it("renders the marathon message without inline preview and with the dedicated CTA link", () => {
     const payload = buildMarathonMessagePayload(false);
 
-    expect(payload.text).toContain(BRANDING.marathonUrl);
+    expect(payload.text).not.toContain(BRANDING.marathonUrl);
     expect(payload.text).not.toContain(`${BRANDING.websiteUrl}#marathon`);
-    expect(payload.options.link_preview_options).toEqual({ is_disabled: false });
+    expect(payload.options).not.toHaveProperty("link_preview_options");
 
     const keyboard = payload.options.reply_markup;
     if (!("inline_keyboard" in keyboard)) {

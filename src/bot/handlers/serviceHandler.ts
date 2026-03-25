@@ -50,12 +50,9 @@ function buildActionButtons(params: {
 
 export function buildMarathonMessagePayload(showLessons: boolean) {
   return {
-    text: `*${STATIC_PAGES.marathon.title}*\n\n${STATIC_PAGES.marathon.body}\n\n${BRANDING.marathonUrl}`,
+    text: `*${STATIC_PAGES.marathon.title}*\n\n${STATIC_PAGES.marathon.body}`,
     options: {
       parse_mode: "Markdown" as const,
-      link_preview_options: {
-        is_disabled: false,
-      },
       reply_markup: buildActionButtons({
         showLessons,
         primaryUrl: BRANDING.marathonUrl,
@@ -115,9 +112,6 @@ async function replyWithSharedVideo(
   if (params.fallbackUrl && params.fallbackMode === "preview") {
     await ctx.reply(`${caption}\n\n${params.fallbackUrl}`, {
       parse_mode: "Markdown",
-      link_preview_options: {
-        is_disabled: false,
-      },
       reply_markup: buildActionButtons({
         showLessons: params.showLessons,
         primaryCallback: params.primaryCallback,
@@ -328,11 +322,8 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       return;
     }
 
-    await ctx.reply(`*${STATIC_PAGES.marathon.title}*\n\n${STATIC_PAGES.marathon.body}\n\n${BRANDING.marathonUrl}`, {
+    await ctx.reply(`*${STATIC_PAGES.marathon.title}*\n\n${STATIC_PAGES.marathon.body}`, {
       parse_mode: "Markdown",
-      link_preview_options: {
-        is_disabled: false,
-      },
       reply_markup: buildActionButtons({
         showLessons,
         primaryUrl: BRANDING.marathonUrl,
