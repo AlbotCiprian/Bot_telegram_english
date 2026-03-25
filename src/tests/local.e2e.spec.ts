@@ -9,7 +9,7 @@ import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
 import { getMainMenuKeyboard, resolveMenuActionFromLabel } from "../bot/menu.js";
 import { getLessonStreamAsset } from "../services/streamingAssets.js";
 import { hasLessonQuiz } from "../services/lessonQuizService.js";
-import { buildMarathonMessagePayload } from "../bot/handlers/serviceHandler.js";
+import { buildMarathonMessagePayload, TEACHING_METHOD_VIDEO_DIMENSIONS } from "../bot/handlers/serviceHandler.js";
 import {
   buildMarathonLandingMessage,
   buildMarathonOfferMessage,
@@ -132,6 +132,13 @@ describe("local runtime invariants", () => {
   it("resolves versioned lesson and promo assets through aliases", () => {
     expect(resolveExistingMediaFile("lesson-1-v2-landscape.mp4")).toBeTruthy();
     expect(resolveExistingMediaFile("Metoda_noastra_optimized_new_format.mp4")).toBeTruthy();
+  });
+
+  it("keeps the teaching method upload dimensions pinned for iOS compatibility", () => {
+    expect(TEACHING_METHOD_VIDEO_DIMENSIONS).toEqual({
+      width: 1080,
+      height: 1920,
+    });
   });
 
   it("maps reply keyboard labels back to menu actions", () => {

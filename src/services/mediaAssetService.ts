@@ -10,6 +10,8 @@ type VideoSendOptions = {
   caption: string;
   parse_mode?: "Markdown";
   supports_streaming?: boolean;
+  width?: number;
+  height?: number;
   reply_markup?: InlineKeyboardMarkup | ReplyKeyboardMarkup | ReplyKeyboardRemove | ForceReply;
 };
 

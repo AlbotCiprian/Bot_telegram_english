@@ -16,6 +16,11 @@ import { getMainMenuKeyboard } from "../menu.js";
 
 type InlineActionButton = ReturnType<typeof Markup.button.url> | ReturnType<typeof Markup.button.callback>;
 
+export const TEACHING_METHOD_VIDEO_DIMENSIONS = {
+  width: 1080,
+  height: 1920,
+} as const;
+
 function hasStartedFreeLessons(user: {
   lesson1Unlocked: boolean;
   lesson2Unlocked: boolean;
@@ -185,6 +190,8 @@ async function replyWithTeachingMethodVideo(
         caption,
         parse_mode: "Markdown",
         supports_streaming: true,
+        width: TEACHING_METHOD_VIDEO_DIMENSIONS.width,
+        height: TEACHING_METHOD_VIDEO_DIMENSIONS.height,
         reply_markup: buildActionButtons({
           showLessons: params.showLessons,
         }).reply_markup,
