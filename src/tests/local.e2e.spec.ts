@@ -4,11 +4,12 @@ import { BOT_PROFILE_COPY } from "../content/botProfile.js";
 import { buildLessonDeliveryText, buildLessonQuizPrompt } from "../content/lessonCopy.js";
 import { embedTextLocally, splitIntoChunks } from "../services/vectorService.js";
 import { isValidEmail, isValidPhone, normalizePhone } from "../utils/validators.js";
-import { LESSON_SEED_CONTENT, MAIN_MENU, isMarathonVisible } from "../content/staticContent.js";
+import { BRANDING, LESSON_SEED_CONTENT, MAIN_MENU, isMarathonVisible } from "../content/staticContent.js";
 import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
 import { getMainMenuKeyboard, resolveMenuActionFromLabel } from "../bot/menu.js";
 import { getLessonStreamAsset } from "../services/streamingAssets.js";
 import { hasLessonQuiz } from "../services/lessonQuizService.js";
+import { buildMarathonMessagePayload } from "../bot/handlers/serviceHandler.js";
 import {
   buildMarathonLandingMessage,
   buildMarathonOfferMessage,
@@ -79,6 +80,29 @@ describe("local runtime invariants", () => {
 
   it("shows marathon by default when no visibility window is set", () => {
     expect(isMarathonVisible()).toBe(true);
+  });
+
+  it("renders the marathon message with the dedicated Tilda link and CTA", () => {
+    const payload = buildMarathonMessagePayload(false);
+
+    expect(payload.text).toContain(BRANDING.marathonUrl);
+    expect(payload.text).not.toContain(`${BRANDING.websiteUrl}#marathon`);
+    expect(payload.options.link_preview_options).toEqual({ is_disabled: false });
+
+    const keyboard = payload.options.reply_markup;
+    if (!("inline_keyboard" in keyboard)) {
+      throw new Error("Marathon keyboard nu este InlineKeyboardMarkup.");
+    }
+
+    expect(keyboard.inline_keyboard[0]?.[0]).toMatchObject({
+      text: "🚀 Vezi maratonul",
+      url: BRANDING.marathonUrl,
+    });
+    expect(
+      keyboard.inline_keyboard
+        .flat()
+        .some((button) => "url" in button && button.url === `${BRANDING.websiteUrl}#marathon`),
+    ).toBe(false);
   });
 
   it("keeps the public bot profile copy aligned with the requested wording", () => {

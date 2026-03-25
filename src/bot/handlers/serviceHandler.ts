@@ -48,6 +48,24 @@ function buildActionButtons(params: {
   return Markup.inlineKeyboard(buttons, { columns: 1 });
 }
 
+export function buildMarathonMessagePayload(showLessons: boolean) {
+  return {
+    text: `*${STATIC_PAGES.marathon.title}*\n\n${STATIC_PAGES.marathon.body}\n\n${BRANDING.marathonUrl}`,
+    options: {
+      parse_mode: "Markdown" as const,
+      link_preview_options: {
+        is_disabled: false,
+      },
+      reply_markup: buildActionButtons({
+        showLessons,
+        primaryUrl: BRANDING.marathonUrl,
+        primaryLabel: "🚀 Vezi maratonul",
+        includeCourseCta: false,
+      }).reply_markup,
+    },
+  };
+}
+
 function getTeachingMethodExpectedPath(fileName: string): string {
   return path.resolve(process.cwd(), "video", fileName);
 }
@@ -310,11 +328,14 @@ export async function continueRequestedService(ctx: Context, user: BotUser, acti
       return;
     }
 
-    await ctx.reply(`*${STATIC_PAGES.marathon.title}*\n\n${STATIC_PAGES.marathon.body}`, {
+    await ctx.reply(`*${STATIC_PAGES.marathon.title}*\n\n${STATIC_PAGES.marathon.body}\n\n${BRANDING.marathonUrl}`, {
       parse_mode: "Markdown",
+      link_preview_options: {
+        is_disabled: false,
+      },
       reply_markup: buildActionButtons({
         showLessons,
-        primaryUrl: `${BRANDING.websiteUrl}#marathon`,
+        primaryUrl: BRANDING.marathonUrl,
         primaryLabel: "🚀 Vezi maratonul",
         includeCourseCta: false,
       }).reply_markup,

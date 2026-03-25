@@ -6,6 +6,7 @@ const MARATHON_TIMEZONE = "Europe/Chisinau";
 export const BRANDING = {
   schoolName: "Express English Academy",
   websiteUrl: "https://www.expres.allengual.md/",
+  marathonUrl: "https://birthdaymaraton.tilda.ws",
   consultationUrl: "https://www.expres.allengual.md/",
   accentLine:
     "Academia care te ajută să treci de la nesiguranță la engleză vorbită liber și folosită pentru creștere profesională.",
