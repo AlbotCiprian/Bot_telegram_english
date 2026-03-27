@@ -1,6 +1,6 @@
 import { config } from "./config.js";
 
-type DelayMap = {
+export type DelayMap = {
   lesson2Ms: number;
   lesson3Ms: number;
   followUpMs: number;
@@ -25,8 +25,22 @@ const delayMapByMode: Record<"dev" | "prod", DelayMap> = {
   },
 };
 
+export function getDelayMapForMode(mode: "dev" | "prod"): DelayMap {
+  return delayMapByMode[mode];
+}
+
 export function getDelayMap(): DelayMap {
-  return delayMapByMode[config.LESSON_DELAY_MODE];
+  return getDelayMapForMode(config.LESSON_DELAY_MODE);
+}
+
+export function getLessonUnlockTimes(
+  activationTime: Date,
+  delayMap: Pick<DelayMap, "lesson2Ms" | "lesson3Ms"> = getDelayMap(),
+): { lesson2UnlockTime: Date; lesson3UnlockTime: Date } {
+  return {
+    lesson2UnlockTime: new Date(activationTime.getTime() + delayMap.lesson2Ms),
+    lesson3UnlockTime: new Date(activationTime.getTime() + delayMap.lesson3Ms),
+  };
 }
 
 export function getRunAt(delayMs: number): Date {

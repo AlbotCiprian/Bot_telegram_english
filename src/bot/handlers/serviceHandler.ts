@@ -12,6 +12,7 @@ import { BotUser } from "../../types/bot.js";
 import { config } from "../../utils/config.js";
 import { logger } from "../../utils/logger.js";
 import { resolveExistingMediaFile } from "../../utils/mediaAssets.js";
+import { getLessonUnlockTimes } from "../../utils/schedule.js";
 import { getMainMenuKeyboard } from "../menu.js";
 
 type InlineActionButton = ReturnType<typeof Markup.button.url> | ReturnType<typeof Markup.button.callback>;
@@ -285,8 +286,7 @@ export async function startFreeLessonsForUser(ctx: Context, userId: number): Pro
   }
 
   const activationTime = new Date();
-  const lesson2UnlockTime = new Date(activationTime.getTime() + 24 * 60 * 60 * 1000);
-  const lesson3UnlockTime = new Date(activationTime.getTime() + 48 * 60 * 60 * 1000);
+  const { lesson2UnlockTime, lesson3UnlockTime } = getLessonUnlockTimes(activationTime);
 
   await prisma.user.update({
     where: { id: userId },

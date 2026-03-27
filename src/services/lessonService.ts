@@ -8,13 +8,14 @@ import { resolveExistingMediaFile } from "../utils/mediaAssets.js";
 import { logUserEvent } from "./eventService.js";
 import { buildLessonQuizUrl, hasLessonQuiz } from "./lessonQuizService.js";
 import { buildMediaAssetKey, sendVideoAsset } from "./mediaAssetService.js";
-import { scheduleCampaignJob } from "./schedulerService.js";
+import { ensureCampaignJobScheduled } from "./schedulerService.js";
 import { buildLessonWatchAccess } from "./streamingService.js";
 import { isLessonStreamReady, supportsTelegramWebAppStreaming } from "./streamingAssets.js";
 import { getTelegramClient } from "./telegram.js";
 
 export type LessonDay = 1 | 2 | 3;
 type UnlockDay = 2 | 3;
+export type LessonNudgeAfterHours = 12 | 24;
 
 type LessonAvailability = {
   dayNumber: LessonDay;
@@ -25,10 +26,96 @@ type LessonAvailability = {
 };
 
 const QUIZ_UNLOCK_DELAY_MS = 60 * 1000;
-const LESSON_NUDGE_DELAYS = {
+export const LESSON_NUDGE_AFTER_HOURS = [12, 24] as const;
+export const LESSON_NUDGE_DELAYS: Record<LessonNudgeAfterHours, number> = {
   12: 12 * 60 * 60 * 1000,
   24: 24 * 60 * 60 * 1000,
-} as const;
+};
+
+function isLessonOpened(params: {
+  currentLessonDay: number;
+  lessonProgress?: Array<{ dayNumber: number; openedAt: Date | null }>;
+}, dayNumber: LessonDay): boolean {
+  return params.currentLessonDay >= dayNumber || Boolean(params.lessonProgress?.some((progress) => progress.openedAt));
+}
+
+export async function getLessonUnlockEvent(userId: number, dayNumber: UnlockDay) {
+  return prisma.userEvent.findFirst({
+    where: {
+      userId,
+      eventType: "lesson_unlocked",
+      metadata: {
+        path: ["dayNumber"],
+        equals: dayNumber,
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function hasLessonUnlockEvent(userId: number, dayNumber: UnlockDay): Promise<boolean> {
+  return Boolean(await getLessonUnlockEvent(userId, dayNumber));
+}
+
+export async function hasLessonNudgeEvent(
+  userId: number,
+  dayNumber: UnlockDay,
+  afterHours: LessonNudgeAfterHours,
+): Promise<boolean> {
+  const event = await prisma.userEvent.findFirst({
+    where: {
+      userId,
+      eventType: "lesson_nudge_sent",
+      AND: [
+        {
+          metadata: {
+            path: ["dayNumber"],
+            equals: dayNumber,
+          },
+        },
+        {
+          metadata: {
+            path: ["afterHours"],
+            equals: afterHours,
+          },
+        },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return Boolean(event);
+}
+
+export async function ensureLessonUnlockedFlag(userId: number, dayNumber: UnlockDay): Promise<void> {
+  const updateData = getUnlockUpdate(dayNumber);
+  const fieldName = dayNumber === 2 ? "lesson2Unlocked" : "lesson3Unlocked";
+
+  await prisma.user.updateMany({
+    where: {
+      id: userId,
+      [fieldName]: false,
+    },
+    data: updateData,
+  });
+}
+
+export async function ensureLessonNudgeJobs(
+  userId: number,
+  dayNumber: UnlockDay,
+): Promise<Array<{ afterHours: LessonNudgeAfterHours; status: "existing" | "recreated" | "scheduled" }>> {
+  const results: Array<{ afterHours: LessonNudgeAfterHours; status: "existing" | "recreated" | "scheduled" }> = [];
+
+  for (const afterHours of LESSON_NUDGE_AFTER_HOURS) {
+    const status = await ensureCampaignJobScheduled(
+      { userId, type: "lesson_nudge", dayNumber, afterHours },
+      LESSON_NUDGE_DELAYS[afterHours],
+    );
+    results.push({ afterHours, status });
+  }
+
+  return results;
+}
 
 function formatRemainingTime(target: Date | null): string | null {
   if (!target) {
@@ -522,19 +609,32 @@ export async function getLockedLessonMessage(userId: number, dayNumber: LessonDa
 export async function unlockLesson(userId: number, dayNumber: UnlockDay): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
+    include: {
+      lessonProgress: {
+        where: { dayNumber },
+        select: {
+          dayNumber: true,
+          openedAt: true,
+        },
+      },
+    },
   });
 
-  if (!user || isLessonUnlocked(user, dayNumber)) {
+  if (!user) {
     return;
   }
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: getUnlockUpdate(dayNumber),
-  });
+  const alreadyOpened = isLessonOpened(user, dayNumber);
+  const alreadyNotified = await hasLessonUnlockEvent(userId, dayNumber);
 
-  const telegram = getTelegramClient();
-  await telegram.sendMessage(
+  if (alreadyOpened) {
+    await ensureLessonUnlockedFlag(userId, dayNumber);
+    return;
+  }
+
+  if (!alreadyNotified) {
+    const telegram = getTelegramClient();
+    await telegram.sendMessage(
     user.telegramId.toString(),
     `🎓 Lecția ${dayNumber} este acum disponibilă.\n\nCând ai câteva minute libere, o poți deschide direct din bot.`,
     {
@@ -542,16 +642,17 @@ export async function unlockLesson(userId: number, dayNumber: UnlockDay): Promis
     },
   );
 
-  await scheduleCampaignJob({ userId, type: "lesson_nudge", dayNumber, afterHours: 12 }, LESSON_NUDGE_DELAYS[12]);
-  await scheduleCampaignJob({ userId, type: "lesson_nudge", dayNumber, afterHours: 24 }, LESSON_NUDGE_DELAYS[24]);
+    await logUserEvent({
+      userId,
+      eventType: "lesson_unlocked",
+      metadata: {
+        dayNumber,
+      },
+    });
+  }
 
-  await logUserEvent({
-    userId,
-    eventType: "lesson_unlocked",
-    metadata: {
-      dayNumber,
-    },
-  });
+  await ensureLessonUnlockedFlag(userId, dayNumber);
+  await ensureLessonNudgeJobs(userId, dayNumber);
 }
 
 export async function deliverLesson(userId: number, dayNumber: LessonDay): Promise<void> {
@@ -743,8 +844,11 @@ export async function sendLessonNudge(userId: number, dayNumber: UnlockDay, afte
     return;
   }
 
-  const progress = user.lessonProgress[0];
-  if (progress?.openedAt || user.currentLessonDay >= dayNumber) {
+  if (isLessonOpened(user, dayNumber)) {
+    return;
+  }
+
+  if (await hasLessonNudgeEvent(userId, dayNumber, afterHours)) {
     return;
   }
 

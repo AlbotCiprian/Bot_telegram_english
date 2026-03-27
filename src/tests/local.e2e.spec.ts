@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getDelayMap } from "../utils/schedule.js";
+import { getDelayMap, getDelayMapForMode, getLessonUnlockTimes } from "../utils/schedule.js";
 import { BOT_PROFILE_COPY } from "../content/botProfile.js";
 import { buildLessonDeliveryText, buildLessonQuizPrompt } from "../content/lessonCopy.js";
 import { embedTextLocally, splitIntoChunks } from "../services/vectorService.js";
@@ -10,6 +10,7 @@ import { getMainMenuKeyboard, resolveMenuActionFromLabel } from "../bot/menu.js"
 import { getLessonStreamAsset } from "../services/streamingAssets.js";
 import { hasLessonQuiz } from "../services/lessonQuizService.js";
 import { buildMarathonMessagePayload, TEACHING_METHOD_VIDEO_DIMENSIONS } from "../bot/handlers/serviceHandler.js";
+import { buildLessonRecoveryActions, parseLessonRecoveryBackfill, type LessonRecoveryCandidate } from "../services/lessonRecoveryService.js";
 import {
   buildMarathonLandingMessage,
   buildMarathonOfferMessage,
@@ -18,6 +19,21 @@ import {
   getMarathonPackageByKey,
   getMarathonPackageCatalog,
 } from "../content/marathonContent.js";
+
+function createRecoveryCandidate(overrides?: Partial<LessonRecoveryCandidate>): LessonRecoveryCandidate {
+  return {
+    userId: 77,
+    dayNumber: 2,
+    unlockAt: new Date("2026-03-28T12:00:00.000Z"),
+    unlocked: false,
+    opened: false,
+    unlockEventAt: null,
+    unlockJobHealthy: false,
+    nudgeEventAt: {},
+    nudgeJobHealthy: {},
+    ...overrides,
+  };
+}
 
 describe("local runtime invariants", () => {
   it("exposes the full main menu", () => {
@@ -76,6 +92,92 @@ describe("local runtime invariants", () => {
     const delays = getDelayMap();
     expect(delays.lesson2Ms).toBeGreaterThan(0);
     expect(delays.longReminderMs).toBeGreaterThan(delays.lesson3Ms);
+  });
+
+  it("derives lesson unlock times from the same delay map in dev and prod", () => {
+    const activationTime = new Date("2026-03-27T10:00:00.000Z");
+    const devUnlockTimes = getLessonUnlockTimes(activationTime, getDelayMapForMode("dev"));
+    const prodUnlockTimes = getLessonUnlockTimes(activationTime, getDelayMapForMode("prod"));
+
+    expect(devUnlockTimes.lesson2UnlockTime.toISOString()).toBe("2026-03-27T10:02:00.000Z");
+    expect(devUnlockTimes.lesson3UnlockTime.toISOString()).toBe("2026-03-27T10:04:00.000Z");
+    expect(prodUnlockTimes.lesson2UnlockTime.toISOString()).toBe("2026-03-28T10:00:00.000Z");
+    expect(prodUnlockTimes.lesson3UnlockTime.toISOString()).toBe("2026-03-29T10:00:00.000Z");
+  });
+
+  it("plans missing future unlock jobs for unopened lessons", () => {
+    const now = new Date("2026-03-27T10:00:00.000Z");
+    const actions = buildLessonRecoveryActions(createRecoveryCandidate(), now, parseLessonRecoveryBackfill("unlock,nudge"));
+
+    expect(actions).toEqual([
+      {
+        kind: "ensure_unlock_job",
+        userId: 77,
+        dayNumber: 2,
+        delayMs: 26 * 60 * 60 * 1000,
+      },
+    ]);
+  });
+
+  it("plans a single backlog unlock for overdue unopened lessons", () => {
+    const now = new Date("2026-03-29T13:00:00.000Z");
+    const actions = buildLessonRecoveryActions(
+      createRecoveryCandidate({
+        unlockAt: new Date("2026-03-28T10:00:00.000Z"),
+      }),
+      now,
+      parseLessonRecoveryBackfill("unlock,nudge"),
+    );
+
+    expect(actions).toEqual([
+      {
+        kind: "send_unlock",
+        userId: 77,
+        dayNumber: 2,
+      },
+    ]);
+  });
+
+  it("does not backfill unlock when the lesson was already opened", () => {
+    const now = new Date("2026-03-29T13:00:00.000Z");
+    const actions = buildLessonRecoveryActions(
+      createRecoveryCandidate({
+        unlockAt: new Date("2026-03-28T10:00:00.000Z"),
+        opened: true,
+      }),
+      now,
+      parseLessonRecoveryBackfill("unlock,nudge"),
+    );
+
+    expect(actions).toEqual([]);
+  });
+
+  it("plans nudge recovery from the original unlock event time", () => {
+    const now = new Date("2026-03-29T14:00:00.000Z");
+    const actions = buildLessonRecoveryActions(
+      createRecoveryCandidate({
+        unlocked: true,
+        unlockEventAt: new Date("2026-03-29T00:00:00.000Z"),
+      }),
+      now,
+      parseLessonRecoveryBackfill("unlock,nudge"),
+    );
+
+    expect(actions).toEqual([
+      {
+        kind: "send_nudge",
+        userId: 77,
+        dayNumber: 2,
+        afterHours: 12,
+      },
+      {
+        kind: "ensure_nudge_job",
+        userId: 77,
+        dayNumber: 2,
+        afterHours: 24,
+        delayMs: 10 * 60 * 60 * 1000,
+      },
+    ]);
   });
 
   it("shows marathon by default when no visibility window is set", () => {

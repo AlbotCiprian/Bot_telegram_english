@@ -28,6 +28,7 @@
     "media:warm-cache": "tsx src/scripts/warmTelegramMediaCache.ts",
     "stream:build": "tsx src/scripts/buildStreamAssets.ts",
     "stream:verify": "tsx src/scripts/verifyStreamAssets.ts",
+    "lessons:reconcile": "tsx src/scripts/reconcileLessons.ts",
     "telegram:logout-cloud": "tsx src/scripts/logoutTelegramCloud.ts",
     "test:e2e-local": "vitest run",
     "audit:local": "tsx src/scripts/auditLocalReadiness.ts",
